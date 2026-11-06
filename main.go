@@ -20,7 +20,7 @@ import (
 )
 
 const (
-	Version     = "2.0.0" // keep in sync with version.txt
+	Version     = "2.0.1"
 	AppName     = "Яйца Таймер"
 	mainClass   = "YaytsaTimerMain"
 	alertClass  = "YaytsaTimerAlert"
@@ -36,6 +36,7 @@ var (
 	mainHwnd, alertHwnd uintptr
 	mainWeb, alertWeb   *edge.Chromium
 	alertReady          bool
+	alertCreating       bool
 	pendingAlert        string
 	quitting            bool
 	theme               = "dark"
@@ -255,8 +256,30 @@ func newWeb(hwnd uintptr, bg uint32, onMsg func(string)) (*edge.Chromium, bool) 
 		_ = s.PutIsSwipeNavigationEnabled(false)
 		_ = s.PutAreBrowserAcceleratorKeysEnabled(debug)
 	}
+	c.NavigationCompletedCallback = func(*edge.ICoreWebView2, *edge.ICoreWebView2NavigationCompletedEventArgs) {
+		if isVisible(hwnd) {
+			wake(c)
+		}
+	}
 	c.Resize()
 	return c, true
+}
+
+// WebView2 created inside a hidden window may never paint: after showing the host,
+// re-assert visibility and bounds.
+func wake(c *edge.Chromium) {
+	if c == nil || c.GetController() == nil {
+		return
+	}
+	_ = c.Show()
+	c.Resize()
+	_ = c.NotifyParentWindowPositionChanged()
+}
+
+func sleepWeb(c *edge.Chromium) {
+	if c != nil && c.GetController() != nil {
+		_ = c.Hide()
+	}
 }
 
 func jsonStr(v any) string { b, _ := json.Marshal(v); return string(b) }
@@ -387,6 +410,7 @@ func showMain() {
 		showWindow(mainHwnd, swShow)
 	}
 	pSetForegroundWindow.Call(mainHwnd)
+	wake(mainWeb)
 	if mainWeb != nil {
 		mainWeb.Focus()
 	}
@@ -395,6 +419,7 @@ func showMain() {
 func toggleMain() {
 	if isVisible(mainHwnd) && !isIconic(mainHwnd) {
 		saveBounds()
+		sleepWeb(mainWeb)
 		showWindow(mainHwnd, swHide)
 	} else {
 		showMain()
@@ -467,6 +492,7 @@ func mainProc(hwnd, msg, wp, lp uintptr) uintptr {
 	case wmClose:
 		if !quitting && closeToTray {
 			saveBounds()
+			sleepWeb(mainWeb)
 			showWindow(hwnd, swHide)
 			return 0
 		}
@@ -550,14 +576,25 @@ func onAlertMessage(s string) {
 	}
 }
 
+func alertRect() (int32, int32, int32, int32) {
+	// Bottom-right corner of the monitor with the mouse.
+	wa := workAreaAt(cursorPos())
+	s := dpiForPoint()
+	w, h := int32(alertW*s), int32(alertH*s)
+	margin := int32(12 * s)
+	return wa.Right - w - margin, wa.Bottom - h - margin, w, h
+}
+
 func createAlertWindow() {
+	x, y, w, h := alertRect()
 	alertHwnd, _, _ = pCreateWindowExW.Call(
 		wsExTopmost|wsExToolWindow,
 		uintptr(unsafe.Pointer(u16(alertClass))),
 		uintptr(unsafe.Pointer(u16(AppName))),
 		wsPopup,
-		0, 0, alertW, alertH, 0, 0, moduleHandle(), 0)
+		uintptr(x), uintptr(y), uintptr(w), uintptr(h), 0, 0, moduleHandle(), 0)
 	applyWindowTheme(alertHwnd, true)
+	showWindow(alertHwnd, swShowNoActivate) // the web view must be created in a visible window
 	bg := uint32(0x202020)
 	if resolvedTheme() == "light" {
 		bg = 0xFFFFFF
@@ -573,26 +610,22 @@ func createAlertWindow() {
 }
 
 func showAlert(dataJSON string) {
-	if alertHwnd == 0 || alertWeb == nil {
-		createAlertWindow()
-	}
 	if !alertReady {
 		pendingAlert = dataJSON
+		if !alertCreating {
+			alertCreating = true
+			// Not from inside a WebView2 event handler: creating a web view pumps messages.
+			dispatch(createAlertWindow)
+		}
 		return
 	}
 	applyTheme()
-	// Bottom-right corner of the monitor with the mouse.
-	wa := workAreaAt(cursorPos())
-	tmp := pMonitorFromPoint // keep linter calm
-	_ = tmp
-	s := dpiForPoint()
-	w, h := int32(alertW*s), int32(alertH*s)
-	margin := int32(12 * s)
-	setWindowPos(alertHwnd, hwndTopmost, wa.Right-w-margin, wa.Bottom-h-margin, w, h, swpNoActivate)
+	x, y, w, h := alertRect()
+	setWindowPos(alertHwnd, hwndTopmost, x, y, w, h, swpNoActivate)
 	alertWeb.Eval("window.showAlert(" + dataJSON + ")")
 	showWindow(alertHwnd, swShowNoActivate)
 	setWindowPos(alertHwnd, hwndTopmost, 0, 0, 0, 0, swpNoMove|swpNoSize|swpNoActivate|swpShowWindow)
-	alertWeb.Resize()
+	wake(alertWeb)
 	pSetTimer.Call(alertHwnd, timerTop, 1500, 0)
 	if !isForeground() {
 		flashWindow(mainHwnd, true)
@@ -624,6 +657,7 @@ func hideAlert() {
 	if alertWeb != nil {
 		alertWeb.Eval("window.hideAlert&&window.hideAlert()")
 	}
+	sleepWeb(alertWeb)
 	showWindow(alertHwnd, swHide)
 	flashWindow(mainHwnd, false)
 }
@@ -725,6 +759,10 @@ func main() {
 		uintptr(x), uintptr(y), uintptr(w), uintptr(h),
 		0, 0, moduleHandle(), 0)
 	applyWindowTheme(mainHwnd, false)
+	startHidden := len(os.Args) > 1 && strings.EqualFold(os.Args[1], "--hidden")
+	if !startHidden {
+		showWindow(mainHwnd, swShow) // the web view must be created in a visible window
+	}
 
 	var ok bool
 	mainWeb, ok = newWeb(mainHwnd, p.bg, onMainMessage)
@@ -738,12 +776,11 @@ func main() {
 	mainWeb.Init(mainBootJS)
 	mainWeb.NavigateToString(mainHTML())
 
-	if !(len(os.Args) > 1 && strings.EqualFold(os.Args[1], "--hidden")) {
-		showWindow(mainHwnd, swShow)
+	if !startHidden {
+		wake(mainWeb)
 		mainWeb.Focus()
 	}
 	addTray()
-	createAlertWindow()
 	go updateLoop()
 
 	var m msgT
