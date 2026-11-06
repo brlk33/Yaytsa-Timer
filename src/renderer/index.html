@@ -1,0 +1,184 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Яйца Таймер</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <header class="titlebar">
+    <div class="brand">
+      <svg class="brand-icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="13" r="8" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M12 9v4l2.5 2" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><path d="M9.5 2.8h5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+      <span data-i18n="appName">Яйца Таймер</span>
+    </div>
+  </header>
+
+  <nav class="tabs" role="tablist">
+    <button class="tab active" data-view="timer" data-i18n="tabTimer"></button>
+    <button class="tab" data-view="stats" data-i18n="tabStats"></button>
+    <button class="tab" data-view="settings" data-i18n="tabSettings"></button>
+  </nav>
+
+  <main>
+    <!-- TIMER -->
+    <section class="view active" id="view-timer">
+      <div class="phase-row">
+        <span class="tag" id="phaseTag"></span>
+        <span class="muted" id="cycleInfo"></span>
+      </div>
+
+      <div class="time" id="time">25:00</div>
+      <div class="bar"><div class="bar-fill" id="barFill"></div></div>
+
+      <div class="controls">
+        <button class="icon-btn" id="btnReset" data-i18n-title="reset">
+          <svg viewBox="0 0 20 20"><path d="M4.5 10a5.5 5.5 0 1 0 1.7-4" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/><path d="M5.6 2.8 5.9 6.3 9.3 5.9" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </button>
+        <button class="primary" id="btnStart"></button>
+        <button class="icon-btn" id="btnSkip" data-i18n-title="skip">
+          <svg viewBox="0 0 20 20"><path d="M5 5.2v9.6L12 10z" fill="currentColor"/><path d="M14.5 5v10" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>
+        </button>
+      </div>
+
+      <input class="label-input" id="label" maxlength="120" data-i18n-ph="labelPh" autocomplete="off">
+
+      <div class="props">
+        <div class="prop">
+          <div class="prop-key">
+            <svg viewBox="0 0 20 20"><circle cx="10" cy="11" r="6.2" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="M10 8v3.2l2 1.4" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+            <span data-i18n="work"></span>
+          </div>
+          <div class="stepper" data-key="work"></div>
+        </div>
+        <div class="prop">
+          <div class="prop-key">
+            <svg viewBox="0 0 20 20"><path d="M4 8h9v3.5A3.5 3.5 0 0 1 9.5 15h-2A3.5 3.5 0 0 1 4 11.5z" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="M13 9h1.2a1.8 1.8 0 0 1 0 3.6H13" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="M7 3.5v2M10 3.5v2" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+            <span data-i18n="break"></span>
+          </div>
+          <div class="stepper" data-key="brk"></div>
+        </div>
+        <div class="prop">
+          <div class="prop-key">
+            <svg viewBox="0 0 20 20"><rect x="3.5" y="4.5" width="13" height="12" rx="2" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="M3.5 8.5h13M7 3v3M13 3v3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+            <span data-i18n="today"></span>
+          </div>
+          <div class="prop-val" id="todayVal"></div>
+        </div>
+      </div>
+
+      <div class="hint" data-i18n="hint"></div>
+      <div class="test-row"><button class="ghost small-btn" id="btnTest" data-i18n="test"></button></div>
+    </section>
+
+    <!-- STATS -->
+    <section class="view" id="view-stats">
+      <h1 data-i18n="tabStats"></h1>
+
+      <div class="cards">
+        <div class="card"><div class="card-label" data-i18n="today"></div><div class="card-val" id="stToday"></div></div>
+        <div class="card"><div class="card-label" data-i18n="last7"></div><div class="card-val" id="stWeek"></div></div>
+        <div class="card"><div class="card-label" data-i18n="last30"></div><div class="card-val" id="stMonth"></div></div>
+      </div>
+
+      <div class="goal" id="goalBlock">
+        <div class="goal-head"><span data-i18n="goal"></span><span class="muted" id="goalText"></span></div>
+        <div class="bar"><div class="bar-fill" id="goalFill"></div></div>
+      </div>
+
+      <div class="chart-head">
+        <h2 data-i18n="byDay"></h2>
+        <div class="seg small" id="chartRange">
+          <button data-range="7">7</button><button data-range="14">14</button><button data-range="30">30</button>
+        </div>
+      </div>
+      <div class="chart" id="chart"></div>
+
+      <div class="hist-head">
+        <h2 data-i18n="history"></h2>
+        <button class="ghost" id="btnExport" data-i18n="exportCsv"></button>
+      </div>
+      <div id="history"></div>
+      <button class="ghost wide" id="btnMore" data-i18n="showMore"></button>
+    </section>
+
+    <!-- SETTINGS -->
+    <section class="view" id="view-settings">
+      <h1 data-i18n="tabSettings"></h1>
+
+      <div class="group-title" data-i18n="gTimer"></div>
+      <div class="set">
+        <div class="set-text"><div class="set-name" data-i18n="workLen"></div><div class="set-desc" data-i18n="stepDesc"></div></div>
+        <div class="stepper" data-key="work"></div>
+      </div>
+      <div class="set">
+        <div class="set-text"><div class="set-name" data-i18n="breakLen"></div><div class="set-desc" data-i18n="stepDesc"></div></div>
+        <div class="stepper" data-key="brk"></div>
+      </div>
+      <div class="set">
+        <div class="set-text"><div class="set-name" data-i18n="autoStart"></div><div class="set-desc" data-i18n="autoStartDesc"></div></div>
+        <button class="toggle" data-key="autoStart"></button>
+      </div>
+      <div class="set">
+        <div class="set-text"><div class="set-name" data-i18n="goalSet"></div><div class="set-desc" data-i18n="goalDesc"></div></div>
+        <div class="stepper" data-key="goal"></div>
+      </div>
+
+      <div class="group-title" data-i18n="gNotify"></div>
+      <div class="set">
+        <div class="set-text"><div class="set-name" data-i18n="popup"></div><div class="set-desc" data-i18n="popupDesc"></div></div>
+        <button class="toggle" data-key="popup"></button>
+      </div>
+      <div class="set">
+        <div class="set-text"><div class="set-name" data-i18n="trayTest"></div></div>
+        <button class="ghost" id="btnTest2" data-i18n="test"></button>
+      </div>
+      <div class="set">
+        <div class="set-text"><div class="set-name" data-i18n="sound"></div></div>
+        <button class="toggle" data-key="sound"></button>
+      </div>
+      <div class="set">
+        <div class="set-text"><div class="set-name" data-i18n="notifications"></div><div class="set-desc" data-i18n="notifDesc"></div></div>
+        <button class="toggle" data-key="notify"></button>
+      </div>
+
+      <div class="group-title" data-i18n="gLook"></div>
+      <div class="set">
+        <div class="set-text"><div class="set-name" data-i18n="language"></div></div>
+        <div class="seg" data-key="lang">
+          <button data-val="ru">Русский</button><button data-val="en">English</button>
+        </div>
+      </div>
+      <div class="set">
+        <div class="set-text"><div class="set-name" data-i18n="theme"></div></div>
+        <div class="seg" data-key="theme">
+          <button data-val="dark" data-i18n="dark"></button><button data-val="light" data-i18n="light"></button><button data-val="system" data-i18n="system"></button>
+        </div>
+      </div>
+      <div class="set">
+        <div class="set-text"><div class="set-name" data-i18n="closeToTray"></div><div class="set-desc" data-i18n="closeToTrayDesc"></div></div>
+        <button class="toggle" data-key="closeToTray"></button>
+      </div>
+      <div class="set">
+        <div class="set-text"><div class="set-name" data-i18n="onTop"></div></div>
+        <button class="toggle" data-key="alwaysOnTop"></button>
+      </div>
+
+      <div class="group-title" data-i18n="gData"></div>
+      <div class="set">
+        <div class="set-text"><div class="set-name" data-i18n="dataName"></div><div class="set-desc" data-i18n="dataDesc"></div></div>
+        <div class="btn-row">
+          <button class="ghost" id="btnExport2" data-i18n="exportCsv"></button>
+          <button class="ghost" id="btnFolder" data-i18n="openFolder"></button>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <div class="toast" id="toast"></div>
+  <div class="update" id="update" hidden><span></span><button></button></div>
+
+  <script src="app.js"></script>
+</body>
+</html>
