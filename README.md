@@ -21,7 +21,7 @@
 
 ## Установка
 
-1. Скачайте **[YaytsaTimer-Setup.exe](https://github.com/brlk33/Yaytsa-Timer/releases/latest/download/YaytsaTimer-Setup.exe)** и запустите.
+1. Скачайте **[YaytsaTimer-Setup.exe](https://github.com/brlk33/Yaytsa-Timer/raw/main/YaytsaTimer-Setup.exe)** и запустите.
 2. Выберите папку (права администратора не нужны) и нажмите «Установить».
 3. Ярлык **Яйца Таймер** появится на рабочем столе и в меню «Пуск».
 
@@ -43,4 +43,4 @@ npm install
 npm run dist
 ```
 
-Установщик появится в `dist/`. Новая версия: поднять `version` в `package.json`, собрать и выложить `YaytsaTimer-Setup.exe`, `YaytsaTimer-Setup.exe.blockmap` и `latest.yml` в GitHub Release — установленные копии обновятся сами.
+Установщик появится в `dist/`. Новая версия: поднять `version` в `package.json`, собрать и положить `YaytsaTimer-Setup.exe`, `YaytsaTimer-Setup.exe.blockmap` и `latest.yml` из `dist/` в корень репозитория — установленные копии обновятся сами при запуске.

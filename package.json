@@ -23,11 +23,22 @@
     "productName": "Yaytsa Timer",
     "executableName": "YaytsaTimer",
     "copyright": "Яйца Cloud",
-    "directories": { "output": "dist", "buildResources": "build" },
-    "files": ["src/**/*", "package.json"],
-    "electronLanguages": ["en-US", "ru"],
+    "directories": {
+      "output": "dist",
+      "buildResources": "build"
+    },
+    "files": [
+      "src/**/*",
+      "package.json"
+    ],
+    "electronLanguages": [
+      "en-US",
+      "ru"
+    ],
     "win": {
-      "target": ["nsis"],
+      "target": [
+        "nsis"
+      ],
       "icon": "build/icon.ico",
       "artifactName": "YaytsaTimer-Setup.${ext}",
       "signAndEditExecutable": true
@@ -42,10 +53,18 @@
       "createStartMenuShortcut": true,
       "installerIcon": "build/icon.ico",
       "uninstallerIcon": "build/icon.ico",
-      "installerLanguages": ["ru_RU", "en_US"],
+      "installerLanguages": [
+        "ru_RU",
+        "en_US"
+      ],
       "language": "1049",
       "deleteAppDataOnUninstall": false
     },
-    "publish": [{ "provider": "github", "owner": "brlk33", "repo": "Yaytsa-Timer", "releaseType": "release" }]
+    "publish": [
+      {
+        "provider": "generic",
+        "url": "https://github.com/brlk33/Yaytsa-Timer/raw/main"
+      }
+    ]
   }
 }
