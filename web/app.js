@@ -31,8 +31,8 @@ const I18N = {
     trayOpen: 'Открыть Яйца Таймер', trayQuit: 'Выйти', trayTest: 'Тест напоминания (5 сек)',
     popup: 'Окно поверх всего', popupDesc: 'Справа снизу, поверх игр и видео. Не исчезает, пока не нажмёте',
     goBreak: 'Начать перерыв', goWork: 'Начать работу', later: 'Закрыть', gotIt: 'Понятно',
-    aBreakBody: (w, b) => `Рабочий заход ${w}\u00a0мин завершён. Перерыв —\u00a0${b}\u00a0мин.`,
-    aWorkBody: w => `Перерыв окончен. Следующий заход —\u00a0${w}\u00a0мин.`,
+    aBreakBody: (w, b) => `Рабочий заход ${w}\u00a0мин завершён. Перерыв\u00a0—\u00a0${b}\u00a0мин.`,
+    aWorkBody: w => `Перерыв окончен. Следующий заход\u00a0—\u00a0${w}\u00a0мин.`,
     aBreakAuto: b => `Перерыв ${b}\u00a0мин уже идёт.`,
     aWorkAuto: w => `Рабочий заход ${w}\u00a0мин уже идёт.`,
     off: 'выкл', exported: 'Файл сохранён', deleted: 'Запись удалена', undo: 'Отменить',
@@ -70,8 +70,8 @@ const I18N = {
     trayOpen: 'Open Yaytsa Timer', trayQuit: 'Quit', trayTest: 'Test reminder (5 sec)',
     popup: 'Pop-up over everything', popupDesc: 'Bottom-right, over games and videos. Stays until you click it',
     goBreak: 'Start break', goWork: 'Start focus', later: 'Close', gotIt: 'Got it',
-    aBreakBody: (w, b) => `${w}\u2011min focus session done. Break —\u00a0${b} min.`,
-    aWorkBody: w => `Break is over. Next session —\u00a0${w} min.`,
+    aBreakBody: (w, b) => `${w}\u2011min focus session done. Break\u00a0—\u00a0${b} min.`,
+    aWorkBody: w => `Break is over. Next session\u00a0—\u00a0${w} min.`,
     aBreakAuto: b => `Your ${b}\u2011min break has started.`,
     aWorkAuto: w => `Your ${w}\u2011min focus session has started.`,
     off: 'off', exported: 'File saved', deleted: 'Entry deleted', undo: 'Undo',
@@ -628,6 +628,11 @@ function bind() {
 
   api.onSystemTheme(dark => { systemDark = dark; if (settings.theme === 'system') applyTheme(); });
 
+  // Called by the host right before quitting
+  window.__beforeQuit = () => {
+    if (timer.phase === 'work' && timer.startedAt) logWork(false, true);
+    else api.saveSync({ settings, sessions, current: { label: $('#label').value } });
+  };
   // Log an in-progress work session if the app is closed mid-session
   window.addEventListener('beforeunload', () => {
     if (timer.phase === 'work' && timer.startedAt) logWork(false, true);

@@ -363,3 +363,8 @@ h2 { font-size: 15px; font-weight: 600; margin: 0; color: var(--text-strong); }
 }
 .update[hidden] { display: none; }
 .update button { border: 0; border-radius: 4px; background: var(--accent); color: #fff; padding: 3px 10px; font-size: 13px; }
+
+/* Native (WebView2) build: Windows draws the title bar */
+html.native .titlebar { display: none; }
+html.native .tabs { padding-top: 8px; }
+html.native main { height: calc(100% - 48px); }
