@@ -1318,3 +1318,30 @@ html.android[data-theme="light"] .face::before {
   box-shadow: inset 0 -14px 28px rgba(0, 0, 0, .04), 0 10px 30px rgba(70, 90, 255, .08);
 }
 html.android .face::after { display: none; }
+
+/* ======================= 2.8.2: no disc — a ring on a soft glow, gentle gradients ======================= */
+html.android .face::before {
+  inset: 14%; border: 0; border-radius: 50%;
+  background: radial-gradient(circle at 40% 35%, rgba(61, 139, 255, .30), rgba(138, 92, 255, .16) 45%, transparent 72%);
+  box-shadow: none; filter: blur(22px); opacity: .55;
+  transition: opacity .6s var(--ease), background .6s var(--ease);
+}
+html.android .face.running::before { opacity: 1; }
+html.android .face.break::before { background: radial-gradient(circle at 40% 35%, rgba(47, 191, 143, .30), rgba(61, 183, 214, .16) 45%, transparent 72%); }
+html.android[data-theme="light"] .face::before { opacity: .4; box-shadow: none; }
+html.android[data-theme="light"] .face.running::before { opacity: .75; }
+html.android .face::after { display: none; }
+html.android .ring-track { stroke: var(--block-2); stroke-width: 5; }
+html.android .ring-fill { stroke-width: 5; }
+
+/* Soft gradients on the surfaces */
+html.android .card, html.android .proj, html.android #view-settings .set, html.android #syncBox .sync-actions,
+html.android #syncBox .sync-form, html.android #syncBox .sync-msg {
+  background: linear-gradient(165deg, var(--block-2), var(--block) 55%);
+}
+html.android #view-timer .label-input { background: linear-gradient(165deg, var(--block-2), var(--block) 60%); }
+html.android .dial[data-key="work"] { background: linear-gradient(160deg, rgba(61, 139, 255, .13), rgba(138, 92, 255, .05) 50%, var(--block) 80%); }
+html.android .dial[data-key="brk"] { background: linear-gradient(160deg, rgba(47, 191, 143, .13), rgba(61, 183, 214, .05) 50%, var(--block) 80%); }
+html.android #view-timer .icon-btn { background: linear-gradient(165deg, var(--block-2), var(--block)); }
+html.android .tag { background: linear-gradient(135deg, rgba(61, 139, 255, .22), rgba(138, 92, 255, .18)); color: var(--text-strong); }
+html.android .tag.break { background: linear-gradient(135deg, rgba(47, 191, 143, .22), rgba(61, 183, 214, .18)); }

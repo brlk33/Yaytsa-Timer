@@ -499,6 +499,8 @@ function renderTimer() {
   ring.style.strokeDashoffset = String(289.03 * (1 - ratio));
   ring.classList.toggle('break', !isWork);
   ring.classList.toggle('empty', ratio <= 0);
+  $('#face').classList.toggle('break', !isWork);
+  $('#face').classList.toggle('running', timer.running);
 
   const btn = $('#btnStart');
   const btnText = timer.running ? t('pause') : (touched ? t('resume') : t('start'));
