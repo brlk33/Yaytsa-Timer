@@ -69,9 +69,10 @@ final class Updater {
                 int n;
                 while ((n = in.read(buf)) > 0) out.write(buf, 0, n);
             }
+            // A real APK is a zip of ~80 KB; anything tiny is an error page, not the app.
             byte[] head = new byte[2];
             try (InputStream in = new FileInputStream(f)) { in.read(head); }
-            if (f.length() < 100_000 || head[0] != 'P' || head[1] != 'K') { f.delete(); return; }
+            if (f.length() < 20_000 || head[0] != 'P' || head[1] != 'K') { f.delete(); return; }
             downloaded = f;
             downloadedVersion = remote;
             ready.accept(remote);
