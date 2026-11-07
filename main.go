@@ -20,7 +20,7 @@ import (
 )
 
 const (
-	Version     = "2.0.1"
+	Version     = "2.0.2"
 	AppName     = "Яйца Таймер"
 	mainClass   = "YaytsaTimerMain"
 	alertClass  = "YaytsaTimerAlert"
@@ -723,8 +723,9 @@ func main() {
 	}
 
 	// One instance: a second launch just brings the window forward.
-	pCreateMutexW.Call(0, 0, uintptr(unsafe.Pointer(u16("YaytsaTimer.SingleInstance"))))
-	if windows.GetLastError() == windows.ERROR_ALREADY_EXISTS {
+	// LazyProc.Call returns GetLastError captured right after the call; windows.GetLastError()
+	// afterwards is unreliable (the Go runtime may have overwritten it).
+	if _, _, e := pCreateMutexW.Call(0, 0, uintptr(unsafe.Pointer(u16("YaytsaTimer.SingleInstance")))); e == windows.ERROR_ALREADY_EXISTS {
 		if h, _, _ := pFindWindowW.Call(uintptr(unsafe.Pointer(u16(mainClass))), 0); h != 0 {
 			pPostMessageW.Call(h, wmAppShow, 0, 0)
 		}
@@ -762,6 +763,8 @@ func main() {
 	startHidden := len(os.Args) > 1 && strings.EqualFold(os.Args[1], "--hidden")
 	if !startHidden {
 		showWindow(mainHwnd, swShow) // the web view must be created in a visible window
+		// The first ShowWindow may use the launcher's STARTUPINFO (e.g. minimized); insist on normal.
+		showWindow(mainHwnd, swRestore)
 	}
 
 	var ok bool
