@@ -11,11 +11,11 @@ BEGIN
     BLOCK "041904B0"
     BEGIN
       VALUE "CompanyName", "Яйца Cloud"
-      VALUE "FileDescription", "Яйца Таймер"
+      VALUE "FileDescription", "Яйцетаймер"
       VALUE "FileVersion", "2.0.0"
       VALUE "InternalName", "YaytsaTimer"
       VALUE "OriginalFilename", "YaytsaTimer.exe"
-      VALUE "ProductName", "Яйца Таймер"
+      VALUE "ProductName", "Яйцетаймер"
       VALUE "ProductVersion", "2.0.0"
     END
   END

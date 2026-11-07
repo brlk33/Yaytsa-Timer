@@ -1,8 +1,8 @@
-version: 2.2.0
+version: 2.2.1
 files:
   - url: YaytsaTimer-Setup.exe
-    sha512: cbfyf6lvXIjLoD05emRu5nqsUgEi/6DQNDCg5cQ1GPLogAHz23SZVLC1fwYWIenKsrq7/xe0YIG3S+oeI9oHNg==
-    size: 1235095
+    sha512: 3kU/+FkiNAbVm1u0/qPe4BSKvZVPjbhzteAbsZc6lN6p4kMRH6wN1GqmV/s3MZUsIBUMOzs+BG5yDV0pn6k4eQ==
+    size: 1235754
 path: YaytsaTimer-Setup.exe
-sha512: cbfyf6lvXIjLoD05emRu5nqsUgEi/6DQNDCg5cQ1GPLogAHz23SZVLC1fwYWIenKsrq7/xe0YIG3S+oeI9oHNg==
-releaseDate: '2026-11-07T20:17:40.000Z'
+sha512: 3kU/+FkiNAbVm1u0/qPe4BSKvZVPjbhzteAbsZc6lN6p4kMRH6wN1GqmV/s3MZUsIBUMOzs+BG5yDV0pn6k4eQ==
+releaseDate: '2026-11-07T20:22:25.000Z'

@@ -10,6 +10,10 @@ if (-not (Get-Command makensis -ErrorAction SilentlyContinue)) {
 }
 $version = (Get-Content version.txt -Raw).Trim()
 
+# Icon, manifest and version info (name + version from version.txt) -> rsrc_windows_amd64.syso
+go -C tools/mkres run . -root ../..
+if ($LASTEXITCODE) { throw 'mkres failed' }
+
 $env:GOOS = 'windows'; $env:GOARCH = 'amd64'; $env:CGO_ENABLED = '0'
 go build -trimpath -ldflags "-s -w -H windowsgui -buildid=" -o dist/YaytsaTimer.exe .
 if ($LASTEXITCODE) { throw 'go build failed' }
