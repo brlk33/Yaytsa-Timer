@@ -17,6 +17,8 @@
 
   <nav class="tabs" role="tablist">
     <button class="tab active" data-view="timer" data-i18n="tabTimer"></button>
+    <button class="tab" data-view="projects" data-i18n="tabProjects"></button>
+    <button class="tab" data-view="apps" data-i18n="tabApps"></button>
     <button class="tab" data-view="stats" data-i18n="tabStats"></button>
     <button class="tab" data-view="settings" data-i18n="tabSettings"></button>
   </nav>
@@ -42,7 +44,9 @@
         </button>
       </div>
 
-      <input class="label-input" id="label" maxlength="120" data-i18n-ph="labelPh" autocomplete="off">
+      <input class="label-input" id="label" maxlength="120" data-i18n-ph="labelPh" autocomplete="off" list="projectList">
+      <datalist id="projectList"></datalist>
+      <div class="label-meta" id="labelMeta"></div>
 
       <div class="props">
         <div class="prop">
@@ -72,6 +76,36 @@
       <div class="test-row"><button class="ghost small-btn" id="btnTest" data-i18n="test"></button></div>
     </section>
 
+    <!-- PROJECTS -->
+    <section class="view" id="view-projects">
+      <h1 data-i18n="tabProjects"></h1>
+      <p class="lead" data-i18n="projLead"></p>
+      <form class="add-row" id="projAdd">
+        <input class="text-input" id="projName" maxlength="120" data-i18n-ph="projNewPh" autocomplete="off">
+        <button class="ghost" type="submit" data-i18n="add"></button>
+      </form>
+      <div id="projList"></div>
+      <button class="ghost wide" id="btnHidden"></button>
+      <div id="projHidden" hidden></div>
+    </section>
+
+    <!-- APPS -->
+    <section class="view" id="view-apps">
+      <h1 data-i18n="tabApps"></h1>
+      <p class="lead" data-i18n="appsLead"></p>
+      <div id="appList"></div>
+      <button class="ghost wide add-app" id="btnAddApp" data-i18n="appsAdd"></button>
+      <div class="picker" id="appPicker" hidden>
+        <div class="picker-head"><h3 data-i18n="appsPickTitle"></h3><button class="ghost" id="btnPickClose" data-i18n="done"></button></div>
+        <label class="search">
+          <svg viewBox="0 0 20 20"><circle cx="8.8" cy="8.8" r="5.3" fill="none" stroke="currentColor" stroke-width="1.6"/><path d="M12.8 12.8l3.7 3.7" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
+          <input id="appSearch" autocomplete="off" spellcheck="false" data-i18n-ph="appsSearchPh">
+        </label>
+        <div class="cand-list" id="appCandidates"></div>
+        <button class="ghost wide browse" id="btnBrowse" data-i18n="appsBrowse"></button>
+      </div>
+    </section>
+
     <!-- STATS -->
     <section class="view" id="view-stats">
       <h1 data-i18n="tabStats"></h1>
@@ -89,11 +123,21 @@
 
       <div class="chart-head">
         <h2 data-i18n="byDay"></h2>
-        <div class="seg small" id="chartRange">
-          <button data-range="7">7</button><button data-range="14">14</button><button data-range="30">30</button>
+        <div class="chart-tools">
+          <div class="seg small" id="chartRange">
+            <button data-range="7">7</button><button data-range="14">14</button><button data-range="30">30</button>
+          </div>
+          <div class="seg small" id="heatRange">
+            <button data-range="13" data-i18n="r3m"></button><button data-range="26" data-i18n="r6m"></button><button data-range="53" data-i18n="r1y"></button>
+          </div>
+          <div class="seg small icons" id="chartMode">
+            <button data-mode="bars" data-i18n-title="modeBars"><svg viewBox="0 0 16 16"><path d="M3 13V8M8 13V3M13 13V6" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/></svg></button>
+            <button data-mode="squares" data-i18n-title="modeSquares"><svg viewBox="0 0 16 16"><rect x="2" y="2" width="5" height="5" rx="1.3" fill="currentColor"/><rect x="9" y="2" width="5" height="5" rx="1.3" fill="currentColor" opacity=".55"/><rect x="2" y="9" width="5" height="5" rx="1.3" fill="currentColor" opacity=".35"/><rect x="9" y="9" width="5" height="5" rx="1.3" fill="currentColor"/></svg></button>
+          </div>
         </div>
       </div>
       <div class="chart" id="chart"></div>
+      <div class="heat" id="heat" hidden></div>
 
       <div class="hist-head">
         <h2 data-i18n="history"></h2>
@@ -151,6 +195,11 @@
         <div class="seg" data-key="theme">
           <button data-val="dark" data-i18n="dark"></button><button data-val="light" data-i18n="light"></button><button data-val="system" data-i18n="system"></button>
         </div>
+      </div>
+      <div class="group-title" data-i18n="gSystem"></div>
+      <div class="set">
+        <div class="set-text"><div class="set-name" data-i18n="launchAtStart"></div><div class="set-desc" data-i18n="launchAtStartDesc"></div></div>
+        <button class="toggle" id="autostartToggle"></button>
       </div>
       <div class="set">
         <div class="set-text"><div class="set-name" data-i18n="closeToTray"></div><div class="set-desc" data-i18n="closeToTrayDesc"></div></div>

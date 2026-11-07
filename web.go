@@ -70,7 +70,11 @@ const mainBootJS = `
     save: p => call('save', p),
     saveSync: p => post('save', p),
     notify: () => post('flash'),
-    progress: () => {},
+    progress: (v, paused) => post('progress', Number(v), !!paused),
+    schedule: ms => post('schedule', Math.max(0, Math.round(ms || 0))),
+    onPhaseDue: on('phase-due'),
+    appsInstalled: () => call('appsInstalled'),
+    appsBrowse: title => call('appsBrowse', title),
     title: t => post('title', t),
     theme: t => post('theme', t),
     systemDark: () => call('systemDark'),
@@ -88,6 +92,12 @@ const mainBootJS = `
     log: m => post('log', String(m)),
     onUpdateReady: on('update-ready'),
     installUpdate: () => post('installUpdate'),
+    autostart: () => call('autostart'),
+    setAutostart: v => call('setAutostart', !!v),
+    appsStats: () => call('appsStats'),
+    appsCandidates: () => call('appsCandidates'),
+    appsTrack: a => call('appsTrack', a),
+    appsUntrack: exe => call('appsUntrack', exe),
   };
 })();
 `

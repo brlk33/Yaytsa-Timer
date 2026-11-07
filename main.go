@@ -20,7 +20,7 @@ import (
 )
 
 const (
-	Version     = "2.0.2"
+	Version     = "2.1.0"
 	AppName     = "Яйца Таймер"
 	mainClass   = "YaytsaTimerMain"
 	alertClass  = "YaytsaTimerAlert"
@@ -29,6 +29,7 @@ const (
 	alertH      = 150
 	timerTop    = 1
 	timerQuit   = 2
+	timerPhase  = 3
 	debugEnvVar = "YAYTSA_DEBUG"
 )
 
@@ -375,11 +376,45 @@ func onMainMessage(s string) {
 		}
 	case "version":
 		result = Version
+	case "autostart":
+		result = autostartEnabled()
+	case "setAutostart":
+		result = setAutostart(arg[bool](r, 0))
+	case "appsStats":
+		result = appsStats()
+	case "appsCandidates":
+		result = appCandidates()
+	case "appsTrack":
+		trackApp(arg[appInfo](r, 0))
+		result = appsStats()
+	case "appsUntrack":
+		untrackApp(arg[string](r, 0))
+		result = appsStats()
+	case "appsInstalled":
+		result = installedApps()
+	case "appsBrowse":
+		// A modal dialog must not run inside the WebView2 event handler: open it from the queue.
+		id, title := r.ID, arg[string](r, 0)
+		dispatch(func() { reply(id, browseExe(title)) })
+		return
+	case "progress":
+		setTaskbarProgress(arg[float64](r, 0), arg[bool](r, 1))
+	case "schedule":
+		// Phase end, in ms from now (0 = cancel). A native timer wakes the page even if
+		// Chromium throttles its own timers while the window is hidden.
+		pKillTimer.Call(mainHwnd, timerPhase)
+		if ms := arg[float64](r, 0); ms > 0 {
+			pSetTimer.Call(mainHwnd, timerPhase, uintptr(ms)+30, 0)
+		}
 	default:
 		result = nil
 	}
-	if r.ID > 0 && mainWeb != nil {
-		mainWeb.Eval(fmt.Sprintf("window.__reply&&window.__reply(%d,%s)", r.ID, jsonStr(result)))
+	reply(r.ID, result)
+}
+
+func reply(id int, result any) {
+	if id > 0 && mainWeb != nil {
+		mainWeb.Eval(fmt.Sprintf("window.__reply&&window.__reply(%d,%s)", id, jsonStr(result)))
 	}
 }
 
@@ -410,6 +445,7 @@ func showMain() {
 		showWindow(mainHwnd, swShow)
 	}
 	pSetForegroundWindow.Call(mainHwnd)
+	resetTaskbarProgress() // the taskbar button was recreated: re-send progress on the next tick
 	wake(mainWeb)
 	if mainWeb != nil {
 		mainWeb.Focus()
@@ -419,7 +455,7 @@ func showMain() {
 func toggleMain() {
 	if isVisible(mainHwnd) && !isIconic(mainHwnd) {
 		saveBounds()
-		sleepWeb(mainWeb)
+		// the page keeps running while hidden so the timer and reminders stay on time
 		showWindow(mainHwnd, swHide)
 	} else {
 		showMain()
@@ -455,6 +491,7 @@ func finalQuit() {
 	}
 	finalized = true
 	saveBounds()
+	saveApps()
 	removeTray()
 	if alertHwnd != 0 {
 		pDestroyWindow.Call(alertHwnd)
@@ -483,7 +520,7 @@ func mainProc(hwnd, msg, wp, lp uintptr) uintptr {
 	case wmGetMinMaxInfo:
 		mmi := (*minMaxInfo)(unsafe.Pointer(lp))
 		s := dpiFor(hwnd)
-		mmi.MinTrackSize = point{int32(380 * s), int32(560 * s)}
+		mmi.MinTrackSize = point{int32(400 * s), int32(580 * s)}
 		return 0
 	case wmDpiChanged:
 		r := (*rect)(unsafe.Pointer(lp))
@@ -492,7 +529,7 @@ func mainProc(hwnd, msg, wp, lp uintptr) uintptr {
 	case wmClose:
 		if !quitting && closeToTray {
 			saveBounds()
-			sleepWeb(mainWeb)
+			// keep the web view alive: the timer runs on in the tray
 			showWindow(hwnd, swHide)
 			return 0
 		}
@@ -505,6 +542,10 @@ func mainProc(hwnd, msg, wp, lp uintptr) uintptr {
 		if wp == timerQuit {
 			pKillTimer.Call(hwnd, timerQuit)
 			finalQuit()
+		}
+		if wp == timerPhase {
+			pKillTimer.Call(hwnd, timerPhase)
+			emit("phase-due", true)
 		}
 		return 0
 	case wmSettingChange:
@@ -700,7 +741,7 @@ func loadSettings() {
 
 func initialBounds() (int32, int32, int32, int32) {
 	s := dpiFor(0)
-	w, h := int32(460*s), int32(700*s)
+	w, h := int32(480*s), int32(760*s)
 	m := readData()
 	if raw, ok := m["nativeWindow"]; ok {
 		var b struct{ X, Y, Width, Height int32 }
@@ -785,6 +826,8 @@ func main() {
 	}
 	addTray()
 	go updateLoop()
+	loadApps()
+	go appTrackLoop()
 
 	var m msgT
 	for {
