@@ -169,15 +169,17 @@ const t = k => I18N[settings.lang][k];
 
 /* ================= Persistence ================= */
 let saveTimer = null;
-const snapshot = () => ({ settings, sessions, projects, current: { label: $('#label').value } });
+const snapshot = () => ({ settings, sessions, projects, current: { label: $('#label').value }, sync: syncSnapshot() });
 function persist() {
   clearTimeout(saveTimer);
   saveTimer = setTimeout(() => {
     api.save(snapshot());
+    syncSchedule();
   }, 250);
 }
 function persistNow() {
   clearTimeout(saveTimer);
+  syncSchedule();
   return api.save(snapshot());
 }
 
@@ -1582,6 +1584,7 @@ function bind() {
   setPhase('work');
   if (ANDROID) applyHostTimer(data.timer);
   bind();
+  syncInit(data);
   render();
   renderAutostart();
   updateDatalist();

@@ -20,7 +20,7 @@ import (
 )
 
 const (
-	Version     = "2.4.0"
+	Version     = "2.5.0"
 	AppName     = "Яйцетаймер"
 	mainClass   = "YaytsaTimerMain"
 	alertClass  = "YaytsaTimerAlert"
@@ -370,6 +370,12 @@ func onMainMessage(s string) {
 		result = exportCsv(arg[string](r, 0), arg[string](r, 1))
 	case "openDataFolder":
 		shellOpen("explorer.exe", dataDir())
+	case "authBrowser":
+		startAuth(arg[string](r, 0), arg[string](r, 1))
+	case "openUrl":
+		if u := arg[string](r, 0); strings.HasPrefix(u, "https://") {
+			shellOpen(u, "")
+		}
 	case "flash":
 		if !isForeground() {
 			flashWindow(mainHwnd, true)

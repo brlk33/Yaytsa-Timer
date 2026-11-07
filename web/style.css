@@ -818,3 +818,15 @@ html.android .titlebar, html.android [data-desktop] { display: none !important; 
 html.android { -webkit-tap-highlight-color: transparent; }
 html.android .tabs { padding-top: 6px; }
 html.android button, html.android .tab { touch-action: manipulation; }
+
+/* ---------- Sync (settings) ---------- */
+.sync-actions { display: flex; gap: 8px; flex-wrap: wrap; margin: -4px 0 12px; }
+.sync-form { display: flex; flex-direction: column; gap: 8px; margin-bottom: 12px; max-width: 420px; }
+.sync-form .btn-row { justify-content: flex-start; align-items: center; margin-top: 2px; }
+.sync-form .ghost.on { background: var(--accent); color: #fff; box-shadow: none; }
+.sync-form .ghost.on:hover { background: var(--accent-hover); }
+.sync-forgot { margin-right: auto; font-size: 13px; color: var(--text-3); text-decoration: none; }
+.sync-forgot:hover { color: var(--text-2); }
+.sync-msg { margin: 0 0 12px; font-size: 13px; color: var(--text-2); }
+.sync-status.ok { color: var(--break, #4dab9a); }
+.sync-status.denied, .sync-status.nodb { color: #e5534b; }

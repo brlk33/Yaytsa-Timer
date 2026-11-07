@@ -29,7 +29,7 @@ if (Test-Path $out) { Remove-Item $out -Recurse -Force }
 New-Item -ItemType Directory -Force "$out\assets", "$out\classes", "$out\dex", "$out\gen" | Out-Null
 
 # Page: the same files the desktop build embeds, plus the Android bridge
-Copy-Item web\index.html, web\style.css, web\app.js, android\bridge.js "$out\assets"
+Copy-Item web\index.html, web\style.css, web\sync.js, web\app.js, android\bridge.js "$out\assets"
 
 # Tools print notes to stderr; PowerShell 5.1 would treat that as an error, so only the exit code counts.
 function Run($exe, [string[]]$a) {

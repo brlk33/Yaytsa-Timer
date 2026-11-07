@@ -49,6 +49,7 @@ public class MainActivity extends Activity {
     private WebView web;
     private boolean pageReady;
     private String pendingAlertAction;
+    private JSONObject pendingAuth;
     private ValueCallback<Uri[]> fileCallback;
     private int exportId;
     private String exportCsv;
@@ -60,6 +61,7 @@ public class MainActivity extends Activity {
         super.onCreate(saved);
         Host.createChannels(this);
         pendingAlertAction = getIntent().getStringExtra(Host.EXTRA_ALERT_ACTION);
+        pendingAuth = authFrom(getIntent());
 
         root = new FrameLayout(this);
         root.setBackgroundColor(0xFF191919);
@@ -117,7 +119,7 @@ public class MainActivity extends Activity {
     private String pageHtml() {
         String html = asset("index.html");
         html = html.replaceAll("(?i)<meta http-equiv=\"Content-Security-Policy\"[^>]*>", "");
-        return html.replace("<script src=\"app.js\"></script>", "<script src=\"bridge.js\"></script><script src=\"app.js\"></script>");
+        return html.replace("<script src=\"sync.js\"></script>", "<script src=\"bridge.js\"></script><script src=\"sync.js\"></script>");
     }
 
     private String asset(String name) {
@@ -228,9 +230,26 @@ public class MainActivity extends Activity {
         super.onDestroy();
     }
 
+    /** yaytsa://auth?state=…&rt=… from the site after Google sign-in (see sync.js). */
+    private static JSONObject authFrom(Intent intent) {
+        Uri u = intent != null ? intent.getData() : null;
+        if (u == null || !"yaytsa".equals(u.getScheme()) || !"auth".equals(u.getHost())) return null;
+        String state = u.getQueryParameter("state"), rt = u.getQueryParameter("rt");
+        if (state == null || rt == null) return null;
+        try {
+            return new JSONObject().put("state", state).put("rt", rt);
+        } catch (Exception e) {
+            return null;
+        }
+    }
+
     @Override
     protected void onNewIntent(Intent intent) {
         super.onNewIntent(intent);
+        JSONObject auth = authFrom(intent);
+        if (auth != null) {
+            if (pageReady) emit("auth-result", auth); else pendingAuth = auth;
+        }
         String a = intent.getStringExtra(Host.EXTRA_ALERT_ACTION);
         if (a != null) {
             Host.cancelAlert(this);
@@ -284,6 +303,10 @@ public class MainActivity extends Activity {
             emit("alert-action", pendingAlertAction);
             pendingAlertAction = null;
         }
+        if (pendingAuth != null) {
+            emit("auth-result", pendingAuth);
+            pendingAuth = null;
+        }
         if (Build.VERSION.SDK_INT >= 33 && checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) {
             requestPermissions(new String[]{Manifest.permission.POST_NOTIFICATIONS}, REQ_NOTIFY);
         }
@@ -331,6 +354,16 @@ public class MainActivity extends Activity {
                 }
                 break;
             }
+            case "authBrowser": {
+                String state = args.optString(0), site = args.optString(1);
+                if (state.matches("[0-9a-f]{16,64}") && site.startsWith("https://")) openUrl(site + "#timer-login/a/" + state);
+                break;
+            }
+            case "openUrl": {
+                String u = args.optString(0);
+                if (u.startsWith("https://")) openUrl(u);
+                break;
+            }
             case "installUpdate":
                 Updater.install(this);
                 break;
@@ -342,6 +375,14 @@ public class MainActivity extends Activity {
                 break;
             default:
                 reply(id, null);
+        }
+    }
+
+    private void openUrl(String u) {
+        try {
+            startActivity(new Intent(Intent.ACTION_VIEW, Uri.parse(u)));
+        } catch (Exception e) {
+            Log.w(TAG, "no browser", e);
         }
     }
 

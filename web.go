@@ -15,6 +15,9 @@ var styleCSS string
 //go:embed web/app.js
 var appJS string
 
+//go:embed web/sync.js
+var syncJS string
+
 //go:embed web/alert.html
 var alertHTMLSrc string
 
@@ -36,7 +39,7 @@ func inline(html string, css map[string]string, js map[string]string) string {
 }
 
 func mainHTML() string {
-	return inline(indexHTML, map[string]string{"style.css": styleCSS}, map[string]string{"app.js": appJS})
+	return inline(indexHTML, map[string]string{"style.css": styleCSS}, map[string]string{"sync.js": syncJS, "app.js": appJS})
 }
 
 func alertHTML() string {
@@ -105,6 +108,9 @@ const mainBootJS = `
     appsCandidates: () => call('appsCandidates'),
     appsTrack: a => call('appsTrack', a),
     appsUntrack: exe => call('appsUntrack', exe),
+    authBrowser: (state, site) => post('authBrowser', state, site),
+    onAuthResult: on('auth-result'),
+    openUrl: u => post('openUrl', u),
   };
 })();
 `

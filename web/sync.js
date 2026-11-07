@@ -1,0 +1,508 @@
+'use strict';
+/* ================= Sync between devices =================
+   One account with the yaytsa-cloud site. Data lives in the project's Realtime Database at
+   timer/<uid>: s/<id> sessions, p/<key> project metadata, set = shared settings. Every item
+   carries u (time of the last change); the newer one wins. Deleted items stay as {del, u} so a
+   device that was offline does not bring them back. Everything goes over plain REST and the
+   database's event stream, so the same code runs in WebView2 and in the Android WebView.
+   Uses globals of app.js (sessions, projects, settings, api, ...); runs only after its boot. */
+
+const SYNC = {
+  key: 'AIzaSyB5N_ynBpx9cD8cyy4da_HFMHVc-qZ_YyU',
+  db: 'https://yaytsa-cloud-default-rtdb.europe-west1.firebasedatabase.app',
+  site: 'https://fggtf24-cyber.github.io/yaytsa-cloud/',
+};
+// Settings that follow the account; the rest (theme, zoom, window options) stay per device.
+const SYNC_SETTINGS = ['work', 'brk', 'autoStart', 'goal', 'sound', 'popup', 'lang'];
+// A deleted item is remembered as '-<time of deletion>'; older copies of it are not brought back.
+const isDel = g => typeof g === 'string' && g[0] === '-';
+const delAt = g => Number(g.slice(1)) || 0;
+
+const ST = {
+  ru: {
+    gSync: 'Синхронизация',
+    syncName: 'Аккаунт Яйца Cloud',
+    syncDesc: 'Один аккаунт с сайтом. История, проекты и настройки таймера одинаковые на ПК и телефоне',
+    google: 'Войти через Google', withEmail: 'Почта и пароль',
+    email: 'Почта', password: 'Пароль', login: 'Войти', register: 'Создать аккаунт', cancel: 'Отмена',
+    logout: 'Выйти', forgot: 'Забыли пароль?',
+    googleWait: 'Войдите в браузере и нажмите «Открыть Яйцетаймер»',
+    stOk: at => `Синхронизировано${at ? ' в ' + at : ''}`, stConn: 'Подключение…', stOffline: 'Нет связи, изменения отправятся позже',
+    stDenied: 'Сервер не принял доступ. Попробуйте выйти и войти снова', stNoDb: 'Синхронизация на сервере ещё не включена',
+    loggedOut: 'Вход истёк, войдите снова', merged: n => `Получено с других устройств: ${n}`,
+    eCreds: 'Неверная почта или пароль', eExists: 'Эта почта уже зарегистрирована. Нажмите «Войти»',
+    eWeak: 'Пароль должен быть не короче 6 символов', eEmail: 'Проверьте адрес почты',
+    eMany: 'Слишком много попыток, подождите немного', eNet: 'Нет связи с сервером', eOther: 'Не получилось войти',
+  },
+  en: {
+    gSync: 'Sync',
+    syncName: 'Яйца Cloud account',
+    syncDesc: 'The same account as the site. History, projects and timer settings match on PC and phone',
+    google: 'Sign in with Google', withEmail: 'Email and password',
+    email: 'Email', password: 'Password', login: 'Sign in', register: 'Create account', cancel: 'Cancel',
+    logout: 'Sign out', forgot: 'Forgot password?',
+    googleWait: 'Sign in in the browser, then press “Open Яйцетаймер”',
+    stOk: at => `Synced${at ? ' at ' + at : ''}`, stConn: 'Connecting…', stOffline: 'Offline, changes will be sent later',
+    stDenied: 'The server refused access. Try signing out and in again', stNoDb: 'Sync is not enabled on the server yet',
+    loggedOut: 'Sign-in expired, please sign in again', merged: n => `Received from other devices: ${n}`,
+    eCreds: 'Wrong email or password', eExists: 'This email is already registered. Press “Sign in”',
+    eWeak: 'The password needs at least 6 characters', eEmail: 'Check the email address',
+    eMany: 'Too many attempts, wait a little', eNet: 'Cannot reach the server', eOther: 'Could not sign in',
+  },
+};
+const st = k => (ST[settings.lang] || ST.ru)[k];
+
+let account = null;                       // {uid, email, rt}
+let syncSent = { s: {}, p: {}, set: '' }; // signatures of what the server holds, as far as we know
+let syncStatus = 'off';                   // off | conn | ok | offline | denied | nodb
+let syncAt = 0;
+let syncForm = false;                     // email form open
+let syncBusy = false;
+let syncErr = '';
+let syncLoaded = false;                   // first full snapshot from the server merged
+let googleState = '';
+let idTok = '', idExp = 0;
+let es = null, esTimer = null, retryT = null, retryMs = 2000;
+let pushT = null, pushing = false, pushAgain = false;
+
+/* ---------- helpers ---------- */
+function canon(v) {
+  if (Array.isArray(v)) return `[${v.map(canon).join(',')}]`;
+  if (v && typeof v === 'object') return `{${Object.keys(v).sort().map(k => JSON.stringify(k) + ':' + canon(v[k])).join(',')}}`;
+  return JSON.stringify(v === undefined ? null : v);
+}
+function sig(o) {
+  const s = canon(o);
+  let h = 0x811c9dc5;
+  for (let i = 0; i < s.length; i++) { h ^= s.charCodeAt(i); h = Math.imul(h, 0x01000193); }
+  return (h >>> 0).toString(36);
+}
+// Database keys cannot hold . $ # [ ] /
+const dbKey = k => encodeURIComponent(k).replace(/\./g, '%2E');
+const unKey = k => { try { return decodeURIComponent(k); } catch { return k; } };
+const sessCore = s => ({ start: s.start, end: s.end, dur: s.dur, label: s.label || '', full: !!s.full });
+const projCore = p => ({ name: p.name || '', deadline: p.deadline || '', hidden: !!p.hidden, created: p.created || 0 });
+const setCore = () => Object.fromEntries(SYNC_SETTINGS.map(k => [k, settings[k]]));
+
+async function post(url, body, form) {
+  const r = await fetch(url, {
+    method: 'POST',
+    headers: { 'content-type': form ? 'application/x-www-form-urlencoded' : 'application/json' },
+    body: form ? new URLSearchParams(body).toString() : JSON.stringify(body),
+  });
+  const j = await r.json().catch(() => ({}));
+  if (!r.ok) { const e = new Error((j.error && j.error.message) || `HTTP ${r.status}`); e.code = (j.error && j.error.message) || ''; throw e; }
+  return j;
+}
+const authUrl = m => `https://identitytoolkit.googleapis.com/v1/accounts:${m}?key=${SYNC.key}`;
+
+function authError(e) {
+  const c = String(e.code || e.message || '');
+  if (/INVALID_LOGIN|INVALID_PASSWORD|EMAIL_NOT_FOUND/.test(c)) return st('eCreds');
+  if (/EMAIL_EXISTS/.test(c)) return st('eExists');
+  if (/WEAK_PASSWORD/.test(c)) return st('eWeak');
+  if (/INVALID_EMAIL|MISSING_EMAIL/.test(c)) return st('eEmail');
+  if (/TOO_MANY/.test(c)) return st('eMany');
+  if (e instanceof TypeError) return st('eNet');
+  return st('eOther');
+}
+
+/* ---------- account ---------- */
+async function idToken() {
+  if (idTok && Date.now() < idExp - 60000) return idTok;
+  try {
+    const j = await post(`https://securetoken.googleapis.com/v1/token?key=${SYNC.key}`, { grant_type: 'refresh_token', refresh_token: account.rt }, true);
+    idTok = j.id_token;
+    idExp = Date.now() + Number(j.expires_in || 3600) * 1000;
+    if (j.refresh_token && j.refresh_token !== account.rt) { account.rt = j.refresh_token; persist(); }
+    return idTok;
+  } catch (e) {
+    if (/TOKEN_EXPIRED|INVALID_REFRESH_TOKEN|USER_DISABLED|USER_NOT_FOUND/.test(e.code || '')) {
+      syncLogout();
+      toast(st('loggedOut'));
+    }
+    throw e;
+  }
+}
+
+async function signedIn(uid, email, rt, tok, expiresIn) {
+  if (account && account.uid !== uid) syncReset();
+  account = { uid, email: email || '', rt };
+  idTok = tok || '';
+  idExp = tok ? Date.now() + Number(expiresIn || 3600) * 1000 : 0;
+  syncForm = false;
+  syncErr = '';
+  await persistNow();
+  syncConnect();
+  renderSync();
+}
+
+async function emailAuth(register) {
+  const email = $('#syncEmail').value.trim();
+  const password = $('#syncPass').value;
+  syncBusy = true; syncErr = ''; renderSync();
+  try {
+    const j = await post(authUrl(register ? 'signUp' : 'signInWithPassword'), { email, password, returnSecureToken: true });
+    await signedIn(j.localId, j.email, j.refreshToken, j.idToken, j.expiresIn);
+  } catch (e) {
+    syncErr = authError(e);
+  }
+  syncBusy = false;
+  renderSync();
+}
+
+// Google sign-in happens on the site in the real browser (Google does not allow it inside
+// embedded web views); the site hands the session back to the app with this random state.
+function googleAuth() {
+  const a = new Uint8Array(16);
+  crypto.getRandomValues(a);
+  googleState = Array.from(a, b => b.toString(16).padStart(2, '0')).join('');
+  api.authBrowser(googleState, SYNC.site);
+  syncErr = st('googleWait');
+  renderSync();
+}
+
+async function onAuthResult(r) {
+  if (!r || !googleState || r.state !== googleState || !r.rt) return;
+  googleState = '';
+  syncBusy = true; syncErr = ''; renderSync();
+  try {
+    const j = await post(`https://securetoken.googleapis.com/v1/token?key=${SYNC.key}`, { grant_type: 'refresh_token', refresh_token: r.rt }, true);
+    const u = await post(authUrl('lookup'), { idToken: j.id_token });
+    const email = u.users && u.users[0] && u.users[0].email;
+    await signedIn(j.user_id, email, j.refresh_token, j.id_token, j.expires_in);
+  } catch (e) {
+    syncErr = authError(e);
+  }
+  syncBusy = false;
+  renderSync();
+}
+
+function syncReset() {
+  syncSent = { s: {}, p: {}, set: '' };
+  syncLoaded = false;
+}
+
+function syncLogout() {
+  disconnect();
+  account = null;
+  idTok = ''; idExp = 0;
+  syncReset();
+  syncStatus = 'off';
+  persistNow();
+  renderSync();
+}
+
+/* ---------- live stream from the server ---------- */
+function disconnect() {
+  if (es) { es.close(); es = null; }
+  clearTimeout(esTimer);
+  clearTimeout(retryT);
+}
+
+function retry() {
+  disconnect();
+  if (!account) return;
+  retryT = setTimeout(syncConnect, retryMs);
+  retryMs = Math.min(retryMs * 2, 60000);
+}
+
+async function syncConnect() {
+  disconnect();
+  if (!account) return;
+  syncStatus = syncStatus === 'ok' ? 'ok' : 'conn';
+  renderSync();
+  let tok;
+  try { tok = await idToken(); } catch { if (account) { syncStatus = 'offline'; renderSync(); retry(); } return; }
+  if (!account) return;
+  const src = new EventSource(`${SYNC.db}/timer/${account.uid}.json?auth=${encodeURIComponent(tok)}`);
+  es = src;
+  const handle = kind => e => {
+    if (es !== src) return;
+    let m;
+    try { m = JSON.parse(e.data); } catch { return; }
+    if (m) onRemote(kind, m.path, m.data);
+  };
+  src.addEventListener('put', handle('put'));
+  src.addEventListener('patch', handle('patch'));
+  src.addEventListener('auth_revoked', () => { idTok = ''; syncConnect(); });
+  src.addEventListener('cancel', () => { syncStatus = 'denied'; renderSync(); disconnect(); });
+  src.onopen = () => { retryMs = 2000; };
+  src.onerror = () => {
+    if (es !== src) return;
+    // A missing database answers 404, which EventSource reports the same way as no network.
+    fetch(`${SYNC.db}/.json?shallow=true`).then(r => r.status === 404 ? 'nodb' : 'offline', () => 'offline')
+      .then(s => { if (es === src || !es) { syncStatus = s; renderSync(); } });
+    retry();
+  };
+  // Tokens live an hour: reconnect with a fresh one before it runs out.
+  esTimer = setTimeout(() => { idTok = ''; syncConnect(); }, 50 * 60000);
+}
+
+let remoteChanged = 0;
+let uiT = null;
+function onRemote(kind, path, data) {
+  const seg = String(path || '/').split('/').filter(Boolean);
+  if (kind === 'patch') Object.entries(data || {}).forEach(([k, v]) => applyAt(seg.concat(k.split('/').filter(Boolean)), v, false));
+  else applyAt(seg, data, true);
+  syncStatus = 'ok';
+  syncAt = Date.now();
+  clearTimeout(uiT);
+  uiT = setTimeout(afterRemote, 120);
+}
+
+function applyAt(seg, v, full) {
+  if (!seg.length) {
+    if (full) mergeAll(v || {});
+    else Object.entries(v || {}).forEach(([k, x]) => applyAt([k], x, false));
+    return;
+  }
+  const [kind, key, ...rest] = seg;
+  if (!['s', 'p', 'set'].includes(kind)) return;
+  if (kind === 'set') { if (!key) applySettings(v); else syncConnect(); return; }
+  if (!key) { Object.entries(v || {}).forEach(([k, x]) => applyItem(kind, k, x)); return; }
+  if (rest.length) { syncConnect(); return; } // a partial item: we never write those, reload everything
+  applyItem(kind, key, v);
+}
+
+// First snapshot: merge both ways. Items the server lacks are sent again even if we think we sent them.
+function mergeAll(d) {
+  const s = d.s || {}, p = d.p || {};
+  Object.entries(s).forEach(([k, v]) => applyItem('s', k, v));
+  Object.entries(p).forEach(([k, v]) => applyItem('p', k, v));
+  if (d.set) applySettings(d.set);
+  for (const x of sessions) if (!s[dbKey(x.id)]) delete syncSent.s[x.id];
+  for (const k of Object.keys(projects)) if (!p[dbKey(k)]) delete syncSent.p[k];
+  if (!d.set) syncSent.set = '';
+  syncLoaded = true;
+}
+
+function applyItem(kind, rawKey, v) {
+  const key = unKey(rawKey);
+  if (!v || typeof v !== 'object') return;
+  const ru = Number(v.u) || 0;
+  if (kind === 's') {
+    const i = sessions.findIndex(x => x.id === key);
+    const local = i >= 0 ? sessions[i] : null;
+    if (v.del) {
+      if (local && (local.u || 0) <= ru) { sessions.splice(i, 1); remoteChanged++; }
+      if (!local || (local.u || 0) <= ru) syncSent.s[key] = '-' + ru;
+      return;
+    }
+    const core = sessCore(v);
+    if (!local && isDel(syncSent.s[key]) && ru <= delAt(syncSent.s[key])) { syncSent.s[key] = 'redel'; return; }
+    if (!local) {
+      // The same work logged on two devices (CSV imported on both): keep the smaller id everywhere.
+      const k = sessionKey(core);
+      const twin = sessions.find(x => sessionKey(x) === k);
+      if (twin) {
+        if (twin.id < key) { syncSent.s[key] = syncSent.s[key] || 'twin'; return; }
+        sessions.splice(sessions.indexOf(twin), 1);
+        if (!syncSent.s[twin.id]) syncSent.s[twin.id] = 'twin';
+      }
+      sessions.push({ id: key, ...core, u: ru });
+      syncSent.s[key] = sig(core);
+      remoteChanged++;
+    } else if ((local.u || 0) < ru) {
+      Object.assign(local, core, { u: ru });
+      syncSent.s[key] = sig(core);
+      remoteChanged++;
+    } else if (sig(sessCore(local)) === sig(core)) {
+      syncSent.s[key] = sig(core);
+    }
+  } else if (kind === 'p') {
+    const local = projects[key];
+    if (v.del) {
+      if (local && (local.u || 0) <= ru) { delete projects[key]; remoteChanged++; }
+      if (!local || (local.u || 0) <= ru) syncSent.p[key] = '-' + ru;
+      return;
+    }
+    const core = projCore(v);
+    if (!local && isDel(syncSent.p[key]) && ru <= delAt(syncSent.p[key])) { syncSent.p[key] = 'redel'; return; }
+    if (!local || (local.u || 0) < ru) {
+      projects[key] = { ...core, u: ru };
+      syncSent.p[key] = sig(core);
+      remoteChanged++;
+    } else if (sig(projCore(local)) === sig(core)) {
+      syncSent.p[key] = sig(core);
+    }
+  }
+}
+
+function applySettings(v) {
+  if (!v || typeof v !== 'object') return;
+  const ru = Number(v.u) || 0;
+  const core = Object.fromEntries(SYNC_SETTINGS.filter(k => k in v).map(k => [k, v[k]]));
+  if ((settings.u || 0) < ru) {
+    const langChanged = core.lang && core.lang !== settings.lang;
+    Object.assign(settings, core, { u: ru });
+    if (langChanged) applyI18n();
+    syncSent.set = sig(setCore());
+    remoteChanged++;
+  } else if (sig(setCore()) === sig(Object.fromEntries(SYNC_SETTINGS.map(k => [k, k in v ? v[k] : settings[k]])))) {
+    syncSent.set = sig(setCore());
+  }
+}
+
+function afterRemote() {
+  sessions.sort((a, b) => a.start - b.start);
+  if (isUntouched()) setPhase(timer.phase); // new phase lengths apply to an untouched timer
+  persist();
+  if (remoteChanged) {
+    render();
+    renderLabelMeta();
+    if (view === 'stats') renderStats();
+    if (view === 'projects') renderProjects();
+    remoteChanged = 0;
+  }
+  renderSync();
+}
+
+/* ---------- sending local changes ---------- */
+function syncSchedule() {
+  if (!account) return;
+  clearTimeout(pushT);
+  pushT = setTimeout(syncPush, 600);
+}
+
+async function syncPush() {
+  if (!account || !syncLoaded) return;
+  if (pushing) { pushAgain = true; return; }
+  const now = Date.now();
+  const up = {}, marks = [];
+  const seen = new Set();
+  for (const x of sessions) {
+    seen.add(x.id);
+    const core = sessCore(x), g = sig(core);
+    if (syncSent.s[x.id] === g) continue;
+    if (!x.u || syncSent.s[x.id] !== undefined) x.u = now;
+    up[`s/${dbKey(x.id)}`] = { ...core, u: x.u };
+    marks.push(['s', x.id, g]);
+  }
+  for (const id of Object.keys(syncSent.s)) {
+    if (seen.has(id) || isDel(syncSent.s[id])) continue;
+    up[`s/${dbKey(id)}`] = { del: 1, u: now };
+    marks.push(['s', id, '-' + now]);
+  }
+  for (const [k, p] of Object.entries(projects)) {
+    const core = projCore(p), g = sig(core);
+    if (syncSent.p[k] === g) continue;
+    if (!p.u || syncSent.p[k] !== undefined) p.u = now;
+    up[`p/${dbKey(k)}`] = { ...core, u: p.u };
+    marks.push(['p', k, g]);
+  }
+  for (const k of Object.keys(syncSent.p)) {
+    if (projects[k] || isDel(syncSent.p[k])) continue;
+    up[`p/${dbKey(k)}`] = { del: 1, u: now };
+    marks.push(['p', k, '-' + now]);
+  }
+  const sg = sig(setCore());
+  if (syncSent.set !== sg) {
+    if (!settings.u || syncSent.set) settings.u = now;
+    up.set = { ...setCore(), u: settings.u };
+    marks.push(['set', '', sg]);
+  }
+  if (!marks.length) return;
+
+  pushing = true;
+  try {
+    const tok = await idToken();
+    const r = await fetch(`${SYNC.db}/timer/${account.uid}.json?auth=${encodeURIComponent(tok)}`, {
+      method: 'PATCH', headers: { 'content-type': 'application/json' }, body: JSON.stringify(up),
+    });
+    if (r.status === 401 || r.status === 403) { syncStatus = 'denied'; throw new Error('denied'); }
+    if (r.status === 404) { syncStatus = 'nodb'; throw new Error('nodb'); }
+    if (!r.ok) throw new Error(`HTTP ${r.status}`);
+    for (const [kind, k, g] of marks) {
+      if (kind === 'set') syncSent.set = g; else syncSent[kind][k] = g;
+    }
+    syncStatus = 'ok';
+    syncAt = Date.now();
+    persist();
+  } catch (e) {
+    if (syncStatus === 'ok' || syncStatus === 'conn') syncStatus = 'offline';
+    clearTimeout(pushT);
+    pushT = setTimeout(syncPush, 30000);
+  }
+  pushing = false;
+  renderSync();
+  if (pushAgain) { pushAgain = false; syncSchedule(); }
+}
+
+/* ---------- settings UI ---------- */
+function renderSync() {
+  const box = $('#syncBox');
+  if (!box) return;
+  $('#syncTitle').textContent = st('gSync');
+  if (account) {
+    const at = syncAt ? hm(syncAt) : '';
+    const status = { ok: st('stOk')(at), conn: st('stConn'), offline: st('stOffline'), denied: st('stDenied'), nodb: st('stNoDb'), off: '' }[syncStatus] || '';
+    box.innerHTML = `
+      <div class="set">
+        <div class="set-text"><div class="set-name"></div><div class="set-desc sync-status ${esc(syncStatus)}"></div></div>
+        <button class="ghost" id="syncLogout"></button>
+      </div>`;
+    box.querySelector('.set-name').textContent = account.email || st('syncName');
+    box.querySelector('.set-desc').textContent = status;
+    box.querySelector('#syncLogout').textContent = st('logout');
+    return;
+  }
+  const typed = syncForm && $('#syncEmail') ? [$('#syncEmail').value, $('#syncPass').value] : null;
+  box.innerHTML = `
+    <div class="set">
+      <div class="set-text"><div class="set-name">${esc(st('syncName'))}</div><div class="set-desc">${esc(st('syncDesc'))}</div></div>
+    </div>
+    <div class="sync-actions">
+      <button class="ghost" id="syncGoogle"${syncBusy ? ' disabled' : ''}>${esc(st('google'))}</button>
+      ${syncForm ? '' : `<button class="ghost" id="syncEmailBtn">${esc(st('withEmail'))}</button>`}
+    </div>
+    ${syncForm ? `
+    <form class="sync-form" id="syncForm" autocomplete="on">
+      <input class="text-input" id="syncEmail" type="email" autocomplete="username" required>
+      <input class="text-input" id="syncPass" type="password" autocomplete="current-password" minlength="6" required>
+      <div class="btn-row">
+        <a class="sync-forgot" id="syncForgot" href="#">${esc(st('forgot'))}</a>
+        <button type="button" class="ghost" id="syncCancel">${esc(st('cancel'))}</button>
+        <button type="button" class="ghost" id="syncRegister"${syncBusy ? ' disabled' : ''}>${esc(st('register'))}</button>
+        <button type="submit" class="ghost on" id="syncLogin"${syncBusy ? ' disabled' : ''}>${esc(st('login'))}</button>
+      </div>
+    </form>` : ''}
+    <p class="sync-msg" ${syncErr ? '' : 'hidden'}></p>`;
+  if (syncForm) {
+    $('#syncEmail').placeholder = st('email');
+    $('#syncPass').placeholder = st('password');
+    if (typed) [$('#syncEmail').value, $('#syncPass').value] = typed;
+  }
+  box.querySelector('.sync-msg').textContent = syncErr;
+}
+
+function bindSync() {
+  const box = $('#syncBox');
+  box.addEventListener('click', e => {
+    const b = e.target.closest('button, a');
+    if (!b) return;
+    if (b.id === 'syncGoogle') googleAuth();
+    else if (b.id === 'syncEmailBtn') { syncForm = true; syncErr = ''; renderSync(); $('#syncEmail').focus(); }
+    else if (b.id === 'syncCancel') { syncForm = false; syncErr = ''; renderSync(); }
+    else if (b.id === 'syncRegister') { if ($('#syncForm').reportValidity()) emailAuth(true); }
+    else if (b.id === 'syncLogout') syncLogout();
+    else if (b.id === 'syncForgot') { e.preventDefault(); api.openUrl && api.openUrl(`${SYNC.site}#account`); }
+  });
+  box.addEventListener('submit', e => { e.preventDefault(); emailAuth(false); });
+  if (api.onAuthResult) api.onAuthResult(onAuthResult);
+  // Back in view (phone unlocked, window shown): make sure the stream is alive.
+  api.onWindowVisible(v => { if (v && account && !es) syncConnect(); });
+  window.addEventListener('online', () => { if (account) { retryMs = 2000; syncConnect(); syncSchedule(); } });
+}
+
+/* ---------- hooks for app.js ---------- */
+const syncSnapshot = () => ({ account, sent: syncSent });
+
+function syncInit(data) {
+  const d = data.sync || {};
+  if (d.account && d.account.uid && d.account.rt) account = d.account;
+  if (d.sent && typeof d.sent === 'object') syncSent = { s: d.sent.s || {}, p: d.sent.p || {}, set: d.sent.set || '' };
+  bindSync();
+  renderSync();
+  if (account) syncConnect();
+}

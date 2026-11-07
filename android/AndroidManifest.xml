@@ -31,6 +31,13 @@
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
+            <!-- The site hands the Google sign-in back here (sync.js) -->
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="yaytsa" android:host="auth" />
+            </intent-filter>
         </activity>
 
         <receiver android:name=".TimerReceiver" android:exported="false" />

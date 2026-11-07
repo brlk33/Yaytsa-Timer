@@ -62,5 +62,8 @@
     appsTrack: () => Promise.resolve([]),
     appsUntrack: () => Promise.resolve([]),
     ready: () => post('ready'),
+    authBrowser: (state, site) => post('authBrowser', state, site),
+    onAuthResult: on('auth-result'),
+    openUrl: u => post('openUrl', u),
   };
 })();
