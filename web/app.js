@@ -462,6 +462,7 @@ function applyHostTimer(s) {
 
 function renderOuter() {
   syncHost();
+  syncTimer();
   const rem = currentRemaining();
   const isWork = timer.phase === 'work';
   const touched = !isUntouched();
@@ -494,14 +495,24 @@ function renderTimer() {
   const fill = $('#barFill');
   fill.style.width = `${(ratio * 100).toFixed(2)}%`;
   fill.classList.toggle('break', !isWork);
+  const ring = $('#ringFill');
+  ring.style.strokeDashoffset = String(289.03 * (1 - ratio));
+  ring.classList.toggle('break', !isWork);
+  ring.classList.toggle('empty', ratio <= 0);
 
   const btn = $('#btnStart');
-  btn.textContent = timer.running ? t('pause') : (touched ? t('resume') : t('start'));
+  const btnText = timer.running ? t('pause') : (touched ? t('resume') : t('start'));
+  if (ANDROID) {
+    if (!btn.dataset.ico) { btn.dataset.ico = '1'; btn.innerHTML = PLAY_PAUSE_SVG; }
+    btn.classList.toggle('is-running', timer.running); // the triangle flows into two bars (CSS)
+    btn.setAttribute('aria-label', btnText);
+  } else btn.textContent = btnText;
   btn.classList.toggle('secondary', timer.running);
 
   const goalH = settings.goal;
   const tSec = todaySec();
   $('#todayVal').textContent = goalH > 0 ? `${fmtDur(tSec)} / ${fmtHours(goalH)}` : fmtDur(tSec);
+  if (ANDROID) $('#faceToday').textContent = $('#todayVal').textContent;
 
   // Running time in the title bar while another tab is open
   const status = touched && view !== 'timer' ? `${isWork ? 'w' : 'b'}${timer.running ? '' : 'p'}|${fmtClock(rem)}` : '';
@@ -518,6 +529,7 @@ function renderTimer() {
 }
 
 function renderSteppers() {
+  if (ANDROID) renderDials();
   $$('.stepper').forEach(el => {
     const key = el.dataset.key;
     const lim = LIMITS[key];
@@ -1160,58 +1172,117 @@ async function pickSound() {
   toast(t('soundSet')(name));
 }
 
-// The page follows the finger; let go past a quarter of the screen (or flick) to switch tabs.
+// Phone: the tabs are pages side by side in <main>; the strip follows the finger and settles
+// on a page with one transform, so nothing is hidden, redrawn or re-animated on the way.
+function pagerTabs() { return $$('.tab').filter(b => b.offsetParent !== null); }
+function pagerIndex() { return Math.max(0, pagerTabs().findIndex(b => b.dataset.view === view)); }
+function setPager(animate, offset = 0) {
+  const main = $('main');
+  main.style.transition = animate ? 'transform .38s cubic-bezier(.22, .9, .3, 1)' : 'none';
+  main.style.transform = `translate3d(calc(${-pagerIndex() * 100}% + ${offset}px), 0, 0)`;
+}
+
 function bindSwipe() {
   const main = $('main');
-  const noSwipe = 'input, textarea, .seg, .stepper, .chart, .heat, .popover, .suggest, .inline';
-  let x0 = 0, y0 = 0, t0 = 0, dx = 0, lock = '', el = null;
-  const tabs = () => $$('.tab').filter(b => b.offsetParent !== null);
-  const reset = animate => {
-    if (!el) return;
-    el.style.transition = animate ? 'transform .22s var(--ease), opacity .22s var(--ease)' : '';
-    el.style.transform = '';
-    el.style.opacity = '';
-  };
+  const noSwipe = '.dial, .seg, .chart, .heat, .popover, .suggest, .inline, .modal, .sheet-wrap';
+  let x0 = 0, y0 = 0, lastX = 0, lastT = 0, vx = 0, dx = 0, lock = '';
   main.addEventListener('touchstart', e => {
-    lock = e.touches.length !== 1 || e.target.closest(noSwipe) || !$('#modal').hidden ? 'no' : '';
-    x0 = e.touches[0].clientX; y0 = e.touches[0].clientY; t0 = Date.now(); dx = 0;
-    el = $(`#view-${view}`);
+    lock = e.touches.length !== 1 || e.target.closest(noSwipe) ? 'no' : '';
+    x0 = lastX = e.touches[0].clientX; y0 = e.touches[0].clientY;
+    lastT = performance.now(); vx = 0; dx = 0;
   }, { passive: true });
   main.addEventListener('touchmove', e => {
     if (lock === 'no' || lock === 'y') return;
-    const mx = e.touches[0].clientX - x0, my = e.touches[0].clientY - y0;
+    const x = e.touches[0].clientX, mx = x - x0, my = e.touches[0].clientY - y0;
     if (!lock) {
-      if (Math.abs(mx) < 12 && Math.abs(my) < 12) return;
-      lock = Math.abs(mx) > Math.abs(my) * 1.3 ? 'x' : 'y';
+      if (Math.abs(mx) < 8 && Math.abs(my) < 8) return;
+      lock = Math.abs(mx) > Math.abs(my) ? 'x' : 'y';
       if (lock === 'y') return;
+      if (document.activeElement && document.activeElement.blur) document.activeElement.blur();
     }
+    e.preventDefault();
+    const now = performance.now();
+    vx = (x - lastX) / Math.max(1, now - lastT) * 0.6 + vx * 0.4; // px per ms, smoothed
+    lastX = x; lastT = now;
+    const i = pagerIndex(), n = pagerTabs().length;
     dx = mx;
-    const list = tabs(), i = list.findIndex(b => b.dataset.view === view);
-    const edge = (dx > 0 && i <= 0) || (dx < 0 && i >= list.length - 1);
-    el.style.transition = 'none';
-    el.style.transform = `translateX(${dx * (edge ? 0.2 : 0.55)}px)`;
-    el.style.opacity = String(1 - Math.min(Math.abs(dx) / 700, 0.35));
-  }, { passive: true });
+    if ((dx > 0 && i === 0) || (dx < 0 && i === n - 1)) dx = mx / 3; // rubber band at the ends
+    setPager(false, dx);
+  }, { passive: false });
   const end = () => {
     if (lock !== 'x') { lock = ''; return; }
     lock = '';
-    const list = tabs(), i = list.findIndex(b => b.dataset.view === view);
-    const speed = Math.abs(dx) / Math.max(1, Date.now() - t0);
-    const go = Math.abs(dx) > main.clientWidth * 0.25 || (speed > 0.45 && Math.abs(dx) > 40);
-    const target = list[dx < 0 ? i + 1 : i - 1];
-    if (go && target) {
-      reset(false);
-      target.click();
-      const nv = $(`#view-${view}`);
-      const cls = dx < 0 ? 'swipe-next' : 'swipe-prev';
-      nv.classList.add(cls);
-      setTimeout(() => nv.classList.remove(cls), 320);
-    } else {
-      reset(true);
-    }
+    const list = pagerTabs(), i = pagerIndex();
+    const w = main.clientWidth || innerWidth;
+    let target = i;
+    if (dx < -w * 0.2 || vx < -0.35) target = i + 1;
+    else if (dx > w * 0.2 || vx > 0.35) target = i - 1;
+    target = Math.min(list.length - 1, Math.max(0, target));
+    if (target !== i) list[target].click(); // the tab handler moves the strip
+    else setPager(true);
   };
   main.addEventListener('touchend', end);
-  main.addEventListener('touchcancel', () => { lock = ''; reset(true); });
+  main.addEventListener('touchcancel', end);
+  addEventListener('resize', () => setPager(false));
+}
+
+// Phase lengths: drag a dial sideways; every step clicks like a ruler.
+function bindDials() {
+  const STEP_PX = 26;
+  $$('.dial').forEach(d => {
+    const key = d.dataset.key;
+    const ruler = d.querySelector('.dial-ruler');
+    let x0 = 0, done = 0, id = null;
+    d.addEventListener('pointerdown', e => {
+      id = e.pointerId; x0 = e.clientX; done = 0;
+      d.setPointerCapture(id);
+      d.classList.add('drag');
+    });
+    d.addEventListener('pointermove', e => {
+      if (e.pointerId !== id) return;
+      const dx = e.clientX - x0;
+      ruler.style.backgroundPositionX = `${dx}px`;
+      const steps = Math.trunc(dx / STEP_PX);
+      while (done !== steps) {
+        const dir = steps > done ? 1 : -1;
+        const before = settings[key];
+        changeSetting(key, dir);
+        done += dir;
+        if (settings[key] !== before && navigator.vibrate) navigator.vibrate(6);
+      }
+    });
+    const up = e => {
+      if (e.pointerId !== id) return;
+      id = null;
+      d.classList.remove('drag');
+      ruler.style.backgroundPositionX = '';
+    };
+    d.addEventListener('pointerup', up);
+    d.addEventListener('pointercancel', up);
+  });
+}
+function renderDials() {
+  $$('.dial').forEach(d => {
+    const v = settings[d.dataset.key];
+    const prev = Number(d.dataset.v);
+    d.dataset.v = v;
+    d.querySelector('b').textContent = v;
+    if (prev && prev !== v) kick(d.querySelector('b'), v > prev ? 'up' : 'down');
+    d.querySelector('small').textContent = t('min');
+    d.classList.toggle('lo', v <= LIMITS[d.dataset.key].min);
+    d.classList.toggle('hi', v >= LIMITS[d.dataset.key].max);
+  });
+}
+
+// Play and pause drawn as two halves with the same points, so CSS can morph one into the other.
+const PLAY_PAUSE_SVG = '<svg class="pp" viewBox="0 0 24 24"><path class="pp-a"/><path class="pp-b"/></svg>';
+
+// Little reactions to presses (phone): restart a CSS animation on the pressed thing.
+function kick(el, cls) {
+  if (!el) return;
+  el.classList.remove(cls);
+  void el.offsetWidth;
+  el.classList.add(cls);
 }
 
 /* ---------- CSV import (our own export format, RU ";" or EN ",") ---------- */
@@ -1295,6 +1366,7 @@ const FIT_STEPS = ['test', 'meta', 'today', 't-md', 'brk', 'work', 'label', 't-s
 let fitLevel = -1;
 
 function fitTimer() {
+  if (ANDROID) return;
   const v = $('#view-timer');
   if (!v.classList.contains('active')) return;
   const main = $('main');
@@ -1423,6 +1495,7 @@ function setValue(key, val) {
 
 let animT = null;
 function animateView() {
+  if (ANDROID) return;
   const v = $(`#view-${view}`);
   $$('.view.anim').forEach(x => x.classList.remove('anim'));
   v.classList.add('anim');
@@ -1479,6 +1552,7 @@ function bind() {
     if (view === 'projects') renderProjects();
     if (view === 'apps') { closePicker(); loadApps(); }
     if (view === 'timer') fitTimer();
+    if (ANDROID) setPager(true);
     closeCalendar();
     renderTimer();
     $('main').scrollTop = 0;
@@ -1647,6 +1721,13 @@ function bind() {
   }
   if (ANDROID) {
     bindSwipe();
+    bindDials();
+    $('#btnReset').addEventListener('click', () => kick($('#btnReset'), 'spin'));
+    $('#btnSkip').addEventListener('click', () => kick($('#btnSkip'), 'nudge'));
+    $('#btnStart').addEventListener('click', () => kick($('#btnStart'), 'press'));
+    $$('.seg[data-key="theme"] button').forEach(b => b.addEventListener('click', () => kick(b, 'swing')));
+    $$('.tab').forEach(b => b.addEventListener('click', () => kick(b, 'pop')));
+    $$('.toggle').forEach(b => b.addEventListener('click', () => kick(b, 'press')));
     $('#btnSound').addEventListener('click', pickSound);
     $('#sheetCancel').addEventListener('click', () => closeSheet(null));
     $('#sheet').addEventListener('click', e => {
@@ -1694,6 +1775,7 @@ function bind() {
   applyI18n();
   setPhase('work');
   if (ANDROID) applyHostTimer(data.timer);
+  if (ANDROID && settings.theme === 'system') settings.theme = systemDark ? 'dark' : 'light'; // the phone offers light and dark only
   bind();
   syncInit(data);
   render();
@@ -1701,5 +1783,6 @@ function bind() {
   updateDatalist();
   renderLabelMeta();
   setInterval(tick, 250);
+  if (ANDROID) { renderProjects(); renderStats(); setPager(false); } // neighbour pages are visible while swiping
   if (api.ready) { tick(); api.ready(); }
 })();

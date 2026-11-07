@@ -181,6 +181,7 @@ async function onAuthResult(r) {
 function syncReset() {
   syncSent = { s: {}, p: {}, set: '' };
   syncLoaded = false;
+  tSent = ''; tU = 0;
 }
 
 function syncLogout() {
@@ -258,6 +259,7 @@ function applyAt(seg, v, full) {
     return;
   }
   const [kind, key, ...rest] = seg;
+  if (kind === 't') { if (!key) applyRemoteTimer(v); else syncConnect(); return; }
   if (!['s', 'p', 'set'].includes(kind)) return;
   if (kind === 'set') { if (!key) applySettings(v); else syncConnect(); return; }
   if (!key) { Object.entries(v || {}).forEach(([k, x]) => applyItem(kind, k, x)); return; }
@@ -271,6 +273,7 @@ function mergeAll(d) {
   Object.entries(s).forEach(([k, v]) => applyItem('s', k, v));
   Object.entries(p).forEach(([k, v]) => applyItem('p', k, v));
   if (d.set) applySettings(d.set);
+  if (d.t) applyRemoteTimer(d.t);
   for (const x of sessions) if (!s[dbKey(x.id)]) delete syncSent.s[x.id];
   for (const k of Object.keys(projects)) if (!p[dbKey(k)]) delete syncSent.p[k];
   if (!d.set) syncSent.set = '';
@@ -429,6 +432,66 @@ async function syncPush() {
   if (pushAgain) { pushAgain = false; syncSchedule(); }
 }
 
+/* ---------- live timer: t = the running phase, shared by every device ----------
+   The timer is wall-clock based (endAt), so devices only exchange its state when somebody
+   presses something; each device counts down on its own and ends the phase on its own.
+   Both log the finished session, and the twin rule above merges the two copies. */
+let tSent = '';   // signature of the timer state last sent or received
+let tU = 0;       // time of that state
+let tRetry = null;
+const timerCore = () => ({
+  phase: timer.phase, total: timer.total, running: !!timer.running,
+  endAt: timer.running ? timer.endAt : 0,
+  remaining: timer.running ? 0 : timer.remaining,
+  startedAt: timer.startedAt || 0,
+  label: $('#label').value.trim(),
+});
+
+// Called from renderOuter (about once a second): sends the state when it changed here.
+async function syncTimer() {
+  if (!account || !syncLoaded) return;
+  const core = timerCore(), g = sig(core);
+  if (g === tSent) return;
+  tSent = g;
+  tU = Date.now();
+  try {
+    const tok = await idToken();
+    const r = await fetch(`${SYNC.db}/timer/${account.uid}/t.json?auth=${encodeURIComponent(tok)}`, {
+      method: 'PUT', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ ...core, u: tU }),
+    });
+    if (!r.ok) throw new Error(`HTTP ${r.status}`);
+  } catch {
+    clearTimeout(tRetry);
+    tRetry = setTimeout(() => { if (tSent === g) tSent = ''; }, 10000); // offline: try again later
+  }
+}
+
+function applyRemoteTimer(v) {
+  if (!v || typeof v !== 'object' || (Number(v.u) || 0) <= tU) return;
+  if (v.phase !== 'work' && v.phase !== 'break') return;
+  const now = Date.now();
+  // A phase that ran out long ago (the other device was closed): its end is not news.
+  if (v.running && v.endAt < now - 60000) return;
+  // This device is ending the same phase right now: let it finish (alert, log) on its own.
+  if (timer.running && now >= timer.endAt - 1500 && v.phase !== timer.phase) return;
+  tU = Number(v.u);
+  const wasRunning = timer.running;
+  timer.phase = v.phase;
+  timer.total = Number(v.total) || phaseMinutes(v.phase) * 60000;
+  timer.running = !!v.running;
+  timer.endAt = timer.running ? Number(v.endAt) : 0;
+  timer.remaining = timer.running ? Math.max(0, timer.endAt - now) : Number(v.remaining) || timer.total;
+  timer.startedAt = Number(v.startedAt) || 0;
+  if (typeof v.label === 'string' && document.activeElement !== $('#label') && $('#label').value.trim() !== v.label) {
+    $('#label').value = v.label;
+    renderLabelMeta();
+  }
+  tSent = sig(timerCore());
+  api.schedule(timer.running ? Math.max(0, timer.endAt - now) : 0);
+  if (timer.running && !wasRunning) api.closeAlert();
+  render();
+}
+
 /* ---------- settings UI ---------- */
 function renderSync() {
   const box = $('#syncBox');
@@ -490,8 +553,8 @@ function bindSync() {
   });
   box.addEventListener('submit', e => { e.preventDefault(); emailAuth(false); });
   if (api.onAuthResult) api.onAuthResult(onAuthResult);
-  // Back in view (phone unlocked, window shown): make sure the stream is alive.
-  api.onWindowVisible(v => { if (v && account && !es) syncConnect(); });
+  // Back in view (phone unlocked, window shown): the stream may have died while asleep, reconnect.
+  api.onWindowVisible(v => { if (v && account && (ANDROID || !es)) syncConnect(); });
   window.addEventListener('online', () => { if (account) { retryMs = 2000; syncConnect(); syncSchedule(); } });
 }
 
