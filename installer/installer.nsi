@@ -1,10 +1,10 @@
-; Яйца Таймер — installer (NSIS 3, Unicode)
+; Яйцетаймер — installer (NSIS 3, Unicode)
 Unicode true
 SetCompressor /SOLID lzma
 ManifestDPIAware true
 RequestExecutionLevel user
 
-!define APPNAME "Яйца Таймер"
+!define APPNAME "Яйцетаймер"
 !define EXE "YaytsaTimer.exe"
 !define REGKEY "Software\Microsoft\Windows\CurrentVersion\Uninstall\YaytsaTimer"
 !ifndef VERSION
@@ -57,8 +57,21 @@ Section "Install"
   File "..\dist\${EXE}"
   WriteUninstaller "$INSTDIR\Uninstall.exe"
 
+  ; The app used to be called "Яйца Таймер": replace its shortcuts with the new name.
+  StrCpy $0 0
+  IfFileExists "$DESKTOP\Яйца Таймер.lnk" 0 +3
+    Delete "$DESKTOP\Яйца Таймер.lnk"
+    StrCpy $0 1
+  Delete "$SMPROGRAMS\Яйца Таймер.lnk"
+
   CreateShortCut "$SMPROGRAMS\${APPNAME}.lnk" "$INSTDIR\${EXE}" "" "$INSTDIR\${EXE}" 0
-  CreateShortCut "$DESKTOP\${APPNAME}.lnk" "$INSTDIR\${EXE}" "" "$INSTDIR\${EXE}" 0
+  ; A silent self-update keeps the desktop as the user left it.
+  IfSilent 0 desk
+  StrCmp $0 1 desk
+  IfFileExists "$DESKTOP\${APPNAME}.lnk" desk nodesk
+  desk:
+    CreateShortCut "$DESKTOP\${APPNAME}.lnk" "$INSTDIR\${EXE}" "" "$INSTDIR\${EXE}" 0
+  nodesk:
 
   WriteRegStr HKCU "Software\YaytsaTimer" "InstallDir" "$INSTDIR"
   WriteRegStr HKCU "${REGKEY}" "DisplayName" "${APPNAME}"

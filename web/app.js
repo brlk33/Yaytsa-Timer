@@ -3,14 +3,13 @@
 /* ================= i18n ================= */
 const I18N = {
   ru: {
-    appName: 'Яйца Таймер', updReady: v => `Версия ${v} загружена`, updNow: 'Перезапустить',
+    appName: 'Яйцетаймер', updReady: v => `Версия ${v} загружена`, updNow: 'Перезапустить',
     tabTimer: 'Таймер', tabStats: 'Статистика', tabSettings: 'Настройки',
     work: 'Работа', break: 'Перерыв', today: 'Сегодня',
     start: 'Старт', pause: 'Пауза', resume: 'Продолжить',
     reset: 'Сбросить', skip: 'Пропустить этап',
     labelPh: 'Над чем работаете?',
     session: n => `Сессия ${n}`, paused: 'пауза',
-    hint: '<kbd>Пробел</kbd> старт / пауза · <kbd>R</kbd> сброс · <kbd>S</kbd> пропуск',
     last7: '7 дней', last30: '30 дней', goal: 'Цель на сегодня',
     byDay: 'По дням', history: 'История', exportCsv: 'Экспорт CSV', showMore: 'Показать ещё',
     noData: 'Здесь появятся ваши рабочие сессии',
@@ -28,7 +27,7 @@ const I18N = {
     nWorkTitle: 'За работу', nWorkBody: m => `Перерыв окончен. Следующий заход — ${m} мин.`,
     test: 'Тест 5 сек', testIn: n => `Тест… ${n}`, testToast: 'Через 5 секунд появится напоминание',
     testTitle: 'Тест напоминания', closeToTray: 'Сворачивать в трей', closeToTrayDesc: 'Крестик прячет окно в трей, таймер продолжает идти',
-    trayOpen: 'Открыть Яйца Таймер', trayQuit: 'Выйти', trayTest: 'Тест напоминания (5 сек)',
+    trayOpen: 'Открыть Яйцетаймер', trayQuit: 'Выйти', trayTest: 'Тест напоминания (5 сек)',
     popup: 'Окно поверх всего', popupDesc: 'Справа снизу, поверх игр и видео. Не исчезает, пока не нажмёте',
     goBreak: 'Начать перерыв', goWork: 'Начать работу', later: 'Закрыть', gotIt: 'Понятно',
     aBreakBody: (w, b) => `Рабочий заход ${w}\u00a0мин завершён. Перерыв\u00a0—\u00a0${b}\u00a0мин.`,
@@ -55,17 +54,18 @@ const I18N = {
     appsNoCand: 'Откройте нужную программу, и она появится в этом списке', running: 'запущена',
     aToday: 'Сегодня', aWeek: '7 дней', aTotal: 'Всего', aActive: 'активно', stopTrack: 'Не отслеживать',
     gSystem: 'Система', launchAtStart: 'Запускать вместе с Windows', launchAtStartDesc: 'Стартует свёрнутой в трей',
+winMin: 'Свернуть', winMax: 'Развернуть', winClose: 'Закрыть', importCsv: 'Импорт CSV', imported: n => `Добавлено ${n} ${plural(n, 'заход', 'захода', 'заходов')}`, importNone: 'В файле нет новых заходов',    importBad: 'Не удалось прочитать файл', delete: 'Удалить', cancel: 'Отмена', delProjTitle: n => `Удалить проект «${n}»?`,    delProjText: 'Время заходов останется в статистике, но без названия проекта. Это нельзя отменить.', projDeleted: 'Проект удалён',    pTodayL: 'Сегодня', pWeekL: 'За 7 дней', calClear: 'Убрать', calToday: 'Сегодня', noProjects: 'Проектов пока нет',
+    monthsNom: ['Январь', 'Февраль', 'Март', 'Апрель', 'Май', 'Июнь', 'Июль', 'Август', 'Сентябрь', 'Октябрь', 'Ноябрь', 'Декабрь'],
 scale: 'Масштаб', appsPickTitle: 'Добавить программу', appsSearchPh: 'Поиск по программам на компьютере', appsBrowse: 'Выбрать .exe вручную…', appsBrowseTitle: 'Выберите программу',    appsFound: 'Найдено', appsAll: 'Все программы', appsNothing: 'Ничего не нашлось. Попробуйте выбрать .exe вручную', appsAdded: n => `«${n}» отслеживается`,    r3m: '3 мес', r6m: '6 мес', r1y: 'Год', modeBars: 'Столбики', modeSquares: 'Квадратики',    monthsShort: ['янв', 'фев', 'мар', 'апр', 'май', 'июн', 'июл', 'авг', 'сен', 'окт', 'ноя', 'дек'],    daysMon: ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс'], noWork: 'без работы',    activeDays: n => `${n} ${plural(n, 'рабочий день', 'рабочих дня', 'рабочих дней')}`, streak: n => `серия ${n} ${plural(n, 'день', 'дня', 'дней')} подряд`,    less: 'Меньше', more: 'Больше', byHour: 'По часам за неделю',
   },
   en: {
-    appName: 'Yaytsa Timer', updReady: v => `Version ${v} downloaded`, updNow: 'Restart',
+    appName: 'Yaytsetaimer', updReady: v => `Version ${v} downloaded`, updNow: 'Restart',
     tabTimer: 'Timer', tabStats: 'Stats', tabSettings: 'Settings',
     work: 'Focus', break: 'Break', today: 'Today',
     start: 'Start', pause: 'Pause', resume: 'Resume',
     reset: 'Reset', skip: 'Skip phase',
     labelPh: 'What are you working on?',
     session: n => `Session ${n}`, paused: 'paused',
-    hint: '<kbd>Space</kbd> start / pause · <kbd>R</kbd> reset · <kbd>S</kbd> skip',
     last7: 'Last 7 days', last30: 'Last 30 days', goal: 'Today’s goal',
     byDay: 'By day', history: 'History', exportCsv: 'Export CSV', showMore: 'Show more',
     noData: 'Your focus sessions will show up here',
@@ -83,7 +83,7 @@ scale: 'Масштаб', appsPickTitle: 'Добавить программу', a
     nWorkTitle: 'Back to work', nWorkBody: m => `Break is over. Next session — ${m} min.`,
     test: 'Test 5 sec', testIn: n => `Test… ${n}`, testToast: 'The reminder will pop up in 5 seconds',
     testTitle: 'Reminder test', closeToTray: 'Close to tray', closeToTrayDesc: 'The close button hides the window to the tray; the timer keeps running',
-    trayOpen: 'Open Yaytsa Timer', trayQuit: 'Quit', trayTest: 'Test reminder (5 sec)',
+    trayOpen: 'Open Yaytsetaimer', trayQuit: 'Quit', trayTest: 'Test reminder (5 sec)',
     popup: 'Pop-up over everything', popupDesc: 'Bottom-right, over games and videos. Stays until you click it',
     goBreak: 'Start break', goWork: 'Start focus', later: 'Close', gotIt: 'Got it',
     aBreakBody: (w, b) => `${w}\u2011min focus session done. Break\u00a0—\u00a0${b} min.`,
@@ -110,6 +110,8 @@ scale: 'Масштаб', appsPickTitle: 'Добавить программу', a
     appsNoCand: 'Open the program you want and it will show up here', running: 'running',
     aToday: 'Today', aWeek: '7 days', aTotal: 'Total', aActive: 'active', stopTrack: 'Stop tracking',
     gSystem: 'System', launchAtStart: 'Launch with Windows', launchAtStartDesc: 'Starts hidden in the tray',
+winMin: 'Minimize', winMax: 'Maximize', winClose: 'Close', importCsv: 'Import CSV', imported: n => `Added ${n} session${n === 1 ? '' : 's'}`, importNone: 'No new sessions in the file',    importBad: 'Could not read the file', delete: 'Delete', cancel: 'Cancel', delProjTitle: n => `Delete project “${n}”?`,    delProjText: 'Session time stays in your stats, just without the project name. This can’t be undone.', projDeleted: 'Project deleted',    pTodayL: 'Today', pWeekL: 'Last 7 days', calClear: 'Clear', calToday: 'Today', noProjects: 'No projects yet',
+    monthsNom: ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'],
 scale: 'Zoom', appsPickTitle: 'Add a program', appsSearchPh: 'Search programs on this PC', appsBrowse: 'Pick an .exe manually…', appsBrowseTitle: 'Choose a program',    appsFound: 'Found', appsAll: 'All programs', appsNothing: 'Nothing found. Try picking the .exe manually', appsAdded: n => `Tracking “${n}”`,    r3m: '3 mo', r6m: '6 mo', r1y: 'Year', modeBars: 'Bars', modeSquares: 'Squares',    monthsShort: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'],    daysMon: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'], noWork: 'no focus',    activeDays: n => `${n} active day${n === 1 ? '' : 's'}`, streak: n => `${n}-day streak`,    less: 'Less', more: 'More', byHour: 'By hour, last 7 days',
   },
 };
@@ -127,7 +129,7 @@ const api = window.focusApi;
 const DEFAULTS = {
   work: 25, brk: 5, autoStart: false, sound: true, notify: true,
   lang: 'ru', theme: 'dark', goal: 4, alwaysOnTop: false, popup: true, closeToTray: true,
-  zoom: 1, chartMode: 'bars', heatRange: 26,
+  zoom: 1, chartMode: 'bars', heatRange: 13,
 };
 const ZOOM = { min: 0.7, max: 1.6, step: 0.1 };
 const LIMITS = {
@@ -390,18 +392,41 @@ function reset() {
   render();
 }
 
+// Light on resources: while the window is hidden in the tray only the title, tray tooltip and
+// taskbar progress update, once a second; a paused timer redraws once a second too.
+let winVisible = true;
+let lastTick = 0;
 function tick() {
   if (timer.running && Date.now() >= timer.endAt) {
     timer.remaining = 0;
     complete();
     return;
   }
-  renderTimer();
+  const now = Date.now();
+  if (winVisible && timer.running) renderTimer();
+  else if (now - lastTick >= 1000) {
+    lastTick = now;
+    if (winVisible) renderTimer(); else renderOuter();
+  }
 }
 
 /* ================= Rendering ================= */
 let lastTitle = '';
 let lastProg = '';
+let lastStatus = '';
+function renderOuter() {
+  const rem = currentRemaining();
+  const isWork = timer.phase === 'work';
+  const touched = !isUntouched();
+  const ratio = timer.total ? 1 - rem / timer.total : 0;
+  const title = touched ? `${fmtClock(rem)} · ${isWork ? t('work') : t('break')} — ${t('appName')}` : t('appName');
+  if (title !== lastTitle) { api.title(title); lastTitle = title; }
+  const prog = touched ? Math.min(1, Math.max(0.001, ratio)).toFixed(3) : '-1';
+  const progKey = `${prog}|${touched && !timer.running}`;
+  if (progKey !== lastProg) { lastProg = progKey; api.progress(Number(prog), touched && !timer.running); }
+  syncTray();
+}
+
 function renderTimer() {
   const rem = currentRemaining();
   const isWork = timer.phase === 'work';
@@ -431,13 +456,18 @@ function renderTimer() {
   const tSec = todaySec();
   $('#todayVal').textContent = goalH > 0 ? `${fmtDur(tSec)} / ${fmtHours(goalH)}` : fmtDur(tSec);
 
-  // Window title and taskbar progress
-  const title = touched ? `${fmtClock(rem)} · ${isWork ? t('work') : t('break')} — ${t('appName')}` : t('appName');
-  if (title !== lastTitle) { api.title(title); lastTitle = title; }
-  const prog = touched ? Math.min(1, Math.max(0.001, ratio)).toFixed(3) : '-1';
-  const progKey = `${prog}|${touched && !timer.running}`;
-  if (progKey !== lastProg) { lastProg = progKey; api.progress(Number(prog), touched && !timer.running); }
-  syncTray();
+  // Running time in the title bar while another tab is open
+  const status = touched && view !== 'timer' ? `${isWork ? 'w' : 'b'}${timer.running ? '' : 'p'}|${fmtClock(rem)}` : '';
+  if (status !== lastStatus) {
+    lastStatus = status;
+    const el = $('#tbStatus');
+    el.hidden = !status;
+    if (status) {
+      el.textContent = fmtClock(rem);
+      el.className = `brand-status${isWork ? '' : ' break'}${timer.running ? '' : ' paused'}`;
+    }
+  }
+  renderOuter();
 }
 
 function renderSteppers() {
@@ -535,25 +565,6 @@ function dayLevel(sec, maxSec) {
   return r < steps[0] ? 1 : r < steps[1] ? 2 : r < steps[2] ? 3 : 4;
 }
 
-function workByHour(from, days) {
-  // minutes of focus in each hour of the last `days` days: grid[day][hour]
-  const grid = Array.from({ length: days }, () => new Array(24).fill(0));
-  const add = (a, b) => {
-    for (let t0 = a; t0 < b;) {
-      const d = new Date(t0);
-      const hourEnd = new Date(d.getFullYear(), d.getMonth(), d.getDate(), d.getHours() + 1).getTime();
-      const seg = Math.min(b, hourEnd) - t0;
-      const di = Math.round((startOfDay(t0) - from) / 86400000);
-      if (di >= 0 && di < days) grid[di][d.getHours()] += seg / 60000;
-      t0 += seg;
-    }
-  };
-  sessions.forEach(s => { if (s.end > from) add(s.start, s.start + s.dur * 1000); });
-  const live = liveWorkSec();
-  if (live) add(Date.now() - live * 1000, Date.now());
-  return grid;
-}
-
 function renderHeat() {
   const el = $('#heat');
   const weeks = settings.heatRange;
@@ -563,30 +574,30 @@ function renderHeat() {
   const byDay = workByDay();
   const maxSec = Math.max(0, ...byDay.values());
 
-  // cell size: fill the width, but never tinier than 10px
-  const avail = Math.max(200, el.clientWidth || $('#view-stats').clientWidth - 56);
-  const gap = weeks > 30 ? 3 : 4;
-  const cell = Math.max(weeks > 30 ? 9 : 7, Math.min(24, Math.floor((avail - 30) / weeks) - gap));
-
+  // Columns are 1fr and cells are square, so any range always fits the width (no scrolling).
   let cells = '';
   let months = '';
   let prevMonth = -1;
   let activeDays = 0;
+  const dayNames = t('daysMon');
+  [0, 2, 4].forEach(r => { cells += `<span class="hd" style="grid-row:${r + 1}">${dayNames[r]}</span>`; });
   for (let w = 0; w < weeks; w++) {
     const colStart = addDays(start, w * 7);
     const m = new Date(colStart).getMonth();
     if (m !== prevMonth) {
-      if (w < weeks - 1 || prevMonth === -1) months += `<span style="grid-column:${w + 1}">${t('monthsShort')[m]}</span>`;
+      // skip a month label squeezed into the last two columns
+      if (prevMonth === -1 || w < weeks - (weeks > 30 ? 2 : 0)) months += `<span style="grid-column:${w + 2}">${t('monthsShort')[m]}</span>`;
       prevMonth = m;
     }
     for (let r = 0; r < 7; r++) {
       const ts = addDays(colStart, r);
-      if (ts > today0) { cells += '<i class="hc future"></i>'; continue; }
+      const pos = `grid-column:${w + 2};grid-row:${r + 1}`;
+      if (ts > today0) { cells += `<i class="hc future" style="${pos}"></i>`; continue; }
       const sec = byDay.get(dayKey(ts)) || 0;
       if (sec >= 60) activeDays++;
       const lv = dayLevel(sec, maxSec);
       const tip = `${dayTitle(ts)} · ${sec >= 60 ? fmtDur(sec) : t('noWork')}`;
-      cells += `<i class="hc l${lv}${ts === today0 ? ' today' : ''}" data-tip="${esc(tip)}" style="--d:${w * 7 + r}"></i>`;
+      cells += `<i class="hc l${lv}${ts === today0 ? ' today' : ''}" data-tip="${esc(tip)}" style="${pos};--d:${w * 7 + r}"></i>`;
     }
   }
 
@@ -594,46 +605,16 @@ function renderHeat() {
   let streak = 0;
   for (let ts = (byDay.get(dayKey(today0)) || 0) >= 60 ? today0 : addDays(today0, -1); (byDay.get(dayKey(ts)) || 0) >= 60; ts = addDays(ts, -1)) streak++;
 
-  const dayNames = t('daysMon');
   const legend = [0, 1, 2, 3, 4].map(l => `<i class="hc l${l}"></i>`).join('');
-
-  // hour-of-day grid for the last 7 days
-  const from7 = addDays(today0, -6);
-  const hours = workByHour(from7, 7);
-  let hcells = '';
-  for (let d = 0; d < 7; d++) {
-    const ts = addDays(from7, d);
-    hcells += `<span class="hh-day">${esc(t('days')[new Date(ts).getDay()])}</span>`;
-    for (let h = 0; h < 24; h++) {
-      const min = Math.round(hours[d][h]);
-      const lv = min < 1 ? 0 : min < 15 ? 1 : min < 30 ? 2 : min < 45 ? 3 : 4;
-      const tip = `${dayTitle(ts)}, ${pad(h)}:00–${pad((h + 1) % 24)}:00 · ${min ? `${min} ${t('min')}` : t('noWork')}`;
-      hcells += `<i class="hc l${lv}" data-tip="${esc(tip)}" style="--d:${d * 24 + h}"></i>`;
-    }
-  }
-  const hourLabels = [0, 6, 12, 18].map(h => `<span style="grid-column:${h + 2} / span 4">${pad(h)}:00</span>`).join('');
-
-  el.style.setProperty('--cell', `${cell}px`);
-  el.style.setProperty('--gap', `${gap}px`);
+  el.style.setProperty('--weeks', weeks);
+  el.classList.toggle('dense', weeks > 30);
   el.innerHTML = `
-    <div class="heat-scroll">
-      <div class="heat-grid-wrap">
-        <div class="heat-months" style="grid-template-columns:repeat(${weeks}, var(--cell))">${months}</div>
-        <div class="heat-body">
-          <div class="heat-days"><span>${dayNames[0]}</span><span></span><span>${dayNames[2]}</span><span></span><span>${dayNames[4]}</span><span></span><span></span></div>
-          <div class="heat-grid">${cells}</div>
-        </div>
-      </div>
-    </div>
+    <div class="heat-months">${months}</div>
+    <div class="heat-grid">${cells}</div>
     <div class="heat-foot">
       <span class="muted">${t('activeDays')(activeDays)}${streak > 1 ? ` · ${t('streak')(streak)}` : ''}</span>
       <span class="heat-legend">${t('less')}${legend}${t('more')}</span>
-    </div>
-    <h3 class="heat-sub">${t('byHour')}</h3>
-    <div class="hours hours-head">${hourLabels}</div>
-    <div class="hours">${hcells}</div>`;
-  const sc = el.querySelector('.heat-scroll');
-  sc.scrollLeft = sc.scrollWidth;
+    </div>`;
 }
 
 // one floating tooltip for all squares
@@ -646,12 +627,10 @@ function initHeatTip() {
     if (!c) { tip.classList.remove('show'); return; }
     tip.textContent = c.dataset.tip;
     const r = c.getBoundingClientRect();
-    const z = settings.zoom || 1;
     tip.classList.add('show');
     const w = tip.offsetWidth;
-    const x = Math.min(Math.max(8, (r.left + r.width / 2) / z - w / 2), window.innerWidth / z - w - 8);
-    tip.style.left = `${x}px`;
-    tip.style.top = `${r.top / z - tip.offsetHeight - 8}px`;
+    tip.style.left = `${Math.min(Math.max(8, r.left + r.width / 2 - w / 2), window.innerWidth - w - 8)}px`;
+    tip.style.top = `${r.top - tip.offsetHeight - 8}px`;
   });
   $('#heat').addEventListener('mouseleave', () => tip.classList.remove('show'));
 }
@@ -793,54 +772,52 @@ function meta(key, name) {
   return projects[key];
 }
 
-function updateDatalist() {
-  const names = projectList().filter(p => !p.hidden).map(p => p.name);
-  $('#projectList').innerHTML = names.map(n => `<option value="${esc(n)}"></option>`).join('');
-}
+// The custom suggestion list reads projects on demand; nothing to precompute.
+function updateDatalist() {}
 
 function renderLabelMeta() {
   const el = $('#labelMeta');
   const key = projKey($('#label').value);
   const p = key && projectList().find(x => x.key === key);
-  if (!p || (!p.total && !p.deadline)) { el.innerHTML = ''; return; }
+  if (!p || (!p.total && !p.deadline)) { el.innerHTML = ''; fitTimer(); return; }
   const parts = [];
   if (p.total >= 60) parts.push(`${t('pTotal')}: ${fmtDur(p.total)}`);
   const dl = deadlineInfo(p.deadline);
   if (dl) parts.push(`<span class="dl-text ${dl.cls}">${t('deadline')}: ${esc(dl.text)}</span>`);
   el.innerHTML = parts.join(' · ');
+  fitTimer();
 }
 
 const ICONS = {
-  play: '<svg viewBox="0 0 20 20"><path d="M6.5 4.8v10.4L15 10z" fill="currentColor"/></svg>',
-  edit: '<svg viewBox="0 0 20 20"><path d="M12.8 4.2l3 3L8 15H5v-3z" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/></svg>',
-  hide: '<svg viewBox="0 0 20 20"><path d="M3 10s2.6-5 7-5 7 5 7 5-2.6 5-7 5-7-5-7-5z" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="M4 16L16 4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>',
-  show: '<svg viewBox="0 0 20 20"><path d="M3 10s2.6-5 7-5 7 5 7 5-2.6 5-7 5-7-5-7-5z" fill="none" stroke="currentColor" stroke-width="1.5"/><circle cx="10" cy="10" r="2.2" fill="currentColor"/></svg>',
-  cal: '<svg viewBox="0 0 20 20"><rect x="3.5" y="4.5" width="13" height="12" rx="2" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="M3.5 8.5h13M7 3v3M13 3v3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>',
+  play: '<svg viewBox="0 0 24 24"><path d="M7 5.2v13.6a.8.8 0 0 0 1.2.7l10.4-6.8a.8.8 0 0 0 0-1.4L8.2 4.5A.8.8 0 0 0 7 5.2z" fill="currentColor"/></svg>',
+  edit: '<svg viewBox="0 0 24 24"><path d="M15.5 4.5l4 4L9 19H5v-4z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg>',
+  hide: '<svg viewBox="0 0 24 24"><path d="M3 12s3.3-6 9-6 9 6 9 6-3.3 6-9 6-9-6-9-6z" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M4.5 19.5l15-15" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>',
+  show: '<svg viewBox="0 0 24 24"><path d="M3 12s3.3-6 9-6 9 6 9 6-3.3 6-9 6-9-6-9-6z" fill="none" stroke="currentColor" stroke-width="1.8"/><circle cx="12" cy="12" r="2.6" fill="currentColor"/></svg>',
+  trash: '<svg viewBox="0 0 24 24"><path d="M4.5 7h15M10 4h4M6.5 7l.9 12a1.6 1.6 0 0 0 1.6 1.5h6a1.6 1.6 0 0 0 1.6-1.5l.9-12" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>',
+  cal: '<svg viewBox="0 0 20 20"><rect x="3.5" y="4.5" width="13" height="12" rx="2.5" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="M3.5 8.5h13M7 3v3M13 3v3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>',
   x: '<svg width="12" height="12" viewBox="0 0 12 12"><path d="M3 3l6 6M9 3l-6 6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>',
+  prev: '<svg viewBox="0 0 20 20"><path d="M12 5l-5 5 5 5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>',
+  next: '<svg viewBox="0 0 20 20"><path d="M8 5l5 5-5 5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>',
 };
 
 function projRow(p) {
   const dl = deadlineInfo(p.deadline);
   const chip = dl
     ? `<span class="chip ${dl.cls}"><button class="chip-main" data-act="deadline">${ICONS.cal}<span>${esc(dl.text)}</span></button><button class="chip-x" data-act="cleardl" title="${esc(t('clearDeadline'))}">${ICONS.x}</button></span>`
-    : (p.hidden ? '' : `<button class="chip add" data-act="deadline">${esc(t('addDeadline'))}</button>`);
-  const sub = [`${t('pToday')} ${fmtDur(p.today)}`, `${t('pWeek')} ${fmtDur(p.week)}`, t('pSessions')(p.count)].join(' · ');
+    : (p.hidden ? '' : `<button class="chip add" data-act="deadline">${ICONS.cal}<span>${esc(t('addDeadline').replace('+ ', ''))}</span></button>`);
+  const stat = (label, val) => `<span class="ps"><span class="ps-l">${esc(label)}</span> ${val}</span>`;
+  const stats = [stat(t('pTodayL'), fmtDur(p.today)), stat(t('pWeekL'), fmtDur(p.week)), `<span class="ps">${t('pSessions')(p.count)}</span>`].join('');
+  const btn = (act, icon, title, cls = '') => `<button class="icon-btn sm${cls}" data-act="${act}" title="${esc(title)}">${icon}</button>`;
   const acts = p.hidden
-    ? `<button class="icon-btn sm" data-act="unhide" title="${esc(t('unhide'))}">${ICONS.show}</button>`
-    : `<button class="icon-btn sm" data-act="work" title="${esc(t('workOn'))}">${ICONS.play}</button>
-       <button class="icon-btn sm" data-act="rename" title="${esc(t('rename'))}">${ICONS.edit}</button>
-       <button class="icon-btn sm" data-act="hide" title="${esc(t('hide'))}">${ICONS.hide}</button>`;
+    ? btn('unhide', ICONS.show, t('unhide')) + btn('delete', ICONS.trash, t('delete'), ' danger')
+    : btn('work', ICONS.play, t('workOn')) + btn('rename', ICONS.edit, t('rename')) + btn('hide', ICONS.hide, t('hide')) + btn('delete', ICONS.trash, t('delete'), ' danger');
   return `<div class="proj${p.hidden ? ' hidden' : ''}${p.current ? ' current' : ''}" data-key="${esc(p.key)}">
     <div class="proj-top">
       <div class="proj-name"><span class="pn">${esc(p.name)}</span>${p.current ? `<span class="tag mini">${esc(t('current'))}</span>` : ''}</div>
-      <div class="proj-total">${fmtDur(p.total)}</div>
-    </div>
-    <div class="proj-bottom">
-      <div class="proj-sub">${sub}</div>
       <div class="proj-acts">${acts}</div>
-      ${chip}
-      <input type="date" class="dl-input" value="${esc(p.deadline)}" tabindex="-1">
+      <div class="proj-total" title="${esc(t('pTotal'))}">${fmtDur(p.total)}</div>
     </div>
+    <div class="proj-stats">${stats}${chip}</div>
   </div>`;
 }
 
@@ -854,7 +831,6 @@ function renderProjects() {
   btn.textContent = showHidden ? t('hideHidden') : t('hiddenN')(hid.length);
   $('#projHidden').hidden = !showHidden || !hid.length;
   $('#projHidden').innerHTML = hid.map(projRow).join('');
-  updateDatalist();
 }
 
 function renameProject(key, name) {
@@ -872,6 +848,15 @@ function renameProject(key, name) {
   }
   if (projKey($('#label').value) === key) $('#label').value = name;
   persistNow();
+}
+
+// Deleting keeps the time (stats stay right) but drops the project name from its sessions.
+function deleteProject(key) {
+  sessions.forEach(s => { if (projKey(s.label) === key) s.label = ''; });
+  delete projects[key];
+  if (projKey($('#label').value) === key) $('#label').value = '';
+  persistNow();
+  toast(t('projDeleted'));
 }
 
 function startRename(row) {
@@ -899,7 +884,7 @@ function startRename(row) {
   input.addEventListener('blur', () => finish(true));
 }
 
-function onProjectClick(e) {
+async function onProjectClick(e) {
   const btn = e.target.closest('[data-act]');
   if (!btn) return;
   const row = btn.closest('.proj');
@@ -920,11 +905,18 @@ function onProjectClick(e) {
     case 'unhide':
       meta(key, name).hidden = false;
       break;
-    case 'deadline': {
-      const input = row.querySelector('.dl-input');
-      try { input.showPicker(); } catch { input.focus(); input.click(); }
+    case 'delete':
+      if (!(await confirmModal(t('delProjTitle')(name), t('delProjText'), t('delete')))) return;
+      deleteProject(key);
+      break;
+    case 'deadline':
+      openCalendar(btn, (projects[key] && projects[key].deadline) || '', v => {
+        meta(key, name).deadline = v;
+        persist();
+        renderProjects();
+        renderLabelMeta();
+      });
       return;
-    }
     case 'cleardl':
       meta(key, name).deadline = '';
       break;
@@ -934,13 +926,237 @@ function onProjectClick(e) {
   renderLabelMeta();
 }
 
-function onDeadlineChange(e) {
-  if (!e.target.classList.contains('dl-input')) return;
-  const row = e.target.closest('.proj');
-  meta(row.dataset.key, row.querySelector('.pn').textContent).deadline = e.target.value || '';
+function onDeadlineChange() {}
+
+/* ---------- Calendar popover (deadline picker) ---------- */
+let calState = null; // {month: Date(1st of month), value: 'YYYY-MM-DD', onPick, anchor}
+
+function isoDay(ts) { return dayKey(ts); }
+
+function renderCalendar() {
+  const { month, value } = calState;
+  const y = month.getFullYear(), m = month.getMonth();
+  const first = new Date(y, m, 1);
+  const lead = (first.getDay() + 6) % 7; // Monday first
+  const today = isoDay(Date.now());
+  const title = settings.lang === 'ru'
+    ? `${t('monthsNom')[m]} ${y}`
+    : `${t('monthsNom')[m]} ${y}`;
+  let days = '';
+  for (let i = 0; i < 42; i++) {
+    const d = new Date(y, m, 1 - lead + i);
+    const iso = isoDay(d.getTime());
+    const cls = ['cd'];
+    if (d.getMonth() !== m) cls.push('out');
+    if (iso === today) cls.push('today');
+    if (iso === value) cls.push('sel');
+    if (d.getDay() === 0 || d.getDay() === 6) cls.push('we');
+    days += `<button class="${cls.join(' ')}" data-d="${iso}">${d.getDate()}</button>`;
+  }
+  $('#cal').innerHTML = `
+    <div class="cal-head">
+      <span class="cal-title">${esc(title)}</span>
+      <button class="icon-btn sm" data-nav="-1">${ICONS.prev}</button>
+      <button class="icon-btn sm" data-nav="1">${ICONS.next}</button>
+    </div>
+    <div class="cal-wd">${t('daysMon').map(n => `<span>${esc(n)}</span>`).join('')}</div>
+    <div class="cal-grid">${days}</div>
+    <div class="cal-foot">
+      <button class="ghost" data-act="clear">${esc(t('calClear'))}</button>
+      <button class="ghost" data-act="today">${esc(t('calToday'))}</button>
+    </div>`;
+}
+
+function openCalendar(anchor, value, onPick) {
+  const base = value ? new Date(parseDay(value)) : new Date();
+  calState = { month: new Date(base.getFullYear(), base.getMonth(), 1), value, onPick, anchor };
+  renderCalendar();
+  const cal = $('#cal');
+  cal.hidden = false;
+  const r = anchor.getBoundingClientRect();
+  const w = cal.offsetWidth, h = cal.offsetHeight;
+  let x = Math.min(Math.max(10, r.right - w), window.innerWidth - w - 10);
+  let y = r.bottom + 8;
+  if (y + h > window.innerHeight - 10) y = Math.max(10, r.top - h - 8);
+  cal.style.left = `${x}px`;
+  cal.style.top = `${y}px`;
+}
+
+function closeCalendar() {
+  $('#cal').hidden = true;
+  calState = null;
+}
+
+function bindCalendar() {
+  $('#cal').addEventListener('click', e => {
+    if (!calState) return;
+    const nav = e.target.closest('[data-nav]');
+    if (nav) {
+      calState.month = new Date(calState.month.getFullYear(), calState.month.getMonth() + Number(nav.dataset.nav), 1);
+      renderCalendar();
+      return;
+    }
+    const day = e.target.closest('[data-d]');
+    const act = e.target.closest('[data-act]');
+    let v = null;
+    if (day) v = day.dataset.d;
+    else if (act && act.dataset.act === 'today') v = isoDay(Date.now());
+    else if (act && act.dataset.act === 'clear') v = '';
+    if (v === null) return;
+    const pick = calState.onPick;
+    closeCalendar();
+    pick(v);
+  });
+  document.addEventListener('mousedown', e => {
+    if (calState && !e.target.closest('#cal') && !e.target.closest('[data-act="deadline"]')) closeCalendar();
+  });
+  window.addEventListener('resize', () => { if (calState) closeCalendar(); });
+  $('main').addEventListener('scroll', () => { if (calState) closeCalendar(); }, { passive: true });
+}
+
+/* ---------- Project suggestions under the task field ---------- */
+let sugIndex = -1;
+let sugItems = [];
+
+function renderSuggest() {
+  const box = $('#labelSuggest');
+  const q = cleanName($('#label').value).toLowerCase();
+  sugItems = projectList().filter(p => !p.hidden && p.key !== q && (!q || p.name.toLowerCase().includes(q))).slice(0, 6);
+  if (!sugItems.length || document.activeElement !== $('#label')) { box.hidden = true; return; }
+  if (sugIndex >= sugItems.length) sugIndex = sugItems.length - 1;
+  box.innerHTML = sugItems.map((p, i) => {
+    const dl = deadlineInfo(p.deadline);
+    return `<button class="sug${i === sugIndex ? ' on' : ''}" data-i="${i}" tabindex="-1">
+      <span class="sug-name">${esc(p.name)}</span>
+      <span class="sug-meta">${dl ? `<span class="dl-text ${dl.cls}">${esc(dl.when)}</span> · ` : ''}${fmtDur(p.total)}</span>
+    </button>`;
+  }).join('');
+  box.hidden = false;
+}
+
+function pickSuggest(i) {
+  const p = sugItems[i];
+  if (!p) return;
+  $('#label').value = p.name;
+  $('#labelSuggest').hidden = true;
   persist();
-  renderProjects();
   renderLabelMeta();
+  $('#label').blur();
+}
+
+function bindLabelSuggest() {
+  const input = $('#label');
+  input.addEventListener('focus', () => { sugIndex = -1; renderSuggest(); });
+  input.addEventListener('input', () => { sugIndex = -1; renderSuggest(); });
+  input.addEventListener('blur', () => setTimeout(() => { $('#labelSuggest').hidden = true; }, 120));
+  input.addEventListener('keydown', e => {
+    const box = $('#labelSuggest');
+    if (box.hidden) return;
+    if (e.key === 'ArrowDown') { e.preventDefault(); sugIndex = (sugIndex + 1) % sugItems.length; renderSuggest(); }
+    else if (e.key === 'ArrowUp') { e.preventDefault(); sugIndex = (sugIndex - 1 + sugItems.length) % sugItems.length; renderSuggest(); }
+    else if (e.key === 'Enter' && sugIndex >= 0) { e.preventDefault(); pickSuggest(sugIndex); }
+    else if (e.key === 'Escape') box.hidden = true;
+  });
+  $('#labelSuggest').addEventListener('mousedown', e => {
+    const b = e.target.closest('.sug');
+    if (b) { e.preventDefault(); pickSuggest(Number(b.dataset.i)); }
+  });
+}
+
+/* ---------- Confirm dialog ---------- */
+let modalResolve = null;
+function confirmModal(title, text, okLabel) {
+  $('#modalTitle').textContent = title;
+  $('#modalText').textContent = text;
+  $('#modalOk').textContent = okLabel;
+  $('#modalCancel').textContent = t('cancel');
+  $('#modal').hidden = false;
+  setTimeout(() => $('#modalCancel').focus(), 30);
+  return new Promise(res => { modalResolve = res; });
+}
+function closeModal(ok) {
+  $('#modal').hidden = true;
+  if (modalResolve) { const r = modalResolve; modalResolve = null; r(ok); }
+}
+
+/* ---------- CSV import (our own export format, RU ";" or EN ",") ---------- */
+function parseCsvLine(line, sep) {
+  const out = [];
+  let cur = '', q = false;
+  for (let i = 0; i < line.length; i++) {
+    const c = line[i];
+    if (q) {
+      if (c === '"' && line[i + 1] === '"') { cur += '"'; i++; }
+      else if (c === '"') q = false;
+      else cur += c;
+    } else if (c === '"') q = true;
+    else if (c === sep) { out.push(cur); cur = ''; }
+    else cur += c;
+  }
+  out.push(cur);
+  return out;
+}
+
+async function importCsv(file) {
+  let text;
+  try { text = (await file.text()).replace(/^﻿/, ''); } catch { toast(t('importBad')); return; }
+  const lines = text.split(/\r?\n/).filter(l => l.trim());
+  if (!lines.length) { toast(t('importBad')); return; }
+  const sep = (lines[0].match(/;/g) || []).length >= (lines[0].match(/,/g) || []).length ? ';' : ',';
+  const seen = new Set(sessions.map(s => `${Math.round(s.start / 60000)}|${Math.round(s.dur / 60)}`));
+  let added = 0;
+  for (const line of lines) {
+    const [date, from, to, mins, task] = parseCsvLine(line, sep);
+    const dm = /^(\d{4})-(\d{2})-(\d{2})$/.exec((date || '').trim());
+    const fm = /^(\d{1,2}):(\d{2})$/.exec((from || '').trim());
+    const tm = /^(\d{1,2}):(\d{2})$/.exec((to || '').trim());
+    const minutes = parseFloat(String(mins || '').replace(',', '.'));
+    if (!dm || !fm || !(minutes > 0)) continue; // header or junk
+    const start = new Date(+dm[1], +dm[2] - 1, +dm[3], +fm[1], +fm[2]).getTime();
+    const dur = Math.round(minutes * 60);
+    let end = start + dur * 1000;
+    if (tm) {
+      let e2 = new Date(+dm[1], +dm[2] - 1, +dm[3], +tm[1], +tm[2]).getTime();
+      if (e2 < start) e2 += 86400000; // crossed midnight
+      end = e2;
+    }
+    const k = `${Math.round(start / 60000)}|${Math.round(dur / 60)}`;
+    if (seen.has(k)) continue;
+    seen.add(k);
+    sessions.push({ id: Date.now().toString(36) + Math.random().toString(36).slice(2, 6), start, end, dur, label: cleanName(task || ''), full: dur >= settings.work * 60 });
+    added++;
+  }
+  if (!added) { toast(t('importNone')); return; }
+  sessions.sort((a, b) => a.start - b.start);
+  await persistNow();
+  render();
+  renderLabelMeta();
+  if (view === 'stats') renderStats();
+  if (view === 'projects') renderProjects();
+  toast(t('imported')(added));
+}
+
+/* ---------- Responsive timer view ----------
+   When the window is too short, parts disappear in a fixed order (least important first).
+   Each step is decided from the full layout, so shrinking never brings a hidden part back;
+   only growing the window can. Works at any zoom: WebView2 zoom changes CSS px itself. */
+const FIT_STEPS = ['test', 'meta', 'today', 't-md', 'brk', 'work', 'label', 't-sm', 'phase'];
+let fitLevel = -1;
+
+function fitTimer() {
+  const v = $('#view-timer');
+  if (!v.classList.contains('active')) return;
+  const main = $('main');
+  let level = 0;
+  const apply = n => {
+    FIT_STEPS.forEach((s, i) => v.classList.toggle(`fit-${s}`, i < n));
+  };
+  apply(0);
+  while (level < FIT_STEPS.length && v.offsetHeight > main.clientHeight + 1) {
+    level++;
+    apply(level);
+  }
+  if (level !== fitLevel) fitLevel = level;
 }
 
 /* ================= Apps (time in programs) ================= */
@@ -1061,8 +1277,9 @@ function animateView() {
   animT = setTimeout(() => v.classList.remove('anim'), 1100);
 }
 
+// Zoom is done by WebView2 itself, so CSS px, media queries and the responsive layout follow it.
 function applyZoom() {
-  document.documentElement.style.zoom = String(settings.zoom);
+  api.zoom(settings.zoom);
 }
 function setZoom(z) {
   z = Math.round(Math.min(ZOOM.max, Math.max(ZOOM.min, z)) * 10) / 10;
@@ -1108,6 +1325,9 @@ function bind() {
     if (view === 'stats') { historyLimit = 7; renderStats(); }
     if (view === 'projects') renderProjects();
     if (view === 'apps') { closePicker(); loadApps(); }
+    if (view === 'timer') fitTimer();
+    closeCalendar();
+    renderTimer();
     $('main').scrollTop = 0;
   }));
 
@@ -1198,14 +1418,40 @@ function bind() {
   }, { passive: false });
 
   api.onPhaseDue(() => tick());
+  api.onWindowVisible(v => { winVisible = v; if (v) { render(); fitTimer(); } });
 
-  document.addEventListener('keydown', e => {
-    if (e.target.tagName === 'INPUT' || e.ctrlKey || e.altKey || e.metaKey) return;
-    if (e.code === 'Space') { e.preventDefault(); toggle(); }
-    else if (e.code === 'KeyR') reset();
-    else if (e.code === 'KeyS') skip();
-    else if (/^Digit[1-5]$/.test(e.code)) $$('.tab')[Number(e.code.slice(5)) - 1].click();
+  // Title bar: drag, double-click to maximize, top edge resizes, own window buttons
+  $('#titlebar').addEventListener('mousedown', e => {
+    if (e.button !== 0 || e.target.closest('.win-btn')) return;
+    const edge = e.target.closest('[data-hit]');
+    api.ncdrag(edge ? Number(edge.dataset.hit) : 2);
   });
+  $('#titlebar').addEventListener('dblclick', e => { if (!e.target.closest('.win-btn')) api.winMax(); });
+  $('#winMin').addEventListener('click', () => api.winMin());
+  $('#winMax').addEventListener('click', () => api.winMax());
+  $('#winClose').addEventListener('click', () => api.winClose());
+  api.onMaximized(m => document.documentElement.classList.toggle('maxed', !!m));
+
+  bindLabelSuggest();
+  bindCalendar();
+  $('#modalCancel').addEventListener('click', () => closeModal(false));
+  $('#modalOk').addEventListener('click', () => closeModal(true));
+  $('#modal').addEventListener('mousedown', e => { if (e.target.id === 'modal') closeModal(false); });
+  document.addEventListener('keydown', e => {
+    if (e.key !== 'Escape') return;
+    if (!$('#modal').hidden) closeModal(false);
+    else if (!$('#cal').hidden) closeCalendar();
+  });
+
+  // CSV import
+  const pickCsv = () => { $('#csvFile').value = ''; $('#csvFile').click(); };
+  $('#btnImport').addEventListener('click', pickCsv);
+  $('#btnImport2').addEventListener('click', pickCsv);
+  $('#csvFile').addEventListener('change', e => { const f = e.target.files[0]; if (f) importCsv(f); });
+
+  // Responsive timer view
+  let fitT = null;
+  window.addEventListener('resize', () => { cancelAnimationFrame(fitT); fitT = requestAnimationFrame(fitTimer); });
 
   api.onAlertAction(action => {
     if (alertIsTest) { alertIsTest = false; return; }

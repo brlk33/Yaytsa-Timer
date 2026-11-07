@@ -4,14 +4,30 @@
   <meta charset="utf-8">
   <meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Яйца Таймер</title>
+  <title>Яйцетаймер</title>
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
-  <header class="titlebar">
+  <header class="titlebar" id="titlebar">
+    <div class="tb-edge" data-hit="12"></div>
     <div class="brand">
-      <svg class="brand-icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="13" r="8" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M12 9v4l2.5 2" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><path d="M9.5 2.8h5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
-      <span data-i18n="appName">Яйца Таймер</span>
+      <span class="brand-logo" aria-hidden="true">
+        <svg viewBox="0 0 32 32">
+          <defs>
+            <linearGradient id="eggG" x1="0" y1="0" x2="0.6" y2="1"><stop offset="0" stop-color="#fff7ea"/><stop offset="1" stop-color="#f1d8b6"/></linearGradient>
+          </defs>
+          <path d="M16 3.5c-5.6 0-10 8.4-10 15 0 5.6 4.4 10 10 10s10-4.4 10-10c0-6.6-4.4-15-10-15z" fill="url(#eggG)"/>
+          <circle cx="16" cy="19" r="5.6" fill="none" stroke="#e8743b" stroke-width="2.2"/>
+          <path d="M16 15.9V19l2.1 1.4" fill="none" stroke="#e8743b" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </span>
+      <span class="brand-name" data-i18n="appName">Яйцетаймер</span>
+      <span class="brand-status" id="tbStatus" hidden></span>
+    </div>
+    <div class="win-btns">
+      <button class="win-btn" id="winMin" data-i18n-title="winMin"><svg viewBox="0 0 12 12"><path d="M2 6.5h8" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></svg></button>
+      <button class="win-btn" id="winMax" data-i18n-title="winMax"><svg class="i-max" viewBox="0 0 12 12"><rect x="2" y="2" width="8" height="8" rx="2" fill="none" stroke="currentColor" stroke-width="1.2"/></svg><svg class="i-restore" viewBox="0 0 12 12"><rect x="1.8" y="3.8" width="6.4" height="6.4" rx="1.6" fill="none" stroke="currentColor" stroke-width="1.2"/><path d="M4 2.2h4.2A1.8 1.8 0 0 1 10 4v4.2" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></svg></button>
+      <button class="win-btn close" id="winClose" data-i18n-title="winClose"><svg viewBox="0 0 12 12"><path d="M2.6 2.6l6.8 6.8M9.4 2.6l-6.8 6.8" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></svg></button>
     </div>
   </header>
 
@@ -36,34 +52,36 @@
 
       <div class="controls">
         <button class="icon-btn" id="btnReset" data-i18n-title="reset">
-          <svg viewBox="0 0 20 20"><path d="M4.5 10a5.5 5.5 0 1 0 1.7-4" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/><path d="M5.6 2.8 5.9 6.3 9.3 5.9" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          <svg viewBox="0 0 24 24"><path d="M3.5 12a8.5 8.5 0 1 0 2.6-6.1L3.5 8.4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M3.5 3.6v4.8h4.8" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
         </button>
         <button class="primary" id="btnStart"></button>
         <button class="icon-btn" id="btnSkip" data-i18n-title="skip">
-          <svg viewBox="0 0 20 20"><path d="M5 5.2v9.6L12 10z" fill="currentColor"/><path d="M14.5 5v10" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>
+          <svg viewBox="0 0 24 24"><path d="M6 5.2v13.6a.8.8 0 0 0 1.25.66l9.9-6.8a.8.8 0 0 0 0-1.32l-9.9-6.8A.8.8 0 0 0 6 5.2z" fill="currentColor"/><path d="M19 5v14" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/></svg>
         </button>
       </div>
 
-      <input class="label-input" id="label" maxlength="120" data-i18n-ph="labelPh" autocomplete="off" list="projectList">
-      <datalist id="projectList"></datalist>
-      <div class="label-meta" id="labelMeta"></div>
+      <div class="label-wrap" data-c="label">
+        <input class="label-input" id="label" maxlength="120" data-i18n-ph="labelPh" autocomplete="off" spellcheck="false">
+        <div class="suggest" id="labelSuggest" hidden></div>
+      </div>
+      <div class="label-meta" id="labelMeta" data-c="meta"></div>
 
       <div class="props">
-        <div class="prop">
+        <div class="prop" data-p="work">
           <div class="prop-key">
             <svg viewBox="0 0 20 20"><circle cx="10" cy="11" r="6.2" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="M10 8v3.2l2 1.4" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
             <span data-i18n="work"></span>
           </div>
           <div class="stepper" data-key="work"></div>
         </div>
-        <div class="prop">
+        <div class="prop" data-p="brk">
           <div class="prop-key">
             <svg viewBox="0 0 20 20"><path d="M4 8h9v3.5A3.5 3.5 0 0 1 9.5 15h-2A3.5 3.5 0 0 1 4 11.5z" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="M13 9h1.2a1.8 1.8 0 0 1 0 3.6H13" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="M7 3.5v2M10 3.5v2" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
             <span data-i18n="break"></span>
           </div>
           <div class="stepper" data-key="brk"></div>
         </div>
-        <div class="prop">
+        <div class="prop" data-p="today">
           <div class="prop-key">
             <svg viewBox="0 0 20 20"><rect x="3.5" y="4.5" width="13" height="12" rx="2" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="M3.5 8.5h13M7 3v3M13 3v3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
             <span data-i18n="today"></span>
@@ -72,8 +90,7 @@
         </div>
       </div>
 
-      <div class="hint" data-i18n="hint"></div>
-      <div class="test-row"><button class="ghost small-btn" id="btnTest" data-i18n="test"></button></div>
+      <div class="test-row" data-c="test"><button class="ghost small-btn" id="btnTest" data-i18n="test"></button></div>
     </section>
 
     <!-- PROJECTS -->
@@ -141,7 +158,10 @@
 
       <div class="hist-head">
         <h2 data-i18n="history"></h2>
-        <button class="ghost" id="btnExport" data-i18n="exportCsv"></button>
+        <div class="btn-row">
+          <button class="ghost" id="btnImport" data-i18n="importCsv"></button>
+          <button class="ghost" id="btnExport" data-i18n="exportCsv"></button>
+        </div>
       </div>
       <div id="history"></div>
       <button class="ghost wide" id="btnMore" data-i18n="showMore"></button>
@@ -214,6 +234,7 @@
       <div class="set">
         <div class="set-text"><div class="set-name" data-i18n="dataName"></div><div class="set-desc" data-i18n="dataDesc"></div></div>
         <div class="btn-row">
+          <button class="ghost" id="btnImport2" data-i18n="importCsv"></button>
           <button class="ghost" id="btnExport2" data-i18n="exportCsv"></button>
           <button class="ghost" id="btnFolder" data-i18n="openFolder"></button>
         </div>
@@ -221,6 +242,15 @@
     </section>
   </main>
 
+  <input type="file" id="csvFile" accept=".csv,text/csv" hidden>
+  <div class="popover cal" id="cal" hidden></div>
+  <div class="modal" id="modal" hidden>
+    <div class="modal-card">
+      <h3 id="modalTitle"></h3>
+      <p id="modalText"></p>
+      <div class="modal-btns"><button class="ghost" id="modalCancel"></button><button class="danger-btn" id="modalOk"></button></div>
+    </div>
+  </div>
   <div class="toast" id="toast"></div>
   <div class="update" id="update" hidden><span></span><button></button></div>
 

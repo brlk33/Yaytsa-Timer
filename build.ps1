@@ -15,7 +15,7 @@ go build -trimpath -ldflags "-s -w -H windowsgui -buildid=" -o dist/YaytsaTimer.
 if ($LASTEXITCODE) { throw 'go build failed' }
 
 Push-Location installer
-makensis -V2 "-DVERSION=$version" installer.nsi
+makensis -V2 -INPUTCHARSET UTF8 "-DVERSION=$version" installer.nsi
 $code = $LASTEXITCODE
 Pop-Location
 if ($code) { throw 'makensis failed' }

@@ -20,8 +20,8 @@ import (
 )
 
 const (
-	Version     = "2.1.0"
-	AppName     = "Яйца Таймер"
+	Version     = "2.2.0"
+	AppName     = "Яйцетаймер"
 	mainClass   = "YaytsaTimerMain"
 	alertClass  = "YaytsaTimerAlert"
 	iconID      = 1
@@ -397,6 +397,19 @@ func onMainMessage(s string) {
 		id, title := r.ID, arg[string](r, 0)
 		dispatch(func() { reply(id, browseExe(title)) })
 		return
+	case "ncdrag":
+		hit := arg[int](r, 0)
+		dispatch(func() { startNcDrag(hit) })
+	case "winMin":
+		showWindow(mainHwnd, swMinimize)
+	case "winMax":
+		toggleMaximize()
+	case "winClose":
+		pPostMessageW.Call(mainHwnd, wmClose, 0, 0)
+	case "isMaximized":
+		result = isZoomed(mainHwnd)
+	case "zoom":
+		setZoom(arg[float64](r, 0))
 	case "progress":
 		setTaskbarProgress(arg[float64](r, 0), arg[bool](r, 1))
 	case "schedule":
@@ -446,6 +459,7 @@ func showMain() {
 	}
 	pSetForegroundWindow.Call(mainHwnd)
 	resetTaskbarProgress() // the taskbar button was recreated: re-send progress on the next tick
+	emit("window-visible", true)
 	wake(mainWeb)
 	if mainWeb != nil {
 		mainWeb.Focus()
@@ -457,6 +471,7 @@ func toggleMain() {
 		saveBounds()
 		// the page keeps running while hidden so the timer and reminders stay on time
 		showWindow(mainHwnd, swHide)
+		emit("window-visible", false)
 	} else {
 		showMain()
 	}
@@ -502,9 +517,14 @@ func finalQuit() {
 
 func mainProc(hwnd, msg, wp, lp uintptr) uintptr {
 	switch uint32(msg) {
+	case wmNcCalcSize:
+		if r, ok := onNcCalcSize(hwnd, wp, lp); ok {
+			return r
+		}
 	case wmSize:
 		if mainWeb != nil {
 			mainWeb.Resize()
+			notifyMaximized()
 		}
 	case wmMove:
 		if mainWeb != nil {
@@ -520,7 +540,7 @@ func mainProc(hwnd, msg, wp, lp uintptr) uintptr {
 	case wmGetMinMaxInfo:
 		mmi := (*minMaxInfo)(unsafe.Pointer(lp))
 		s := dpiFor(hwnd)
-		mmi.MinTrackSize = point{int32(400 * s), int32(580 * s)}
+		mmi.MinTrackSize = point{int32(340 * s), int32(320 * s)}
 		return 0
 	case wmDpiChanged:
 		r := (*rect)(unsafe.Pointer(lp))
@@ -531,6 +551,7 @@ func mainProc(hwnd, msg, wp, lp uintptr) uintptr {
 			saveBounds()
 			// keep the web view alive: the timer runs on in the tray
 			showWindow(hwnd, swHide)
+			emit("window-visible", false)
 			return 0
 		}
 		quitApp()
@@ -777,7 +798,8 @@ func main() {
 		pSetProcessDpiAwarenessContext.Call(^uintptr(3)) // PER_MONITOR_AWARE_V2 (-4)
 	}
 	// Sounds must play without a click first (the reminder rings by itself).
-	os.Setenv("WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS", "--autoplay-policy=no-user-gesture-required --disable-features=msSmartScreenProtection")
+	// Lighter on RAM/CPU: one renderer for both windows, no background browser services.
+	os.Setenv("WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS", "--autoplay-policy=no-user-gesture-required --disable-features=msSmartScreenProtection,msEdgeTranslate,msWebOOUI,msPdfOOUI,AutofillServerCommunication --renderer-process-limit=1 --disable-background-networking --disable-component-update --disable-sync --disable-domain-reliability --no-first-run")
 
 	migrate()
 	loadSettings()
@@ -801,6 +823,7 @@ func main() {
 		uintptr(x), uintptr(y), uintptr(w), uintptr(h),
 		0, 0, moduleHandle(), 0)
 	applyWindowTheme(mainHwnd, false)
+	refreshFrame(mainHwnd) // apply the caption-less frame
 	startHidden := len(os.Args) > 1 && strings.EqualFold(os.Args[1], "--hidden")
 	if !startHidden {
 		showWindow(mainHwnd, swShow) // the web view must be created in a visible window
