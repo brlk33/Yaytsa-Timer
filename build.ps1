@@ -34,3 +34,6 @@ $yml = "version: $version`nfiles:`n  - url: YaytsaTimer-Setup.exe`n    sha512: $
 [IO.File]::WriteAllText("$PWD\latest.yml", $yml)
 
 Get-Item dist/YaytsaTimer.exe, YaytsaTimer-Setup.exe | Select-Object Name, Length
+
+# Android APK with the same version (self-updating phones read the same version.txt)
+if ((Test-Path 'D:\Program Files\Android\sdk') -or $env:ANDROID_HOME) { & "$PSScriptRoot\build-android.ps1" } else { Write-Warning 'Android SDK not found: YaytsaTimer.apk not rebuilt' }

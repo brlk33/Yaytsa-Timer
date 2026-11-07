@@ -812,3 +812,9 @@ button.chip.add svg { width: 14px; height: 14px; }
 /* real program icons */
 .app-ico.has-img { background: none; box-shadow: none; }
 .app-ico.has-img img { width: 100%; height: 100%; object-fit: contain; display: block; -webkit-user-drag: none; }
+
+/* ---------- Android: no window chrome, no desktop-only settings, touch first ---------- */
+html.android .titlebar, html.android [data-desktop] { display: none !important; }
+html.android { -webkit-tap-highlight-color: transparent; }
+html.android .tabs { padding-top: 6px; }
+html.android button, html.android .tab { touch-action: manipulation; }

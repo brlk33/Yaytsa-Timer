@@ -34,7 +34,7 @@
   <nav class="tabs" role="tablist">
     <button class="tab active" data-view="timer" data-i18n="tabTimer"></button>
     <button class="tab" data-view="projects" data-i18n="tabProjects"></button>
-    <button class="tab" data-view="apps" data-i18n="tabApps"></button>
+    <button class="tab" data-view="apps" data-i18n="tabApps" data-desktop></button>
     <button class="tab" data-view="stats" data-i18n="tabStats"></button>
     <button class="tab" data-view="settings" data-i18n="tabSettings"></button>
   </nav>
@@ -216,16 +216,16 @@
           <button data-val="dark" data-i18n="dark"></button><button data-val="light" data-i18n="light"></button><button data-val="system" data-i18n="system"></button>
         </div>
       </div>
-      <div class="group-title" data-i18n="gSystem"></div>
-      <div class="set">
+      <div class="group-title" data-i18n="gSystem" data-desktop></div>
+      <div class="set" data-desktop>
         <div class="set-text"><div class="set-name" data-i18n="launchAtStart"></div><div class="set-desc" data-i18n="launchAtStartDesc"></div></div>
         <button class="toggle" id="autostartToggle"></button>
       </div>
-      <div class="set">
+      <div class="set" data-desktop>
         <div class="set-text"><div class="set-name" data-i18n="closeToTray"></div><div class="set-desc" data-i18n="closeToTrayDesc"></div></div>
         <button class="toggle" data-key="closeToTray"></button>
       </div>
-      <div class="set">
+      <div class="set" data-desktop>
         <div class="set-text"><div class="set-name" data-i18n="onTop"></div></div>
         <button class="toggle" data-key="alwaysOnTop"></button>
       </div>
@@ -236,7 +236,7 @@
         <div class="btn-row">
           <button class="ghost" id="btnImport2" data-i18n="importCsv"></button>
           <button class="ghost" id="btnExport2" data-i18n="exportCsv"></button>
-          <button class="ghost" id="btnFolder" data-i18n="openFolder"></button>
+          <button class="ghost" id="btnFolder" data-i18n="openFolder" data-desktop></button>
         </div>
       </div>
     </section>

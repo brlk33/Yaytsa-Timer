@@ -29,6 +29,8 @@ const I18N = {
     testTitle: 'Тест напоминания', closeToTray: 'Сворачивать в трей', closeToTrayDesc: 'Крестик прячет окно в трей, таймер продолжает идти',
     trayOpen: 'Открыть Яйцетаймер', trayQuit: 'Выйти', trayTest: 'Тест напоминания (5 сек)',
     popup: 'Окно поверх всего', popupDesc: 'Справа снизу, поверх игр и видео. Не исчезает, пока не нажмёте',
+    popupA: 'Уведомление с кнопками', popupDescA: 'Всплывает поверх экрана с кнопкой «Начать перерыв». Выключено — простое уведомление',
+    dataDescA: 'Экспорт и импорт истории в CSV',
     goBreak: 'Начать перерыв', goWork: 'Начать работу', later: 'Закрыть', gotIt: 'Понятно',
     aBreakBody: (w, b) => `Рабочий заход ${w}\u00a0мин завершён. Перерыв\u00a0—\u00a0${b}\u00a0мин.`,
     aWorkBody: w => `Перерыв окончен. Следующий заход\u00a0—\u00a0${w}\u00a0мин.`,
@@ -85,6 +87,8 @@ scale: 'Масштаб', appsPickTitle: 'Добавить программу', a
     testTitle: 'Reminder test', closeToTray: 'Close to tray', closeToTrayDesc: 'The close button hides the window to the tray; the timer keeps running',
     trayOpen: 'Open Яйцетаймер', trayQuit: 'Quit', trayTest: 'Test reminder (5 sec)',
     popup: 'Pop-up over everything', popupDesc: 'Bottom-right, over games and videos. Stays until you click it',
+    popupA: 'Notification with buttons', popupDescA: 'Pops up over the screen with a “Start break” button. Off: a plain notification',
+    dataDescA: 'Export and import history as CSV',
     goBreak: 'Start break', goWork: 'Start focus', later: 'Close', gotIt: 'Got it',
     aBreakBody: (w, b) => `${w}\u2011min focus session done. Break\u00a0—\u00a0${b} min.`,
     aWorkBody: w => `Break is over. Next session\u00a0—\u00a0${w} min.`,
@@ -126,6 +130,7 @@ function plural(n, one, few, many) {
 
 /* ================= State ================= */
 const api = window.focusApi;
+const ANDROID = !!api.android;
 const DEFAULTS = {
   work: 25, brk: 5, autoStart: false, sound: true, notify: true,
   lang: 'ru', theme: 'dark', goal: 4, alwaysOnTop: false, popup: true, closeToTray: true,
@@ -294,7 +299,7 @@ function logWork(full, sync) {
   sessions.push({
     id: Date.now().toString(36) + Math.random().toString(36).slice(2, 6),
     start: timer.startedAt || (Date.now() - elapsedMs),
-    end: Date.now(),
+    end: timer.running ? Math.min(Date.now(), timer.endAt) : Date.now(),
     dur,
     label: $('#label').value.trim(),
     full: !!full,
@@ -315,20 +320,27 @@ function complete() {
 }
 
 let alertIsTest = false;
-function alertPhaseEnd(finished, test) {
-  alertIsTest = !!test;
+function alertTexts(finished, test) {
   const next = finished === 'work' ? 'break' : 'work';
   const auto = test ? false : settings.autoStart;
-  const title = test ? t('testTitle') : (next === 'break' ? t('nBreakTitle') : t('nWorkTitle'));
+  return {
+    next, auto,
+    title: test ? t('testTitle') : (next === 'break' ? t('nBreakTitle') : t('nWorkTitle')),
+    body: auto
+      ? (next === 'break' ? t('aBreakAuto')(settings.brk) : t('aWorkAuto')(settings.work))
+      : (next === 'break' ? t('aBreakBody')(settings.work, settings.brk) : t('aWorkBody')(settings.work)),
+    goLabel: next === 'break' ? t('goBreak') : t('goWork'),
+    okLabel: auto ? t('gotIt') : t('later'),
+  };
+}
+function alertPhaseEnd(finished, test) {
+  alertIsTest = !!test;
+  const { next, auto, title, body, goLabel, okLabel } = alertTexts(finished, test);
   if (settings.popup || test) {
     api.showAlert({
-      next, title,
-      body: auto
-        ? (next === 'break' ? t('aBreakAuto')(settings.brk) : t('aWorkAuto')(settings.work))
-        : (next === 'break' ? t('aBreakBody')(settings.work, settings.brk) : t('aWorkBody')(settings.work)),
-      goLabel: next === 'break' ? t('goBreak') : t('goWork'),
-      okLabel: auto ? t('gotIt') : t('later'),
+      next, title, body, goLabel, okLabel,
       hideGo: auto,
+      test: !!test,
       sound: settings.sound,
       repeatSec: 15,
       theme: effectiveTheme(),
@@ -414,7 +426,36 @@ function tick() {
 let lastTitle = '';
 let lastProg = '';
 let lastStatus = '';
+const TIMER_KEYS = ['phase', 'total', 'remaining', 'running', 'endAt', 'startedAt'];
+let lastHostState = '';
+function syncHost() {
+  if (!api.timerState) return;
+  const a = alertTexts(timer.phase);
+  const state = {
+    phase: timer.phase, total: timer.total, running: timer.running,
+    remaining: timer.running ? 0 : timer.remaining, endAt: timer.running ? timer.endAt : 0,
+    startedAt: timer.startedAt,
+    label: $('#label').value.trim(),
+    sound: settings.sound, popup: settings.popup,
+    text: {
+      phase: timer.phase === 'work' ? t('work') : t('break'), paused: t('paused'),
+      pause: t('pause'), resume: t('resume'), reset: t('reset'),
+      doneTitle: a.title, doneBody: a.body, go: a.auto ? '' : a.goLabel, ok: a.okLabel,
+    },
+  };
+  const key = JSON.stringify(state);
+  if (key !== lastHostState) { lastHostState = key; api.timerState(state); }
+}
+function applyHostTimer(s) {
+  if (!s || (s.phase !== 'work' && s.phase !== 'break') || !(s.total > 0)) return false;
+  TIMER_KEYS.forEach(k => { if (k in s) timer[k] = s[k]; });
+  timer.running = !!timer.running;
+  if (!timer.running && !(timer.remaining >= 0)) timer.remaining = timer.total;
+  return true;
+}
+
 function renderOuter() {
+  syncHost();
   const rem = currentRemaining();
   const isWork = timer.phase === 'work';
   const touched = !isUntouched();
@@ -1473,7 +1514,9 @@ function bind() {
 
   api.onAlertAction(action => {
     if (alertIsTest) { alertIsTest = false; return; }
-    if (action === 'start' && !timer.running) start();
+    if (action !== 'start') return;
+    tick(); // a phase that ran out while the app slept is completed first
+    if (!timer.running) start();
   });
   api.onUpdateReady(v => {
     const el = $('#update');
@@ -1490,6 +1533,16 @@ function bind() {
   $('#btnTest2').addEventListener('click', runTest);
   window.addEventListener('error', e => api.log(String(e.message)));
 
+  if (ANDROID) {
+    api.onTimerState(s => { if (applyHostTimer(s)) { lastHostState = ''; render(); } });
+    // System back: close what is open, then go back to the timer; false lets the app go to background
+    window.__back = () => {
+      if (!$('#modal').hidden) { closeModal(false); return true; }
+      if (!$('#cal').hidden) { closeCalendar(); return true; }
+      if (view !== 'timer') { $('.tab[data-view="timer"]').click(); return true; }
+      return false;
+    };
+  }
   api.onSystemTheme(dark => { systemDark = dark; if (settings.theme === 'system') applyTheme(); });
 
   // Called by the host right before quitting
@@ -1499,6 +1552,7 @@ function bind() {
   };
   // Log an in-progress work session if the app is closed mid-session
   window.addEventListener('beforeunload', () => {
+    if (ANDROID) { api.saveSync(snapshot()); return; }
     if (timer.phase === 'work' && timer.startedAt) logWork(false, true);
     else api.saveSync(snapshot());
   });
@@ -1513,6 +1567,7 @@ function bind() {
 
 /* ================= Boot ================= */
 (async function boot() {
+  if (ANDROID) Object.values(I18N).forEach(l => { l.popup = l.popupA; l.popupDesc = l.popupDescA; l.dataDesc = l.dataDescA; });
   const data = (await api.load()) || {};
   settings = { ...DEFAULTS, ...(data.settings || {}) };
   sessions = Array.isArray(data.sessions) ? data.sessions : [];
@@ -1525,10 +1580,12 @@ function bind() {
   applyZoom();
   applyI18n();
   setPhase('work');
+  if (ANDROID) applyHostTimer(data.timer);
   bind();
   render();
   renderAutostart();
   updateDatalist();
   renderLabelMeta();
   setInterval(tick, 250);
+  if (api.ready) { tick(); api.ready(); }
 })();
