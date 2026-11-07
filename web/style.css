@@ -1075,3 +1075,44 @@ html.android .seg[data-key="theme"] button[data-val="system"] { display: none; }
 html.android .seg button.swing .ico { animation: kSwing .5s var(--ease); }
 @keyframes kSwing { 30% { transform: rotate(-28deg) scale(1.15); } 70% { transform: rotate(10deg); } }
 html.android .toggle.press { animation: kPress .3s var(--ease); }
+
+/* Liquid tab highlight (positions come from drawBlob in app.js) */
+html.android .tabs { position: relative; }
+html.android .tab::before { display: none; }
+html.android .tab { z-index: 1; }
+html.android .tab .ico, html.android .tab span { opacity: var(--lit, .45) !important; transition: none; }
+.tab-blob {
+  position: absolute; left: 0; top: 4px; bottom: 6px; width: 0;
+  border-radius: 20px;
+  background: var(--hover);
+  box-shadow: inset 0 0 0 1px var(--border);
+  transform-origin: 50% 50%;
+  pointer-events: none; will-change: transform, width;
+}
+
+/* Launch splash (phone): the egg timer ticks round once, rings, and melts away */
+.splash {
+  position: fixed; inset: 0; z-index: 100;
+  align-items: center; justify-content: center;
+  background: var(--bg);
+  animation: spOut .34s cubic-bezier(.4, 0, .2, 1) 1.12s both;
+  pointer-events: none;
+}
+.splash svg { width: 132px; height: 132px; overflow: visible; animation: spIn .32s cubic-bezier(.2, .9, .3, 1.2) both, spLift .34s cubic-bezier(.4, 0, .2, 1) 1.12s both; }
+.sp-egg { transform-origin: 128px 222px; animation: spRing .34s ease-in-out .8s both; }
+.sp-cap { transform-origin: 128px 46px; animation: spPress .34s ease-in-out .8s both; }
+.sp-sector { fill: none; stroke: #D97757; stroke-width: 44; stroke-dasharray: 100; stroke-dashoffset: 100;
+  transform: rotate(-90deg); transform-origin: 128px 152px;
+  animation: spFill .62s cubic-bezier(.45, .05, .35, 1) .16s forwards; }
+.sp-hand { transform-origin: 128px 152px; animation: spHand .62s cubic-bezier(.45, .05, .35, 1) .16s both; }
+.sp-wave { fill: none; stroke: #D97757; stroke-width: 9; stroke-linecap: round; opacity: 0; animation: spWave .42s ease-out .82s both; }
+.sp-wave.r { animation-delay: .86s; }
+@keyframes spIn { from { transform: scale(.82); opacity: 0; } }
+@keyframes spFill { to { stroke-dashoffset: 0; } }
+@keyframes spHand { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+@keyframes spRing { 20% { transform: rotate(-7deg); } 45% { transform: rotate(6deg); } 70% { transform: rotate(-3deg); } }
+@keyframes spPress { 30% { transform: translateY(6px); } }
+@keyframes spWave { 0% { opacity: 0; transform: scale(.8); } 35% { opacity: .9; } 100% { opacity: 0; transform: scale(1.15); } }
+@keyframes spOut { to { opacity: 0; visibility: hidden; } }
+@keyframes spLift { to { transform: scale(1.08); } }
+@media (prefers-reduced-motion: reduce) { .splash { display: none !important; } }

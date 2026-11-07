@@ -1180,10 +1180,65 @@ function setPager(animate, offset = 0) {
   const main = $('main');
   main.style.transition = animate ? 'transform .38s cubic-bezier(.22, .9, .3, 1)' : 'none';
   main.style.transform = `translate3d(calc(${-pagerIndex() * 100}% + ${offset}px), 0, 0)`;
+  if (animate) animateBlob(pagerIndex());
+  else drawBlob(pagerIndex() - offset / (main.clientWidth || innerWidth));
+}
+
+/* Liquid tab highlight. f is a fractional tab position (1.5 = halfway between tabs 1 and 2).
+   The edge in front runs ahead and the one behind lags, so on the way the blob stretches
+   over both tabs and then pulls itself together, a little flatter while stretched. */
+let blobF = 0, blobRaf = 0;
+function drawBlob(f) {
+  const blob = $('.tab-blob');
+  if (!blob) return;
+  blobF = f;
+  const list = pagerTabs(), n = list.length;
+  if (!n) return;
+  const bar = $('.tabs').getBoundingClientRect();
+  const rects = list.map(b => { const r = b.getBoundingClientRect(); return [r.left - bar.left + 4, r.right - bar.left - 4]; });
+  const fc = Math.max(0, Math.min(n - 1, f));
+  const a = Math.min(n - 2, Math.floor(fc)), b = a + 1;
+  let left, right;
+  if (n === 1) [left, right] = rects[0];
+  else {
+    const t = fc - a;
+    const lead = 1 - Math.pow(1 - t, 2.4), lag = Math.pow(t, 2.4);
+    right = rects[a][1] + (rects[b][1] - rects[a][1]) * lead;
+    left = rects[a][0] + (rects[b][0] - rects[a][0]) * lag;
+  }
+  // Pulled past the first or last tab: lean that way and squash, like a drop on a spring
+  const over = f - fc;
+  const w0 = rects[0][1] - rects[0][0];
+  left += over * w0 * 0.25;
+  right += over * w0 * 0.25;
+  const stretch = (right - left) / w0;
+  const squash = Math.min(0.14, Math.max(0, stretch - 1) * 0.12 + Math.abs(over) * 0.2);
+  blob.style.transform = `translate3d(${left.toFixed(2)}px, 0, 0) scaleY(${(1 - squash).toFixed(3)})`;
+  blob.style.width = `${(right - left).toFixed(2)}px`;
+  // Icons and labels light up as the blob reaches them
+  list.forEach((tab, k) => {
+    const o = 0.45 + 0.55 * Math.max(0, 1 - Math.abs(k - f));
+    tab.style.setProperty('--lit', o.toFixed(3));
+  });
+}
+function animateBlob(to) {
+  cancelAnimationFrame(blobRaf);
+  const from = blobF, t0 = performance.now(), dur = 460;
+  if (Math.abs(to - from) < 0.001) { drawBlob(to); return; }
+  const ease = x => 1 - Math.pow(1 - x, 3.2); // fast start, soft landing
+  const step = now => {
+    const x = Math.min(1, (now - t0) / dur);
+    drawBlob(from + (to - from) * ease(x));
+    if (x < 1) blobRaf = requestAnimationFrame(step);
+  };
+  blobRaf = requestAnimationFrame(step);
 }
 
 function bindSwipe() {
   const main = $('main');
+  const blob = document.createElement('div');
+  blob.className = 'tab-blob';
+  $('.tabs').prepend(blob);
   const noSwipe = '.dial, .seg, .chart, .heat, .popover, .suggest, .inline, .modal, .sheet-wrap';
   let x0 = 0, y0 = 0, lastX = 0, lastT = 0, vx = 0, dx = 0, lock = '';
   main.addEventListener('touchstart', e => {
@@ -1784,5 +1839,6 @@ function bind() {
   renderLabelMeta();
   setInterval(tick, 250);
   if (ANDROID) { renderProjects(); renderStats(); setPager(false); } // neighbour pages are visible while swiping
+  setTimeout(() => { const sp = $('#splash'); if (sp) sp.remove(); }, 1600); // the launch animation is pure CSS
   if (api.ready) { tick(); api.ready(); }
 })();
