@@ -7,6 +7,7 @@ import android.content.pm.PackageManager;
 import android.content.res.Configuration;
 import android.graphics.Color;
 import android.graphics.Insets;
+import android.media.RingtoneManager;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
@@ -41,8 +42,8 @@ import java.nio.charset.StandardCharsets;
  */
 public class MainActivity extends Activity {
     private static final String TAG = "Yaytsa";
-    private static final int REQ_IMPORT = 1, REQ_EXPORT = 2, REQ_NOTIFY = 3;
-    private static final long UPDATE_EVERY = 6 * 3600_000L;
+    private static final int REQ_IMPORT = 1, REQ_EXPORT = 2, REQ_NOTIFY = 3, REQ_SOUND_SYS = 4, REQ_SOUND_FILE = 5;
+    private static final long UPDATE_EVERY = 60_000L; // every launch, at most once a minute
 
     private final Handler ui = new Handler(Looper.getMainLooper());
     private FrameLayout root;
@@ -291,7 +292,7 @@ public class MainActivity extends Activity {
         lastUpdateCheck = now;
         String local = version();
         new Thread(() -> {
-            try { Thread.sleep(8000); } catch (InterruptedException ignored) {}
+            try { Thread.sleep(1500); } catch (InterruptedException ignored) {}
             Updater.check(getApplicationContext(), local, v -> emit("update-ready", v));
         }).start();
     }
@@ -364,6 +365,12 @@ public class MainActivity extends Activity {
                 if (u.startsWith("https://")) openUrl(u);
                 break;
             }
+            case "soundInfo":
+                reply(id, soundJson(Host.soundName(this)));
+                break;
+            case "pickSound":
+                pickSound(id, args.optString(0));
+                break;
             case "installUpdate":
                 Updater.install(this);
                 break;
@@ -427,6 +434,110 @@ public class MainActivity extends Activity {
         }
     }
 
+    /* ---------------- alert sound ---------------- */
+
+    private int soundId;
+    private android.media.Ringtone playing;
+
+    private JSONObject soundJson(String name) {
+        try {
+            return new JSONObject().put("name", name == null ? "" : name);
+        } catch (Exception e) {
+            return new JSONObject();
+        }
+    }
+
+    private void pickSound(int id, String kind) {
+        soundId = id;
+        if ("default".equals(kind)) {
+            Host.setSound(this, null, "");
+            preview(Host.soundUri(this));
+            reply(id, soundJson(""));
+            return;
+        }
+        Intent i;
+        int req;
+        if ("system".equals(kind)) {
+            i = new Intent(RingtoneManager.ACTION_RINGTONE_PICKER)
+                    .putExtra(RingtoneManager.EXTRA_RINGTONE_TYPE, RingtoneManager.TYPE_NOTIFICATION | RingtoneManager.TYPE_ALARM)
+                    .putExtra(RingtoneManager.EXTRA_RINGTONE_SHOW_SILENT, false)
+                    .putExtra(RingtoneManager.EXTRA_RINGTONE_SHOW_DEFAULT, true)
+                    .putExtra(RingtoneManager.EXTRA_RINGTONE_EXISTING_URI, Host.soundUri(this));
+            req = REQ_SOUND_SYS;
+        } else {
+            i = new Intent(Intent.ACTION_OPEN_DOCUMENT).addCategory(Intent.CATEGORY_OPENABLE).setType("audio/*");
+            req = REQ_SOUND_FILE;
+        }
+        try {
+            startActivityForResult(i, req);
+        } catch (Exception e) {
+            reply(id, null);
+        }
+    }
+
+    private String ringtoneTitle(Uri u) {
+        try {
+            android.media.Ringtone r = RingtoneManager.getRingtone(this, u);
+            return r != null ? r.getTitle(this) : "";
+        } catch (Exception e) {
+            return "";
+        }
+    }
+
+    private String displayName(Uri u) {
+        try (android.database.Cursor c = getContentResolver().query(u, new String[]{android.provider.OpenableColumns.DISPLAY_NAME}, null, null, null)) {
+            if (c != null && c.moveToFirst()) return c.getString(0);
+        } catch (Exception ignored) {}
+        return "sound";
+    }
+
+    /**
+     * The notification system plays the sound itself and cannot read files picked for this app,
+     * so the chosen file is copied into the shared Notifications folder (Android 10+); on older
+     * versions we keep a persistent grant and hand it to the system UI.
+     */
+    private Uri storeSound(Uri src, String name) {
+        try {
+            if (Build.VERSION.SDK_INT >= 29) {
+                android.content.ContentValues v = new android.content.ContentValues();
+                v.put(android.provider.MediaStore.Audio.Media.DISPLAY_NAME, "yaytsa-" + name);
+                String type = getContentResolver().getType(src);
+                v.put(android.provider.MediaStore.Audio.Media.MIME_TYPE, type != null ? type : "audio/mpeg");
+                v.put(android.provider.MediaStore.Audio.Media.RELATIVE_PATH, "Notifications/Yaytsa");
+                v.put(android.provider.MediaStore.Audio.Media.IS_NOTIFICATION, 1);
+                v.put(android.provider.MediaStore.Audio.Media.IS_PENDING, 1);
+                Uri dst = getContentResolver().insert(android.provider.MediaStore.Audio.Media.EXTERNAL_CONTENT_URI, v);
+                if (dst == null) return null;
+                try (InputStream in = getContentResolver().openInputStream(src); OutputStream out = getContentResolver().openOutputStream(dst)) {
+                    byte[] buf = new byte[65536];
+                    int n;
+                    while ((n = in.read(buf)) > 0) out.write(buf, 0, n);
+                }
+                v.clear();
+                v.put(android.provider.MediaStore.Audio.Media.IS_PENDING, 0);
+                getContentResolver().update(dst, v, null, null);
+                return dst;
+            }
+            getContentResolver().takePersistableUriPermission(src, Intent.FLAG_GRANT_READ_URI_PERMISSION);
+            grantUriPermission("com.android.systemui", src, Intent.FLAG_GRANT_READ_URI_PERMISSION);
+            return src;
+        } catch (Exception e) {
+            Log.w(TAG, "sound copy failed", e);
+            return null;
+        }
+    }
+
+    private void preview(Uri u) {
+        try {
+            if (playing != null) playing.stop();
+            playing = RingtoneManager.getRingtone(this, u);
+            if (playing == null) return;
+            playing.play();
+            android.media.Ringtone r = playing;
+            ui.postDelayed(() -> { if (r.isPlaying()) r.stop(); }, 4000);
+        } catch (Exception ignored) {}
+    }
+
     /* ---------------- file pickers ---------------- */
 
     @Override
@@ -437,6 +548,27 @@ public class MainActivity extends Activity {
         if (req == REQ_IMPORT) {
             if (fileCallback != null) fileCallback.onReceiveValue(uri != null ? new Uri[]{uri} : null);
             fileCallback = null;
+        } else if (req == REQ_SOUND_SYS) {
+            Uri picked = result == RESULT_OK && data != null ? data.getParcelableExtra(RingtoneManager.EXTRA_RINGTONE_PICKED_URI) : null;
+            if (picked == null) { reply(soundId, null); return; }
+            String name = ringtoneTitle(picked);
+            Host.setSound(this, picked, name);
+            preview(picked);
+            reply(soundId, soundJson(name));
+        } else if (req == REQ_SOUND_FILE) {
+            if (uri == null) { reply(soundId, null); return; }
+            int id = soundId;
+            new Thread(() -> {
+                String name = displayName(uri);
+                Uri stored = storeSound(uri, name);
+                ui.post(() -> {
+                    if (stored == null) { reply(id, null); return; }
+                    String title = name.replaceFirst("\\.[A-Za-z0-9]{1,5}$", "");
+                    Host.setSound(this, stored, title);
+                    preview(stored);
+                    reply(id, soundJson(title));
+                });
+            }).start();
         } else if (req == REQ_EXPORT) {
             boolean ok = false;
             if (uri != null && exportCsv != null) {

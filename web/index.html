@@ -32,11 +32,11 @@
   </header>
 
   <nav class="tabs" role="tablist">
-    <button class="tab active" data-view="timer" data-i18n="tabTimer"></button>
-    <button class="tab" data-view="projects" data-i18n="tabProjects"></button>
-    <button class="tab" data-view="apps" data-i18n="tabApps" data-desktop></button>
-    <button class="tab" data-view="stats" data-i18n="tabStats"></button>
-    <button class="tab" data-view="settings" data-i18n="tabSettings"></button>
+    <button class="tab active" data-view="timer" data-i18n-title="tabTimer"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="13.5" r="7.5"/><path d="M12 10v3.5l2.5 1.6M9.5 2.8h5"/></svg><span data-i18n="tabTimer"></span></button>
+    <button class="tab" data-view="projects" data-i18n-title="tabProjects"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3.5 7.5a2 2 0 0 1 2-2h3.8l2 2.2h7.2a2 2 0 0 1 2 2v7.8a2 2 0 0 1-2 2h-13a2 2 0 0 1-2-2z"/></svg><span data-i18n="tabProjects"></span></button>
+    <button class="tab" data-view="apps" data-i18n-title="tabApps" data-desktop><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="4" width="6.5" height="6.5" rx="1.8"/><rect x="13.5" y="4" width="6.5" height="6.5" rx="1.8"/><rect x="4" y="13.5" width="6.5" height="6.5" rx="1.8"/><rect x="13.5" y="13.5" width="6.5" height="6.5" rx="1.8"/></svg><span data-i18n="tabApps"></span></button>
+    <button class="tab" data-view="stats" data-i18n-title="tabStats"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5.5 19.5v-7M12 19.5V5M18.5 19.5v-10"/></svg><span data-i18n="tabStats"></span></button>
+    <button class="tab" data-view="settings" data-i18n-title="tabSettings"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7.5h9.5M18.5 7.5H20M4 16.5h2M11 16.5h9"/><circle cx="16" cy="7.5" r="2.5"/><circle cx="8.5" cy="16.5" r="2.5"/></svg><span data-i18n="tabSettings"></span></button>
   </nav>
 
   <main>
@@ -99,7 +99,7 @@
       <p class="lead" data-i18n="projLead"></p>
       <form class="add-row" id="projAdd">
         <input class="text-input" id="projName" maxlength="120" data-i18n-ph="projNewPh" autocomplete="off">
-        <button class="ghost" type="submit" data-i18n="add"></button>
+        <button class="ghost add-btn" type="submit" data-i18n-title="add"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5.5v13M5.5 12h13"/></svg></button>
       </form>
       <div id="projList"></div>
       <button class="ghost wide" id="btnHidden"></button>
@@ -159,8 +159,8 @@
       <div class="hist-head">
         <h2 data-i18n="history"></h2>
         <div class="btn-row">
-          <button class="ghost" id="btnImport" data-i18n="importCsv"></button>
-          <button class="ghost" id="btnExport" data-i18n="exportCsv"></button>
+          <button class="ghost with-ico" id="btnImport"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 4v10.5M7.5 10 12 14.5 16.5 10M5 19.5h14"/></svg><span data-i18n="importCsv"></span></button>
+          <button class="ghost with-ico" id="btnExport"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 14.5V4M7.5 8.5 12 4l4.5 4.5M5 19.5h14"/></svg><span data-i18n="exportCsv"></span></button>
         </div>
       </div>
       <div id="history"></div>
@@ -173,47 +173,51 @@
 
       <div class="group-title" data-i18n="gTimer"></div>
       <div class="set">
-        <div class="set-text"><div class="set-name" data-i18n="workLen"></div><div class="set-desc" data-i18n="stepDesc"></div></div>
+        <span class="set-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="13" r="7.5"/><path d="M12 9.5V13l2.4 1.5M9.5 3h5"/></svg></span><div class="set-text"><div class="set-name" data-i18n="workLen"></div><div class="set-desc" data-i18n="stepDesc"></div></div>
         <div class="stepper" data-key="work"></div>
       </div>
       <div class="set">
-        <div class="set-text"><div class="set-name" data-i18n="breakLen"></div><div class="set-desc" data-i18n="stepDesc"></div></div>
+        <span class="set-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 9h11v4.5A4.5 4.5 0 0 1 11.5 18h-2A4.5 4.5 0 0 1 5 13.5z"/><path d="M16 10.5h1.2a2.2 2.2 0 0 1 0 4.4H16M8.5 4v2.5M12 4v2.5"/></svg></span><div class="set-text"><div class="set-name" data-i18n="breakLen"></div><div class="set-desc" data-i18n="stepDesc"></div></div>
         <div class="stepper" data-key="brk"></div>
       </div>
       <div class="set">
-        <div class="set-text"><div class="set-name" data-i18n="autoStart"></div><div class="set-desc" data-i18n="autoStartDesc"></div></div>
+        <span class="set-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 11a7 7 0 0 1 12-4.9L19 8M19 4v4h-4M19 13a7 7 0 0 1-12 4.9L5 16M5 20v-4h4"/></svg></span><div class="set-text"><div class="set-name" data-i18n="autoStart"></div><div class="set-desc" data-i18n="autoStartDesc"></div></div>
         <button class="toggle" data-key="autoStart"></button>
       </div>
       <div class="set">
-        <div class="set-text"><div class="set-name" data-i18n="goalSet"></div><div class="set-desc" data-i18n="goalDesc"></div></div>
+        <span class="set-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="4"/><circle cx="12" cy="12" r=".9" fill="currentColor"/></svg></span><div class="set-text"><div class="set-name" data-i18n="goalSet"></div><div class="set-desc" data-i18n="goalDesc"></div></div>
         <div class="stepper" data-key="goal"></div>
       </div>
 
       <div class="group-title" data-i18n="gNotify"></div>
       <div class="set">
-        <div class="set-text"><div class="set-name" data-i18n="popup"></div><div class="set-desc" data-i18n="popupDesc"></div></div>
+        <span class="set-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 16.5V11a6 6 0 0 1 12 0v5.5l1.5 2h-15z"/><path d="M10 20.5a2 2 0 0 0 4 0"/></svg></span><div class="set-text"><div class="set-name" data-i18n="popup"></div><div class="set-desc" data-i18n="popupDesc"></div></div>
         <button class="toggle" data-key="popup"></button>
       </div>
       <div class="set">
-        <div class="set-text"><div class="set-name" data-i18n="trayTest"></div></div>
+        <span class="set-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 5.5v13l10-6.5z"/></svg></span><div class="set-text"><div class="set-name" data-i18n="trayTest"></div></div>
         <button class="ghost" id="btnTest2" data-i18n="test"></button>
       </div>
       <div class="set">
-        <div class="set-text"><div class="set-name" data-i18n="sound"></div></div>
+        <span class="set-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4.5 9.5h3l4.5-4v13l-4.5-4h-3z"/><path d="M16 9a4.5 4.5 0 0 1 0 6M18.5 6.5a8 8 0 0 1 0 11"/></svg></span><div class="set-text"><div class="set-name" data-i18n="sound"></div></div>
         <button class="toggle" data-key="sound"></button>
+      </div>
+      <div class="set" data-android>
+        <span class="set-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 17.5V6.2l10-2.2v11.3"/><circle cx="6.6" cy="17.5" r="2.4"/><circle cx="16.6" cy="15.3" r="2.4"/></svg></span><div class="set-text"><div class="set-name" data-i18n="alertSound"></div><div class="set-desc" id="soundName"></div></div>
+        <button class="ghost with-ico" id="btnSound"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 17.5V6.2l10-2.2v11.3"/><circle cx="6.6" cy="17.5" r="2.4"/><circle cx="16.6" cy="15.3" r="2.4"/></svg><span data-i18n="choose"></span></button>
       </div>
 
       <div class="group-title" data-i18n="gLook"></div>
       <div class="set">
-        <div class="set-text"><div class="set-name" data-i18n="language"></div></div>
+        <span class="set-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="8.5"/><path d="M3.5 12h17M12 3.5c2.5 2.6 3.5 5.4 3.5 8.5s-1 5.9-3.5 8.5c-2.5-2.6-3.5-5.4-3.5-8.5s1-5.9 3.5-8.5z"/></svg></span><div class="set-text"><div class="set-name" data-i18n="language"></div></div>
         <div class="seg" data-key="lang">
           <button data-val="ru">Русский</button><button data-val="en">English</button>
         </div>
       </div>
       <div class="set">
-        <div class="set-text"><div class="set-name" data-i18n="theme"></div></div>
+        <span class="set-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="8"/><path d="M12 4a8 8 0 0 1 0 16z" fill="currentColor"/></svg></span><div class="set-text"><div class="set-name" data-i18n="theme"></div></div>
         <div class="seg" data-key="theme">
-          <button data-val="dark" data-i18n="dark"></button><button data-val="light" data-i18n="light"></button><button data-val="system" data-i18n="system"></button>
+          <button data-val="dark" data-i18n-title="dark"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19.5 14.6A7.8 7.8 0 0 1 9.4 4.5a7.8 7.8 0 1 0 10.1 10.1z"/></svg><span data-i18n="dark"></span></button><button data-val="light" data-i18n-title="light"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3.8"/><path d="M12 3v1.8M12 19.2V21M3 12h1.8M19.2 12H21M5.6 5.6l1.3 1.3M17.1 17.1l1.3 1.3M5.6 18.4l1.3-1.3M17.1 6.9l1.3-1.3"/></svg><span data-i18n="light"></span></button><button data-val="system" data-i18n-title="system"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="8"/><path d="M12 4a8 8 0 0 1 0 16z" fill="currentColor"/></svg><span data-i18n="system"></span></button>
         </div>
       </div>
       <div class="group-title" data-i18n="gSystem" data-desktop></div>
@@ -237,8 +241,8 @@
       <div class="set">
         <div class="set-text"><div class="set-name" data-i18n="dataName"></div><div class="set-desc" data-i18n="dataDesc"></div></div>
         <div class="btn-row">
-          <button class="ghost" id="btnImport2" data-i18n="importCsv"></button>
-          <button class="ghost" id="btnExport2" data-i18n="exportCsv"></button>
+          <button class="ghost with-ico" id="btnImport2"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 4v10.5M7.5 10 12 14.5 16.5 10M5 19.5h14"/></svg><span data-i18n="importCsv"></span></button>
+          <button class="ghost with-ico" id="btnExport2"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 14.5V4M7.5 8.5 12 4l4.5 4.5M5 19.5h14"/></svg><span data-i18n="exportCsv"></span></button>
           <button class="ghost" id="btnFolder" data-i18n="openFolder" data-desktop></button>
         </div>
       </div>
@@ -253,6 +257,9 @@
       <p id="modalText"></p>
       <div class="modal-btns"><button class="ghost" id="modalCancel"></button><button class="danger-btn" id="modalOk"></button></div>
     </div>
+  </div>
+  <div class="sheet-wrap" id="sheet" hidden>
+    <div class="sheet"><h3 id="sheetTitle"></h3><div id="sheetItems"></div><button class="sheet-cancel" id="sheetCancel" data-i18n="cancel"></button></div>
   </div>
   <div class="toast" id="toast"></div>
   <div class="update" id="update" hidden><span></span><button></button></div>

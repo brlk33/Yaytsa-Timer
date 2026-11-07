@@ -176,6 +176,27 @@ final class Host {
         return (NotificationManager) c.getSystemService(Context.NOTIFICATION_SERVICE);
     }
 
+    /* A channel's sound cannot change after it is created, so a new sound means a new channel id. */
+    static String alertChannel(Context c) { return prefs(c).getString("alertChannel", CH_ALERT); }
+
+    static android.net.Uri soundUri(Context c) {
+        String s = prefs(c).getString("soundUri", "");
+        return s.isEmpty() ? RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION) : android.net.Uri.parse(s);
+    }
+
+    static String soundName(Context c) { return prefs(c).getString("soundName", ""); }
+
+    static void setSound(Context c, android.net.Uri uri, String name) {
+        String old = alertChannel(c);
+        prefs(c).edit()
+                .putString("soundUri", uri == null ? "" : uri.toString())
+                .putString("soundName", name == null ? "" : name)
+                .putString("alertChannel", "alert_" + System.currentTimeMillis())
+                .apply();
+        nm(c).deleteNotificationChannel(old);
+        createChannels(c);
+    }
+
     static void createChannels(Context c) {
         NotificationManager nm = nm(c);
         NotificationChannel timer = new NotificationChannel(CH_TIMER, "Таймер", NotificationManager.IMPORTANCE_LOW);
@@ -183,11 +204,11 @@ final class Host {
         timer.setShowBadge(false);
         nm.createNotificationChannel(timer);
 
-        NotificationChannel alert = new NotificationChannel(CH_ALERT, "Конец захода", NotificationManager.IMPORTANCE_HIGH);
+        NotificationChannel alert = new NotificationChannel(alertChannel(c), "Конец захода", NotificationManager.IMPORTANCE_HIGH);
         alert.setDescription("Сигнал, когда работа или перерыв закончились");
         alert.enableVibration(true);
         alert.setVibrationPattern(new long[]{0, 250, 150, 250});
-        alert.setSound(RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION),
+        alert.setSound(soundUri(c),
                 new AudioAttributes.Builder().setUsage(AudioAttributes.USAGE_ALARM)
                         .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION).build());
         nm.createNotificationChannel(alert);
@@ -258,7 +279,7 @@ final class Host {
     }
 
     static void postAlert(Context c, String title, String body, String go, String ok, boolean sound) {
-        Notification.Builder b = new Notification.Builder(c, sound ? CH_ALERT : CH_ALERT_QUIET)
+        Notification.Builder b = new Notification.Builder(c, sound ? alertChannel(c) : CH_ALERT_QUIET)
                 .setSmallIcon(R.drawable.ic_stat)
                 .setColor(0xFFD97757)
                 .setContentTitle(title)

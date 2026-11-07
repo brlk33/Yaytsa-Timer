@@ -44,6 +44,8 @@ const I18N = {
     tabProjects: 'Проекты', tabApps: 'Программы',
     projLead: 'Проект — это название в поле «Над чем работаете?». Время каждого захода засчитывается в его проект.',
     projNewPh: 'Новый проект', add: 'Добавить', done: 'Готово',
+    alertSound: 'Звук сигнала', choose: 'Выбрать', soundDefault: 'Стандартный', soundSystem: 'Звуки телефона', soundFile: 'Свой файл',
+    soundSet: n => `Звук: ${n}`, updTitle: v => `Доступна версия ${v}`, updText: 'Обновление уже скачано, установка займёт несколько секунд.', updInstall: 'Обновить', updLater: 'Позже',
     projEmpty: 'Напишите на вкладке «Таймер», над чем работаете, или добавьте проект здесь',
     pTotal: 'Всего', pWeek: '7 дней', pToday: 'Сегодня', pSessions: n => `${n} ${plural(n, 'заход', 'захода', 'заходов')}`,
     deadline: 'Дедлайн', addDeadline: '+ Дедлайн', clearDeadline: 'Убрать дедлайн',
@@ -102,6 +104,8 @@ scale: 'Масштаб', appsPickTitle: 'Добавить программу', a
     tabProjects: 'Projects', tabApps: 'Apps',
     projLead: 'A project is the name in “What are you working on?”. Every focus session counts toward its project.',
     projNewPh: 'New project', add: 'Add', done: 'Done',
+    alertSound: 'Alert sound', choose: 'Choose', soundDefault: 'Default', soundSystem: 'Phone sounds', soundFile: 'Your own file',
+    soundSet: n => `Sound: ${n}`, updTitle: v => `Version ${v} is available`, updText: 'The update is already downloaded, installing takes a few seconds.', updInstall: 'Update', updLater: 'Later',
     projEmpty: 'Type what you’re working on in the Timer tab, or add a project here',
     pTotal: 'Total', pWeek: '7 days', pToday: 'Today', pSessions: n => `${n} session${n === 1 ? '' : 's'}`,
     deadline: 'Deadline', addDeadline: '+ Deadline', clearDeadline: 'Remove deadline',
@@ -1108,11 +1112,12 @@ function bindLabelSuggest() {
 
 /* ---------- Confirm dialog ---------- */
 let modalResolve = null;
-function confirmModal(title, text, okLabel) {
+function confirmModal(title, text, okLabel, opts = {}) {
   $('#modalTitle').textContent = title;
   $('#modalText').textContent = text;
   $('#modalOk').textContent = okLabel;
-  $('#modalCancel').textContent = t('cancel');
+  $('#modalOk').classList.toggle('safe', !!opts.safe);
+  $('#modalCancel').textContent = opts.cancel || t('cancel');
   $('#modal').hidden = false;
   setTimeout(() => $('#modalCancel').focus(), 30);
   return new Promise(res => { modalResolve = res; });
@@ -1120,6 +1125,93 @@ function confirmModal(title, text, okLabel) {
 function closeModal(ok) {
   $('#modal').hidden = true;
   if (modalResolve) { const r = modalResolve; modalResolve = null; r(ok); }
+}
+
+/* ---------- Phone: action sheet, alert sound, swipes between tabs ---------- */
+let sheetResolve = null;
+function actionSheet(title, items) {
+  $('#sheetTitle').textContent = title;
+  $('#sheetItems').innerHTML = items.map(i =>
+    `<button class="sheet-item${i.on ? ' on' : ''}" data-key="${esc(i.key)}">${i.icon || ''}<span>${esc(i.label)}</span></button>`).join('');
+  $('#sheet').hidden = false;
+  return new Promise(res => { sheetResolve = res; });
+}
+function closeSheet(key) {
+  $('#sheet').hidden = true;
+  if (sheetResolve) { const r = sheetResolve; sheetResolve = null; r(key); }
+}
+
+const SHEET_ICONS = {
+  bell: '<svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 16.5V11a6 6 0 0 1 12 0v5.5l1.5 2h-15z"/><path d="M10 20.5a2 2 0 0 0 4 0"/></svg>',
+  phone: '<svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="6.5" y="2.5" width="11" height="19" rx="2.5"/><path d="M11 18.5h2"/></svg>',
+  file: '<svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 17.5V6.2l10-2.2v11.3"/><circle cx="6.6" cy="17.5" r="2.4"/><circle cx="16.6" cy="15.3" r="2.4"/></svg>',
+};
+async function pickSound() {
+  const k = await actionSheet(t('alertSound'), [
+    { key: 'default', label: t('soundDefault'), icon: SHEET_ICONS.bell },
+    { key: 'system', label: t('soundSystem'), icon: SHEET_ICONS.phone },
+    { key: 'file', label: t('soundFile'), icon: SHEET_ICONS.file },
+  ]);
+  if (!k) return;
+  const r = await api.pickSound(k);
+  if (!r) return;
+  const name = r.name || t('soundDefault');
+  $('#soundName').textContent = name;
+  toast(t('soundSet')(name));
+}
+
+// The page follows the finger; let go past a quarter of the screen (or flick) to switch tabs.
+function bindSwipe() {
+  const main = $('main');
+  const noSwipe = 'input, textarea, .seg, .stepper, .chart, .heat, .popover, .suggest, .inline';
+  let x0 = 0, y0 = 0, t0 = 0, dx = 0, lock = '', el = null;
+  const tabs = () => $$('.tab').filter(b => b.offsetParent !== null);
+  const reset = animate => {
+    if (!el) return;
+    el.style.transition = animate ? 'transform .22s var(--ease), opacity .22s var(--ease)' : '';
+    el.style.transform = '';
+    el.style.opacity = '';
+  };
+  main.addEventListener('touchstart', e => {
+    lock = e.touches.length !== 1 || e.target.closest(noSwipe) || !$('#modal').hidden ? 'no' : '';
+    x0 = e.touches[0].clientX; y0 = e.touches[0].clientY; t0 = Date.now(); dx = 0;
+    el = $(`#view-${view}`);
+  }, { passive: true });
+  main.addEventListener('touchmove', e => {
+    if (lock === 'no' || lock === 'y') return;
+    const mx = e.touches[0].clientX - x0, my = e.touches[0].clientY - y0;
+    if (!lock) {
+      if (Math.abs(mx) < 12 && Math.abs(my) < 12) return;
+      lock = Math.abs(mx) > Math.abs(my) * 1.3 ? 'x' : 'y';
+      if (lock === 'y') return;
+    }
+    dx = mx;
+    const list = tabs(), i = list.findIndex(b => b.dataset.view === view);
+    const edge = (dx > 0 && i <= 0) || (dx < 0 && i >= list.length - 1);
+    el.style.transition = 'none';
+    el.style.transform = `translateX(${dx * (edge ? 0.2 : 0.55)}px)`;
+    el.style.opacity = String(1 - Math.min(Math.abs(dx) / 700, 0.35));
+  }, { passive: true });
+  const end = () => {
+    if (lock !== 'x') { lock = ''; return; }
+    lock = '';
+    const list = tabs(), i = list.findIndex(b => b.dataset.view === view);
+    const speed = Math.abs(dx) / Math.max(1, Date.now() - t0);
+    const go = Math.abs(dx) > main.clientWidth * 0.25 || (speed > 0.45 && Math.abs(dx) > 40);
+    const target = list[dx < 0 ? i + 1 : i - 1];
+    if (go && target) {
+      reset(false);
+      target.click();
+      const nv = $(`#view-${view}`);
+      const cls = dx < 0 ? 'swipe-next' : 'swipe-prev';
+      nv.classList.add(cls);
+      setTimeout(() => nv.classList.remove(cls), 320);
+    } else {
+      reset(true);
+    }
+  };
+  main.addEventListener('touchend', end);
+  main.addEventListener('touchcancel', () => { lock = ''; reset(true); });
 }
 
 /* ---------- CSV import (our own export format, RU ";" or EN ",") ---------- */
@@ -1520,11 +1612,18 @@ function bind() {
     tick(); // a phase that ran out while the app slept is completed first
     if (!timer.running) start();
   });
+  let updAsked = false;
   api.onUpdateReady(v => {
     const el = $('#update');
     el.querySelector('span').textContent = t('updReady')(v);
     el.querySelector('button').textContent = t('updNow');
     el.hidden = false;
+    // On the phone ask right away, once per launch
+    if (ANDROID && !updAsked && $('#modal').hidden) {
+      updAsked = true;
+      confirmModal(t('updTitle')(v), t('updText'), t('updInstall'), { safe: true, cancel: t('updLater') })
+        .then(ok => { if (ok) api.installUpdate(); });
+    }
   });
   $('#update button').addEventListener('click', () => api.installUpdate());
   api.onTrayAction(a => {
@@ -1539,11 +1638,23 @@ function bind() {
     api.onTimerState(s => { if (applyHostTimer(s)) { lastHostState = ''; render(); } });
     // System back: close what is open, then go back to the timer; false lets the app go to background
     window.__back = () => {
+      if (!$('#sheet').hidden) { closeSheet(null); return true; }
       if (!$('#modal').hidden) { closeModal(false); return true; }
       if (!$('#cal').hidden) { closeCalendar(); return true; }
       if (view !== 'timer') { $('.tab[data-view="timer"]').click(); return true; }
       return false;
     };
+  }
+  if (ANDROID) {
+    bindSwipe();
+    $('#btnSound').addEventListener('click', pickSound);
+    $('#sheetCancel').addEventListener('click', () => closeSheet(null));
+    $('#sheet').addEventListener('click', e => {
+      if (e.target.id === 'sheet') closeSheet(null);
+      const it = e.target.closest('.sheet-item');
+      if (it) closeSheet(it.dataset.key);
+    });
+    api.soundInfo().then(r => { $('#soundName').textContent = (r && r.name) || t('soundDefault'); });
   }
   api.onSystemTheme(dark => { systemDark = dark; if (settings.theme === 'system') applyTheme(); });
 
