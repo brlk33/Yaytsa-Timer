@@ -808,3 +808,7 @@ button.chip.add svg { width: 14px; height: 14px; }
 }
 
 #view-timer .bar { width: 100%; max-width: 340px; }
+
+/* real program icons */
+.app-ico.has-img { background: none; box-shadow: none; }
+.app-ico.has-img img { width: 100%; height: 100%; object-fit: contain; display: block; -webkit-user-drag: none; }

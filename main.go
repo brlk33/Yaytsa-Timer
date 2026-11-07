@@ -20,7 +20,7 @@ import (
 )
 
 const (
-	Version     = "2.3.0"
+	Version     = "2.4.0"
 	AppName     = "Яйцетаймер"
 	mainClass   = "YaytsaTimerMain"
 	alertClass  = "YaytsaTimerAlert"
@@ -383,7 +383,7 @@ func onMainMessage(s string) {
 	case "appsStats":
 		result = appsStats()
 	case "appsCandidates":
-		result = appCandidates()
+		result = withIcons(appCandidates())
 	case "appsTrack":
 		trackApp(arg[appInfo](r, 0))
 		result = appsStats()
@@ -391,7 +391,7 @@ func onMainMessage(s string) {
 		untrackApp(arg[string](r, 0))
 		result = appsStats()
 	case "appsInstalled":
-		result = installedApps()
+		result = withIcons(installedApps())
 	case "appsBrowse":
 		// A modal dialog must not run inside the WebView2 event handler: open it from the queue.
 		id, title := r.ID, arg[string](r, 0)

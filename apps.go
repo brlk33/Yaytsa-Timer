@@ -29,6 +29,7 @@ type appInfo struct {
 	Exe  string `json:"exe"` // lower-case base name, e.g. "afterfx.exe"
 	Name string `json:"name"`
 	Path string `json:"path"`
+	Icon string `json:"icon,omitempty"` // filled for the page only, never saved
 }
 
 type appTimes struct {
@@ -225,6 +226,7 @@ func appsStats() []appStat {
 	out := make([]appStat, 0, len(apps.Tracked))
 	for _, a := range apps.Tracked {
 		s := appStat{appInfo: a, Running: running[a.Exe]}
+		s.Icon = appIcon(a.Path)
 		for day, m := range apps.Days {
 			t := m[a.Exe]
 			if t == nil {
@@ -252,6 +254,7 @@ func appsStats() []appStat {
 
 func trackApp(a appInfo) {
 	a.Exe = strings.ToLower(filepath.Base(a.Exe))
+	a.Icon = ""
 	if a.Exe == "" || a.Exe == "." {
 		return
 	}
