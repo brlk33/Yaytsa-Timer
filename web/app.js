@@ -21,7 +21,7 @@ const I18N = {
     sound: 'Звук', notifications: 'Уведомления', notifDesc: 'Системное уведомление в конце этапа',
     language: 'Язык', theme: 'Тема', dark: 'Тёмная', light: 'Светлая', system: 'Системная',
     onTop: 'Поверх всех окон',
-    dataName: 'Учёт времени', dataDesc: 'Экспорт истории или папка с файлом данных',
+    dataName: 'Учёт времени', dataDesc: 'Экспорт и импорт истории: CSV или бэкап Super Productivity',
     openFolder: 'Открыть папку',
     nBreakTitle: 'Время перерыва', nBreakBody: m => `Рабочий заход завершён. Отдохните ${m} мин.`,
     nWorkTitle: 'За работу', nWorkBody: m => `Перерыв окончен. Следующий заход — ${m} мин.`,
@@ -54,7 +54,7 @@ const I18N = {
     appsNoCand: 'Откройте нужную программу, и она появится в этом списке', running: 'запущена',
     aToday: 'Сегодня', aWeek: '7 дней', aTotal: 'Всего', aActive: 'активно', stopTrack: 'Не отслеживать',
     gSystem: 'Система', launchAtStart: 'Запускать вместе с Windows', launchAtStartDesc: 'Стартует свёрнутой в трей',
-winMin: 'Свернуть', winMax: 'Развернуть', winClose: 'Закрыть', importCsv: 'Импорт CSV', imported: n => `Добавлено ${n} ${plural(n, 'заход', 'захода', 'заходов')}`, importNone: 'В файле нет новых заходов',    importBad: 'Не удалось прочитать файл', delete: 'Удалить', cancel: 'Отмена', delProjTitle: n => `Удалить проект «${n}»?`,    delProjText: 'Время заходов останется в статистике, но без названия проекта. Это нельзя отменить.', projDeleted: 'Проект удалён',    pTodayL: 'Сегодня', pWeekL: 'За 7 дней', calClear: 'Убрать', calToday: 'Сегодня', noProjects: 'Проектов пока нет',
+winMin: 'Свернуть', winMax: 'Развернуть', winClose: 'Закрыть', importCsv: 'Импорт', importTip: 'CSV из Яйцетаймера или бэкап Super Productivity (.json)', imported: n => `Добавлено ${n} ${plural(n, 'заход', 'захода', 'заходов')}`, importNone: 'В файле нет новых заходов',    importBad: 'Не удалось прочитать файл', delete: 'Удалить', cancel: 'Отмена', delProjTitle: n => `Удалить проект «${n}»?`,    delProjText: 'Время заходов останется в статистике, но без названия проекта. Это нельзя отменить.', projDeleted: 'Проект удалён',    pTodayL: 'Сегодня', pWeekL: 'За 7 дней', calClear: 'Убрать', calToday: 'Сегодня', noProjects: 'Проектов пока нет',
     monthsNom: ['Январь', 'Февраль', 'Март', 'Апрель', 'Май', 'Июнь', 'Июль', 'Август', 'Сентябрь', 'Октябрь', 'Ноябрь', 'Декабрь'],
 scale: 'Масштаб', appsPickTitle: 'Добавить программу', appsSearchPh: 'Поиск по программам на компьютере', appsBrowse: 'Выбрать .exe вручную…', appsBrowseTitle: 'Выберите программу',    appsFound: 'Найдено', appsAll: 'Все программы', appsNothing: 'Ничего не нашлось. Попробуйте выбрать .exe вручную', appsAdded: n => `«${n}» отслеживается`,    r3m: '3 мес', r6m: '6 мес', r1y: 'Год', modeBars: 'Столбики', modeSquares: 'Квадратики',    monthsShort: ['янв', 'фев', 'мар', 'апр', 'май', 'июн', 'июл', 'авг', 'сен', 'окт', 'ноя', 'дек'],    daysMon: ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс'], noWork: 'без работы',    activeDays: n => `${n} ${plural(n, 'рабочий день', 'рабочих дня', 'рабочих дней')}`, streak: n => `серия ${n} ${plural(n, 'день', 'дня', 'дней')} подряд`,    less: 'Меньше', more: 'Больше', byHour: 'По часам за неделю',
   },
@@ -77,7 +77,7 @@ scale: 'Масштаб', appsPickTitle: 'Добавить программу', a
     sound: 'Sound', notifications: 'Notifications', notifDesc: 'System notification when a phase ends',
     language: 'Language', theme: 'Theme', dark: 'Dark', light: 'Light', system: 'System',
     onTop: 'Always on top',
-    dataName: 'Time log', dataDesc: 'Export history or open the data folder',
+    dataName: 'Time log', dataDesc: 'Export and import history: CSV or a Super Productivity backup',
     openFolder: 'Open folder',
     nBreakTitle: 'Break time', nBreakBody: m => `Focus session done. Rest for ${m} min.`,
     nWorkTitle: 'Back to work', nWorkBody: m => `Break is over. Next session — ${m} min.`,
@@ -110,7 +110,7 @@ scale: 'Масштаб', appsPickTitle: 'Добавить программу', a
     appsNoCand: 'Open the program you want and it will show up here', running: 'running',
     aToday: 'Today', aWeek: '7 days', aTotal: 'Total', aActive: 'active', stopTrack: 'Stop tracking',
     gSystem: 'System', launchAtStart: 'Launch with Windows', launchAtStartDesc: 'Starts hidden in the tray',
-winMin: 'Minimize', winMax: 'Maximize', winClose: 'Close', importCsv: 'Import CSV', imported: n => `Added ${n} session${n === 1 ? '' : 's'}`, importNone: 'No new sessions in the file',    importBad: 'Could not read the file', delete: 'Delete', cancel: 'Cancel', delProjTitle: n => `Delete project “${n}”?`,    delProjText: 'Session time stays in your stats, just without the project name. This can’t be undone.', projDeleted: 'Project deleted',    pTodayL: 'Today', pWeekL: 'Last 7 days', calClear: 'Clear', calToday: 'Today', noProjects: 'No projects yet',
+winMin: 'Minimize', winMax: 'Maximize', winClose: 'Close', importCsv: 'Import', importTip: 'Yaytsetaimer CSV or a Super Productivity backup (.json)', imported: n => `Added ${n} session${n === 1 ? '' : 's'}`, importNone: 'No new sessions in the file',    importBad: 'Could not read the file', delete: 'Delete', cancel: 'Cancel', delProjTitle: n => `Delete project “${n}”?`,    delProjText: 'Session time stays in your stats, just without the project name. This can’t be undone.', projDeleted: 'Project deleted',    pTodayL: 'Today', pWeekL: 'Last 7 days', calClear: 'Clear', calToday: 'Today', noProjects: 'No projects yet',
     monthsNom: ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'],
 scale: 'Zoom', appsPickTitle: 'Add a program', appsSearchPh: 'Search programs on this PC', appsBrowse: 'Pick an .exe manually…', appsBrowseTitle: 'Choose a program',    appsFound: 'Found', appsAll: 'All programs', appsNothing: 'Nothing found. Try picking the .exe manually', appsAdded: n => `Tracking “${n}”`,    r3m: '3 mo', r6m: '6 mo', r1y: 'Year', modeBars: 'Bars', modeSquares: 'Squares',    monthsShort: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'],    daysMon: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'], noWork: 'no focus',    activeDays: n => `${n} active day${n === 1 ? '' : 's'}`, streak: n => `${n}-day streak`,    less: 'Less', more: 'More', byHour: 'By hour, last 7 days',
   },
@@ -1097,14 +1097,16 @@ function parseCsvLine(line, sep) {
   return out;
 }
 
-async function importCsv(file) {
-  let text;
-  try { text = (await file.text()).replace(/^﻿/, ''); } catch { toast(t('importBad')); return; }
+const newId = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
+// Same start minute and same task = the same session (lengths may differ by CSV rounding).
+const sessionKey = s => `${Math.round(s.start / 60000)}|${projKey(s.label)}`;
+
+// Our own CSV export (RU ";" or EN ","): Date, Start, End, Minutes, Task.
+function sessionsFromCsv(text) {
   const lines = text.split(/\r?\n/).filter(l => l.trim());
-  if (!lines.length) { toast(t('importBad')); return; }
+  if (!lines.length) return null;
   const sep = (lines[0].match(/;/g) || []).length >= (lines[0].match(/,/g) || []).length ? ';' : ',';
-  const seen = new Set(sessions.map(s => `${Math.round(s.start / 60000)}|${Math.round(s.dur / 60)}`));
-  let added = 0;
+  const out = [];
   for (const line of lines) {
     const [date, from, to, mins, task] = parseCsvLine(line, sep);
     const dm = /^(\d{4})-(\d{2})-(\d{2})$/.exec((date || '').trim());
@@ -1120,10 +1122,89 @@ async function importCsv(file) {
       if (e2 < start) e2 += 86400000; // crossed midnight
       end = e2;
     }
-    const k = `${Math.round(start / 60000)}|${Math.round(dur / 60)}`;
+    out.push({ start, end, dur, label: cleanName(task || '') });
+  }
+  return out;
+}
+
+/* Super Productivity backup (.json): time is stored per task per day (timeSpentOnDay, ms),
+   plus the start of each work day in timeTracking. Tasks of a day are laid out one after
+   another from that start (09:00 when unknown). Archived tasks count too; parents with
+   subtasks are skipped so time is not counted twice. Pieces under a minute are dropped. */
+function sessionsFromSuperProductivity(obj) {
+  const data = obj && (obj.data || obj);
+  if (!data || !data.task || !data.task.entities) return null;
+  const ents = x => (x && x.entities ? Object.values(x.entities) : []);
+  const tasks = [
+    ...ents(data.task),
+    ...ents(data.taskArchive),
+    ...ents(data.archiveYoung && data.archiveYoung.task),
+    ...ents(data.archiveOld && data.archiveOld.task),
+  ];
+  const byId = new Map(tasks.map(t => [t.id, t]));
+
+  const dayStart = new Map();
+  const trackings = [data.timeTracking, data.archiveYoung && data.archiveYoung.timeTracking, data.archiveOld && data.archiveOld.timeTracking];
+  for (const tt of trackings) {
+    if (!tt) continue;
+    for (const kind of ['tag', 'project']) {
+      for (const ctx of Object.values(tt[kind] || {})) {
+        for (const [day, v] of Object.entries(ctx || {})) {
+          if (v && v.s && (!dayStart.has(day) || v.s < dayStart.get(day))) dayStart.set(day, v.s);
+        }
+      }
+    }
+  }
+
+  const days = new Map();
+  for (const tk of tasks) {
+    if (!tk || (tk.subTaskIds && tk.subTaskIds.length) || !tk.timeSpentOnDay) continue;
+    let title = cleanName(tk.title);
+    const parent = tk.parentId && byId.get(tk.parentId);
+    if (parent) title = `${cleanName(parent.title)} / ${title}`;
+    for (const [day, ms] of Object.entries(tk.timeSpentOnDay)) {
+      if (!(ms >= 60000) || !/^\d{4}-\d{2}-\d{2}$/.test(day)) continue;
+      if (!days.has(day)) days.set(day, []);
+      days.get(day).push({ title, ms, created: tk.created || 0 });
+    }
+  }
+
+  const out = [];
+  for (const day of [...days.keys()].sort()) {
+    const [y, m, d] = day.split('-').map(Number);
+    const nine = new Date(y, m - 1, d, 9).getTime();
+    let cur = dayStart.get(day);
+    if (!cur || startOfDay(cur) !== new Date(y, m - 1, d).getTime()) cur = nine;
+    cur = Math.floor(cur / 60000) * 60000;
+    for (const e of days.get(day).sort((a, b) => (a.created - b.created) || a.title.localeCompare(b.title))) {
+      const dur = Math.round(e.ms / 1000);
+      // whole-minute start, like a CSV export of the same data, so both imports dedupe
+      const start = Math.floor(cur / 60000) * 60000;
+      out.push({ start, end: start + dur * 1000, dur, label: e.title });
+      cur += dur * 1000;
+    }
+  }
+  return out;
+}
+
+// One entry point for both formats; duplicates (same start minute and task) are skipped.
+async function importFile(file) {
+  let text;
+  try { text = (await file.text()).replace(/^﻿/, ''); } catch { toast(t('importBad')); return; }
+  let found = null;
+  if (/^\s*[{[]/.test(text)) {
+    try { found = sessionsFromSuperProductivity(JSON.parse(text)); } catch { found = null; }
+  } else {
+    found = sessionsFromCsv(text);
+  }
+  if (!found) { toast(t('importBad')); return; }
+  const seen = new Set(sessions.map(sessionKey));
+  let added = 0;
+  for (const s of found) {
+    const k = sessionKey(s);
     if (seen.has(k)) continue;
     seen.add(k);
-    sessions.push({ id: Date.now().toString(36) + Math.random().toString(36).slice(2, 6), start, end, dur, label: cleanName(task || ''), full: dur >= settings.work * 60 });
+    sessions.push({ id: newId(), ...s, full: s.dur >= settings.work * 60 });
     added++;
   }
   if (!added) { toast(t('importNone')); return; }
@@ -1447,7 +1528,7 @@ function bind() {
   const pickCsv = () => { $('#csvFile').value = ''; $('#csvFile').click(); };
   $('#btnImport').addEventListener('click', pickCsv);
   $('#btnImport2').addEventListener('click', pickCsv);
-  $('#csvFile').addEventListener('change', e => { const f = e.target.files[0]; if (f) importCsv(f); });
+  $('#csvFile').addEventListener('change', e => { const f = e.target.files[0]; if (f) importFile(f); });
 
   // Responsive timer view
   let fitT = null;
