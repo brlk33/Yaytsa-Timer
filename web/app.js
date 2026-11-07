@@ -1178,68 +1178,71 @@ function pagerTabs() { return $$('.tab').filter(b => b.offsetParent !== null); }
 function pagerIndex() { return Math.max(0, pagerTabs().findIndex(b => b.dataset.view === view)); }
 function setPager(animate, offset = 0) {
   const main = $('main');
-  main.style.transition = animate ? 'transform .38s cubic-bezier(.22, .9, .3, 1)' : 'none';
+  main.style.transition = animate ? 'transform .4s cubic-bezier(.22, .9, .3, 1)' : 'none';
   main.style.transform = `translate3d(calc(${-pagerIndex() * 100}% + ${offset}px), 0, 0)`;
-  if (animate) animateBlob(pagerIndex());
-  else drawBlob(pagerIndex() - offset / (main.clientWidth || innerWidth));
+  drawBlob(pagerIndex() - offset / (main.clientWidth || innerWidth));
 }
 
-/* Liquid tab highlight. f is a fractional tab position (1.5 = halfway between tabs 1 and 2).
-   The edge in front runs ahead and the one behind lags, so on the way the blob stretches
-   over both tabs and then pulls itself together, a little flatter while stretched. */
-let blobF = 0, blobRaf = 0;
-function drawBlob(f) {
-  const blob = $('.tab-blob');
-  if (!blob) return;
-  blobF = f;
-  const list = pagerTabs(), n = list.length;
-  if (!n) return;
+/* Bouncy tab highlight. The two edges are springs chasing the tab under the finger: the edge
+   in front is stiff and overshoots a little, the one behind is soft and catches up late, so
+   the drop stretches, squashes and wobbles into place. */
+const blob = { l: 0, r: 0, vl: 0, vr: 0, tl: 0, tr: 0, raf: 0, last: 0, ready: false, w0: 80 };
+function blobRects() {
+  const list = pagerTabs();
   const bar = $('.tabs').getBoundingClientRect();
-  const rects = list.map(b => { const r = b.getBoundingClientRect(); return [r.left - bar.left + 4, r.right - bar.left - 4]; });
-  const fc = Math.max(0, Math.min(n - 1, f));
-  const a = Math.min(n - 2, Math.floor(fc)), b = a + 1;
-  let left, right;
-  if (n === 1) [left, right] = rects[0];
-  else {
-    const t = fc - a;
-    const lead = 1 - Math.pow(1 - t, 2.4), lag = Math.pow(t, 2.4);
-    right = rects[a][1] + (rects[b][1] - rects[a][1]) * lead;
-    left = rects[a][0] + (rects[b][0] - rects[a][0]) * lag;
-  }
-  // Pulled past the first or last tab: lean that way and squash, like a drop on a spring
-  const over = f - fc;
-  const w0 = rects[0][1] - rects[0][0];
-  left += over * w0 * 0.25;
-  right += over * w0 * 0.25;
-  const stretch = (right - left) / w0;
-  const squash = Math.min(0.14, Math.max(0, stretch - 1) * 0.12 + Math.abs(over) * 0.2);
-  blob.style.transform = `translate3d(${left.toFixed(2)}px, 0, 0) scaleY(${(1 - squash).toFixed(3)})`;
-  blob.style.width = `${(right - left).toFixed(2)}px`;
-  // Icons and labels light up as the blob reaches them
-  list.forEach((tab, k) => {
-    const o = 0.45 + 0.55 * Math.max(0, 1 - Math.abs(k - f));
-    tab.style.setProperty('--lit', o.toFixed(3));
-  });
+  return list.map(b => { const r = b.getBoundingClientRect(); return [r.left - bar.left + 4, r.right - bar.left - 4]; });
 }
-function animateBlob(to) {
-  cancelAnimationFrame(blobRaf);
-  const from = blobF, t0 = performance.now(), dur = 460;
-  if (Math.abs(to - from) < 0.001) { drawBlob(to); return; }
-  const ease = x => 1 - Math.pow(1 - x, 3.2); // fast start, soft landing
-  const step = now => {
-    const x = Math.min(1, (now - t0) / dur);
-    drawBlob(from + (to - from) * ease(x));
-    if (x < 1) blobRaf = requestAnimationFrame(step);
+function drawBlob(f) {
+  const el = $('.tab-blob');
+  if (!el) return;
+  const rects = blobRects(), n = rects.length;
+  if (!n) return;
+  const fc = Math.max(0, Math.min(n - 1, f));
+  const a = Math.min(n - 1, Math.floor(fc)), b = Math.min(n - 1, a + 1), t = fc - a;
+  blob.w0 = rects[0][1] - rects[0][0];
+  const over = (f - fc) * blob.w0 * 0.3; // pulled past the ends: lean that way
+  blob.tl = rects[a][0] + (rects[b][0] - rects[a][0]) * t + over;
+  blob.tr = rects[a][1] + (rects[b][1] - rects[a][1]) * t + over;
+  if (!blob.ready) { blob.ready = true; blob.l = blob.tl; blob.r = blob.tr; }
+  if (!blob.raf) { blob.last = performance.now(); blob.raf = requestAnimationFrame(blobStep); }
+}
+function animateBlob(to) { drawBlob(to); }
+function blobStep(now) {
+  const dt = Math.min(0.032, (now - blob.last) / 1000);
+  blob.last = now;
+  const right = (blob.tl + blob.tr) > (blob.l + blob.r); // moving right: the right edge leads
+  const spring = (x, v, target, lead) => {
+    const k = lead ? 520 : 210, c = lead ? 24 : 19;
+    const acc = k * (target - x) - c * v;
+    v += acc * dt;
+    return [x + v * dt, v];
   };
-  blobRaf = requestAnimationFrame(step);
+  [blob.l, blob.vl] = spring(blob.l, blob.vl, blob.tl, !right);
+  [blob.r, blob.vr] = spring(blob.r, blob.vr, blob.tr, right);
+  if (blob.r - blob.l < 30) blob.r = blob.l + 30;
+  const width = blob.r - blob.l;
+  const stretch = width / blob.w0;
+  const squash = Math.max(-0.06, Math.min(0.18, (stretch - 1) * 0.16));
+  const el = $('.tab-blob');
+  el.style.transform = `translate3d(${blob.l.toFixed(2)}px, 0, 0) scale(1, ${(1 - squash).toFixed(3)})`;
+  el.style.width = `${width.toFixed(2)}px`;
+  // Icons and labels light up as the drop reaches them
+  const rects = blobRects(), mid = (blob.l + blob.r) / 2;
+  pagerTabs().forEach((tab, k) => {
+    const c = (rects[k][0] + rects[k][1]) / 2, w = rects[k][1] - rects[k][0] + 8;
+    tab.style.setProperty('--lit', (0.42 + 0.58 * Math.max(0, 1 - Math.abs(mid - c) / w)).toFixed(3));
+  });
+  const done = Math.abs(blob.tl - blob.l) < 0.3 && Math.abs(blob.tr - blob.r) < 0.3 && Math.abs(blob.vl) < 4 && Math.abs(blob.vr) < 4;
+  blob.raf = done ? 0 : requestAnimationFrame(blobStep);
 }
 
 function bindSwipe() {
   const main = $('main');
-  const blob = document.createElement('div');
-  blob.className = 'tab-blob';
-  $('.tabs').prepend(blob);
-  const noSwipe = '.dial, .seg, .chart, .heat, .popover, .suggest, .inline, .modal, .sheet-wrap';
+  const el = document.createElement('div');
+  el.className = 'tab-blob';
+  $('.tabs').prepend(el);
+  // Only things that move with the finger themselves keep the gesture
+  const noSwipe = '.popover, .suggest, .inline, .modal, .sheet-wrap';
   let x0 = 0, y0 = 0, lastX = 0, lastT = 0, vx = 0, dx = 0, lock = '';
   main.addEventListener('touchstart', e => {
     lock = e.touches.length !== 1 || e.target.closest(noSwipe) ? 'no' : '';
@@ -1255,7 +1258,7 @@ function bindSwipe() {
       if (lock === 'y') return;
       if (document.activeElement && document.activeElement.blur) document.activeElement.blur();
     }
-    e.preventDefault();
+    if (e.cancelable) e.preventDefault();
     const now = performance.now();
     vx = (x - lastX) / Math.max(1, now - lastT) * 0.6 + vx * 0.4; // px per ms, smoothed
     lastX = x; lastT = now;
@@ -1278,39 +1281,80 @@ function bindSwipe() {
   };
   main.addEventListener('touchend', end);
   main.addEventListener('touchcancel', end);
-  addEventListener('resize', () => setPager(false));
+  addEventListener('resize', () => { blob.ready = false; setPager(false); });
 }
 
-// Phase lengths: drag a dial sideways; every step clicks like a ruler.
+/* Phase lengths: a small wheel. Pull it down to go up (bigger numbers sit above), like
+   scrolling a list; it snaps to a step with a little bounce. */
+const WHEEL_ROW = 34;
+// The window works like a lens: a number grows and brightens as it rolls into the middle.
+// Five numbers per wheel, so this is a handful of style writes per frame.
+function wheelPlace(d, dy) {
+  d._dy = dy;
+  const col = d.querySelector('.wheel-col');
+  col.style.transform = `translate3d(0, ${dy.toFixed(2)}px, 0)`;
+  col.querySelectorAll('.wr').forEach((r, i) => {
+    const dist = Math.abs((i - 2) * WHEEL_ROW + dy) / WHEEL_ROW; // 0 = in the middle of the lens
+    const k = Math.max(0, 1 - dist);
+    const lens = k * k * (3 - 2 * k); // smooth bulge
+    r.style.transform = `scale(${(0.56 + 0.44 * lens).toFixed(3)})`;
+    r.style.opacity = (0.28 + 0.72 * lens).toFixed(3);
+  });
+}
+// Let go: the drum springs back to the step with a small bounce.
+function wheelSettle(d) {
+  cancelAnimationFrame(d._raf);
+  let x = d._dy || 0, v = d._v || 0, last = performance.now();
+  const step = now => {
+    const dt = Math.min(0.032, (now - last) / 1000);
+    last = now;
+    v += (-340 * x - 15 * v) * dt;
+    x += v * dt;
+    if (Math.abs(x) < 0.15 && Math.abs(v) < 3) { wheelPlace(d, 0); d._raf = 0; return; }
+    wheelPlace(d, x);
+    d._raf = requestAnimationFrame(step);
+  };
+  d._raf = requestAnimationFrame(step);
+}
 function bindDials() {
-  const STEP_PX = 26;
   $$('.dial').forEach(d => {
     const key = d.dataset.key;
-    const ruler = d.querySelector('.dial-ruler');
-    let x0 = 0, done = 0, id = null;
+    let x0 = 0, y0 = 0, base = 0, id = null, lock = '', lastY = 0, lastT = 0;
     d.addEventListener('pointerdown', e => {
-      id = e.pointerId; x0 = e.clientX; done = 0;
-      d.setPointerCapture(id);
-      d.classList.add('drag');
+      id = e.pointerId; x0 = e.clientX; y0 = lastY = e.clientY; lastT = performance.now(); base = 0; lock = '';
+      cancelAnimationFrame(d._raf);
+      base = -(d._dy || 0);
     });
     d.addEventListener('pointermove', e => {
       if (e.pointerId !== id) return;
-      const dx = e.clientX - x0;
-      ruler.style.backgroundPositionX = `${dx}px`;
-      const steps = Math.trunc(dx / STEP_PX);
-      while (done !== steps) {
-        const dir = steps > done ? 1 : -1;
-        const before = settings[key];
-        changeSetting(key, dir);
-        done += dir;
-        if (settings[key] !== before && navigator.vibrate) navigator.vibrate(6);
+      const mx = e.clientX - x0, my = e.clientY - y0;
+      if (!lock) {
+        if (Math.abs(mx) < 6 && Math.abs(my) < 6) return;
+        lock = Math.abs(my) > Math.abs(mx) ? 'y' : 'x';
+        if (lock === 'y') { try { d.setPointerCapture(id); } catch {} d.classList.add('drag'); }
       }
+      if (lock !== 'y') return; // sideways: that is a page swipe
+      const now = performance.now();
+      d._v = (e.clientY - lastY) / Math.max(1, now - lastT) * 1000;
+      lastY = e.clientY; lastT = now;
+      let dy = my - base;
+      const lim = LIMITS[key];
+      while (Math.abs(dy) > WHEEL_ROW / 2) {
+        const dir = dy > 0 ? 1 : -1; // finger down = bigger
+        if ((dir > 0 && settings[key] >= lim.max) || (dir < 0 && settings[key] <= lim.min)) break;
+        changeSetting(key, dir);
+        base += dir * WHEEL_ROW;
+        dy -= dir * WHEEL_ROW;
+      }
+      const atEnd = (dy > 0 && settings[key] >= lim.max) || (dy < 0 && settings[key] <= lim.min);
+      wheelPlace(d, atEnd ? dy / 3 : dy);
     });
     const up = e => {
       if (e.pointerId !== id) return;
-      id = null;
+      id = null; lock = '';
       d.classList.remove('drag');
-      ruler.style.backgroundPositionX = '';
+      d._v = Math.max(-900, Math.min(900, d._v || 0)) * 0.25;
+      wheelSettle(d);
     };
     d.addEventListener('pointerup', up);
     d.addEventListener('pointercancel', up);
@@ -1318,14 +1362,17 @@ function bindDials() {
 }
 function renderDials() {
   $$('.dial').forEach(d => {
-    const v = settings[d.dataset.key];
-    const prev = Number(d.dataset.v);
-    d.dataset.v = v;
-    d.querySelector('b').textContent = v;
-    if (prev && prev !== v) kick(d.querySelector('b'), v > prev ? 'up' : 'down');
-    d.querySelector('small').textContent = t('min');
-    d.classList.toggle('lo', v <= LIMITS[d.dataset.key].min);
-    d.classList.toggle('hi', v >= LIMITS[d.dataset.key].max);
+    const key = d.dataset.key, lim = LIMITS[key], v = settings[key];
+    const col = d.querySelector('.wheel-col');
+    if (col.dataset.v !== String(v)) {
+      col.dataset.v = v;
+      col.innerHTML = [2, 1, 0, -1, -2].map(k => {
+        const x = v + k * lim.step;
+        return `<span class="wr">${x >= lim.min && x <= lim.max ? x : ''}</span>`;
+      }).join('');
+      wheelPlace(d, d._dy || 0);
+    }
+    d.querySelector('.dial-unit').textContent = t('min');
   });
 }
 
@@ -1816,7 +1863,10 @@ function bind() {
 
 /* ================= Boot ================= */
 (async function boot() {
-  if (ANDROID) Object.values(I18N).forEach(l => { l.popup = l.popupA; l.popupDesc = l.popupDescA; l.dataDesc = l.dataDescA; });
+  if (ANDROID) {
+    Object.values(I18N).forEach(l => { l.popup = l.popupA; l.popupDesc = l.popupDescA; l.dataDesc = l.dataDescA; l.workLen = l.work; l.breakLen = l.break; });
+    I18N.ru.trayTest = 'Проверка сигнала'; I18N.en.trayTest = 'Test the alert'; // shorter labels on the phone
+  }
   const data = (await api.load()) || {};
   settings = { ...DEFAULTS, ...(data.settings || {}) };
   sessions = Array.isArray(data.sessions) ? data.sessions : [];

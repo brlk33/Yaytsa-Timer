@@ -1116,3 +1116,172 @@ html.android .tab .ico, html.android .tab span { opacity: var(--lit, .45) !impor
 @keyframes spOut { to { opacity: 0; visibility: hidden; } }
 @keyframes spLift { to { transform: scale(1.08); } }
 @media (prefers-reduced-motion: reduce) { .splash { display: none !important; } }
+
+/* ======================= 2.8: quiet, blocky, flat phone UI ======================= */
+html.android {
+  --block: #222222;
+  --block-2: #2b2b2b;
+  --grad: linear-gradient(135deg, #3d8bff, #8a5cff);
+}
+html.android[data-theme="light"] {
+  --block: #f2f2f0;
+  --block-2: #e8e8e5;
+}
+
+/* Every button gives way under the finger: a short, soft press, no shadows */
+html.android button { transition: transform .14s var(--ease), background .2s var(--ease), color .2s var(--ease), opacity .2s var(--ease); }
+html.android button:active:not(:disabled) { transform: scale(.94); }
+html.android .tab:active { transform: none; }
+html.android .ghost, html.android .add-btn, html.android .stepper button, html.android #view-timer .icon-btn {
+  border-radius: 999px; background: var(--block-2); color: var(--text-strong); box-shadow: none;
+}
+html.android .ghost:active, html.android .add-btn:active, html.android #view-timer .icon-btn:active { background: var(--active); }
+
+/* Segmented controls and toggles: flat pills */
+html.android .seg { border-radius: 999px; background: var(--block-2); box-shadow: none; padding: 4px; }
+html.android .seg button { border-radius: 999px; }
+html.android .seg button.on { background: var(--bg); box-shadow: none; color: var(--text-strong); }
+html.android[data-theme="light"] .seg button.on { background: #fff; }
+html.android .toggle { box-shadow: none; background: var(--block-2); }
+html.android .toggle.on { background: var(--grad); }
+html.android .toggle::after { box-shadow: none; }
+
+/* Fewer small words */
+html.android #cycleInfo, html.android #view-timer .label-meta, html.android .lead,
+html.android .set-desc:not(#soundName):not(.sync-status), html.android .ps + .ps { display: none !important; }
+html.android .hist-head .with-ico span { display: none; }
+html.android .hist-head .with-ico { width: 44px; padding: 0; justify-content: center; }
+html.android h1 { font-size: 26px; letter-spacing: -.02em; margin: 2px 0 16px; }
+
+/* Settings as blocks: each group is one rounded card of rows */
+html.android .group-title { border: 0; padding: 0 6px 8px; margin: 26px 0 0; font-size: 14px; font-weight: 650; color: var(--text-strong); }
+html.android .group-title:empty { display: none; }
+html.android #view-settings .set { background: var(--block); margin: 0; padding: 10px 14px; border-radius: 0; box-shadow: none; }
+html.android #view-settings .group-title + .set,
+html.android #view-settings .group-title + #syncBox .set:first-child { border-radius: 20px 20px 0 0; }
+html.android #view-settings .set:has(+ .group-title), html.android #view-settings .set:last-child,
+html.android #view-settings .set:has(+ [data-desktop]) { border-radius: 0 0 20px 20px; }
+html.android #view-settings .group-title + .set:has(+ .group-title),
+html.android #view-settings .group-title + .set:last-child { border-radius: 20px; }
+html.android #view-settings .set + .set:not([data-desktop]) { box-shadow: inset 0 1px 0 var(--border); }
+html.android #syncBox .sync-actions, html.android #syncBox .sync-form, html.android #syncBox .sync-msg { background: var(--block); margin: 0; padding: 4px 14px 14px; }
+html.android #syncBox > :last-child:not([hidden]) { border-radius: 0 0 20px 20px; }
+html.android #syncBox > .set:only-child { border-radius: 20px; }
+html.android #syncBox:has(> .sync-msg[hidden]) > .sync-actions:not(:has(~ .sync-form)) { border-radius: 0 0 20px 20px; }
+html.android #syncBox.flash { animation: kFlash 1.2s var(--ease); border-radius: 20px; }
+@keyframes kFlash { 20%, 60% { box-shadow: 0 0 0 3px rgba(61, 139, 255, .55); } }
+html.android .set-ico { background: var(--block-2); }
+
+/* Stats and projects: flat cards */
+html.android .card, html.android .proj { background: var(--block); border: 0; border-radius: 20px; box-shadow: none; }
+html.android .proj.current { box-shadow: inset 0 0 0 1.5px rgba(61, 139, 255, .55); }
+
+/* Projects: the name gets the whole first line and may wrap; actions sit on their own row */
+html.android .proj { display: grid; grid-template-columns: 1fr auto; grid-template-areas: "name total" "stats stats" "acts acts"; gap: 6px 12px; padding: 16px; }
+html.android .proj-top { display: contents; }
+html.android .proj-name { grid-area: name; align-items: flex-start; }
+html.android .proj-name .pn { white-space: normal; overflow: visible; overflow-wrap: anywhere; line-height: 1.3; font-size: 17px; }
+html.android .proj-total { grid-area: total; align-self: start; padding-top: 1px; }
+html.android .proj-stats { grid-area: stats; margin-top: 0; }
+html.android .proj-acts { grid-area: acts; gap: 8px; margin-top: 6px; }
+html.android .proj-acts .icon-btn.sm { width: 40px; height: 40px; border-radius: 999px; background: var(--block-2); color: var(--text-strong); }
+html.android .proj-acts .icon-btn.sm.danger { margin-left: auto; color: var(--danger); }
+html.android .proj-acts .icon-btn.sm svg { width: 18px; height: 18px; }
+
+/* Timer: a flat disc behind the ring, a solid start key, wheels in flat blocks */
+html.android .face::before { content: ""; position: absolute; inset: 7%; border-radius: 50%; background: var(--block); }
+html.android .ring-track { stroke: var(--block-2); stroke-width: 4.2; }
+html.android .ring-fill { stroke: url(#ringWork); stroke-width: 4.2; }
+html.android .ring-fill.break { stroke: url(#ringBreak); }
+html.android #view-timer .tag { border-radius: 999px; padding: 0 12px; }
+html.android #btnStart { width: 84px; height: 84px; background: var(--grad); color: #fff; box-shadow: none; }
+html.android #btnStart.secondary { background: var(--block-2); color: var(--text-strong); }
+html.android #btnStart.press { animation: kPress .32s var(--ease); }
+html.android #view-timer .label-input { background: var(--block); border-radius: 999px; box-shadow: none; }
+
+/* Wheels */
+html.android .dials { gap: 14px; margin-top: 16px; }
+html.android .dial {
+  height: 104px; padding: 0 16px; gap: 6px; justify-content: space-between;
+  background: var(--block); box-shadow: none; border-radius: 24px; cursor: ns-resize; touch-action: none;
+}
+html.android .dial.drag { background: var(--block-2); transform: none; }
+html.android .dial-ico { width: 24px; height: 24px; }
+.wheel {
+  position: relative; flex: 1; height: 90px; overflow: hidden;
+  -webkit-mask-image: linear-gradient(transparent, #000 30%, #000 70%, transparent);
+  mask-image: linear-gradient(transparent, #000 30%, #000 70%, transparent);
+}
+.wheel-col { position: absolute; left: 0; right: 0; top: 50%; margin-top: -85px; will-change: transform; }
+.wr {
+  display: block; height: 34px; line-height: 34px; text-align: center;
+  font-size: 17px; font-weight: 600; color: var(--text-3); font-variant-numeric: tabular-nums;
+}
+.wr.cur { font-size: 30px; font-weight: 700; color: var(--text-strong); }
+html.android .dial-unit { font-size: 12px; color: var(--text-2); width: 26px; text-align: left; }
+
+/* Bottom bar: the drop is a soft gradient tint */
+html.android .tab-blob { background: linear-gradient(135deg, rgba(61, 139, 255, .2), rgba(138, 92, 255, .2)); box-shadow: none; }
+
+/* "Sync is off" banner, drops in from the top */
+.banner {
+  position: fixed; left: 50%; top: 14px; z-index: 40;
+  display: flex; align-items: center; gap: 10px;
+  width: min(440px, calc(100% - 24px)); padding: 8px 8px 8px 14px;
+  transform: translateX(-50%);
+  background: var(--bg-3); color: var(--text-strong);
+  border-radius: 999px; box-shadow: var(--shadow);
+  animation: bannerIn .5s cubic-bezier(.3, 1.5, .5, 1) both;
+}
+html:not(.android) .banner { top: 56px; }
+.banner.out { animation: bannerOut .26s var(--ease) both; }
+@keyframes bannerIn { from { transform: translate(-50%, -140%); opacity: 0; } }
+@keyframes bannerOut { to { transform: translate(-50%, -140%); opacity: 0; } }
+.banner-ico { width: 22px; height: 22px; color: var(--text-2); flex: none; }
+.banner-ico svg { width: 100%; height: 100%; }
+.banner-text { flex: 1; min-width: 0; font-size: 14px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.banner-go { border: 0; border-radius: 999px; padding: 8px 14px; background: linear-gradient(135deg, #3d8bff, #8a5cff); color: #fff; font-size: 14px; font-weight: 600; flex: none; }
+.banner-go:active { transform: scale(.96); }
+.banner-x { border: 0; background: transparent; color: var(--text-2); width: 34px; height: 34px; border-radius: 50%; display: grid; place-items: center; flex: none; }
+.banner-x svg { width: 18px; height: 18px; }
+
+/* ---------- 2.8: the timer as an object — matte, with a scale and a roller window ---------- */
+/* Matte disc: a faint light from the top left, an edge that catches it, no gloss */
+html.android .face::before {
+  background: radial-gradient(120% 120% at 30% 20%, var(--block-2), var(--block) 60%);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.05), inset 0 -10px 24px rgba(0,0,0,.12);
+}
+html.android[data-theme="light"] .face::before { box-shadow: inset 0 1px 0 #fff, inset 0 -10px 24px rgba(0,0,0,.04); }
+/* Start key: matte colour with a thin lit rim, sinks a little when pressed */
+html.android #btnStart { box-shadow: inset 0 0 0 1px rgba(255,255,255,.18), inset 0 -6px 14px rgba(0,0,0,.14); }
+html.android #btnStart.secondary { box-shadow: inset 0 0 0 1px var(--border), inset 0 -6px 14px rgba(0,0,0,.1); }
+html.android #view-timer .icon-btn { box-shadow: inset 0 0 0 1px var(--border); }
+/* Wheels: a roller drum seen through a window with two hairlines */
+.wheel::before, .wheel::after { content: ""; position: absolute; left: 10%; right: 10%; height: 1px; background: var(--border-strong); z-index: 1; }
+.wheel::before { top: calc(50% - 17px); }
+.wheel::after { top: calc(50% + 17px); }
+html.android .dial { box-shadow: inset 0 0 0 1px var(--border); }
+/* Cards and settings blocks: a hairline edge instead of shadows */
+html.android .card, html.android .proj, html.android .dial { box-shadow: inset 0 0 0 1px var(--border); }
+
+/* Disc, minimal: matte surface lit from the top, one fine inner rim, nothing printed on it */
+html.android .face::before {
+  background: radial-gradient(110% 110% at 35% 15%, var(--block-2), var(--block) 65%);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.06), inset 0 -14px 28px rgba(0,0,0,.14);
+}
+html.android .face::after {
+  content: ""; position: absolute; inset: 15%; border-radius: 50%;
+  box-shadow: inset 0 0 0 1px rgba(255,255,255,.035);
+  pointer-events: none;
+}
+html.android[data-theme="light"] .face::before { box-shadow: inset 0 1px 0 #fff, inset 0 -14px 28px rgba(0,0,0,.05); }
+html.android[data-theme="light"] .face::after { box-shadow: inset 0 0 0 1px rgba(0,0,0,.04); }
+
+/* Wheel lens: every number is drawn at full size and scaled by its distance to the middle (app.js) */
+.wr, .wr.cur { font-size: 30px; font-weight: 700; color: var(--text-strong); transform-origin: 50% 50%; will-change: transform, opacity; }
+.wheel {
+  background: linear-gradient(transparent calc(50% - 17px), rgba(255,255,255,.045) calc(50% - 17px), rgba(255,255,255,.045) calc(50% + 17px), transparent calc(50% + 17px));
+}
+html.android[data-theme="light"] .wheel {
+  background: linear-gradient(transparent calc(50% - 17px), rgba(0,0,0,.035) calc(50% - 17px), rgba(0,0,0,.035) calc(50% + 17px), transparent calc(50% + 17px));
+}

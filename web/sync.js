@@ -21,6 +21,7 @@ const delAt = g => Number(g.slice(1)) || 0;
 const ST = {
   ru: {
     gSync: 'Синхронизация',
+    bannerText: 'Нет синхронизации', bannerGo: 'Включить',
     syncName: 'Аккаунт Яйца Cloud',
     syncDesc: 'Один аккаунт с сайтом. История, проекты и настройки таймера одинаковые на ПК и телефоне',
     google: 'Войти через Google', withEmail: 'Почта и пароль',
@@ -36,6 +37,7 @@ const ST = {
   },
   en: {
     gSync: 'Sync',
+    bannerText: 'Sync is off', bannerGo: 'Turn on',
     syncName: 'Яйца Cloud account',
     syncDesc: 'The same account as the site. History, projects and timer settings match on PC and phone',
     google: 'Sign in with Google', withEmail: 'Email and password',
@@ -132,6 +134,7 @@ async function signedIn(uid, email, rt, tok, expiresIn) {
   idExp = tok ? Date.now() + Number(expiresIn || 3600) * 1000 : 0;
   syncForm = false;
   syncErr = '';
+  hideBanner();
   await persistNow();
   syncConnect();
   renderSync();
@@ -558,6 +561,41 @@ function bindSync() {
   window.addEventListener('online', () => { if (account) { retryMs = 2000; syncConnect(); syncSchedule(); } });
 }
 
+/* ---------- "sync is off" banner: on launch, at most once a day, until signed in ---------- */
+const NAG_EVERY = 20 * 3600 * 1000;
+function maybeNag() {
+  if (account || Date.now() - (Number(settings.syncNagAt) || 0) < NAG_EVERY) return;
+  settings.syncNagAt = Date.now();
+  persist();
+  $('#syncBannerText').textContent = st('bannerText');
+  $('#syncBannerGo').textContent = st('bannerGo');
+  const el = $('#syncBanner');
+  el.classList.remove('out');
+  el.hidden = false;
+}
+function hideBanner() {
+  const el = $('#syncBanner');
+  if (!el || el.hidden) return;
+  el.classList.add('out');
+  setTimeout(() => { el.hidden = true; el.classList.remove('out'); }, 260);
+}
+function bindBanner() {
+  $('#syncBannerX').addEventListener('click', hideBanner);
+  $('#syncBannerGo').addEventListener('click', () => {
+    hideBanner();
+    $('.tab[data-view="settings"]').click();
+    setTimeout(() => {
+      const box = $('#syncBox');
+      const page = $('#view-settings');
+      if (page.scrollHeight > page.clientHeight) page.scrollTo({ top: box.offsetTop - 120, behavior: 'smooth' });
+      else box.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      box.classList.remove('flash');
+      void box.offsetWidth;
+      box.classList.add('flash');
+    }, 420);
+  });
+}
+
 /* ---------- hooks for app.js ---------- */
 const syncSnapshot = () => ({ account, sent: syncSent });
 
@@ -566,6 +604,8 @@ function syncInit(data) {
   if (d.account && d.account.uid && d.account.rt) account = d.account;
   if (d.sent && typeof d.sent === 'object') syncSent = { s: d.sent.s || {}, p: d.sent.p || {}, set: d.sent.set || '' };
   bindSync();
+  bindBanner();
   renderSync();
   if (account) syncConnect();
+  else setTimeout(maybeNag, ANDROID ? 2600 : 1500); // after the launch animation
 }
