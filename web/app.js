@@ -1302,6 +1302,42 @@ function wheelPlace(d, dy) {
   });
 }
 // Let go: the drum springs back to the step with a small bounce.
+// A ratchet click per step, like a fishing reel: a very short burst of noise through a narrow
+// band, then the pawl's softer second click. Every click is a little different. Silent when
+// sounds are off. One shared noise buffer, two tiny nodes per click.
+let tickNoise = null;
+function tickSound(dir) {
+  if (!settings.sound) return;
+  try {
+    audioCtx = audioCtx || new AudioContext();
+    if (audioCtx.state === 'suspended') audioCtx.resume();
+    if (!tickNoise) {
+      const n = Math.floor(audioCtx.sampleRate * 0.03);
+      tickNoise = audioCtx.createBuffer(1, n, audioCtx.sampleRate);
+      const ch = tickNoise.getChannelData(0);
+      for (let i = 0; i < n; i++) ch[i] = Math.random() * 2 - 1;
+    }
+    const click = (at, freq, level, len) => {
+      const src = audioCtx.createBufferSource();
+      src.buffer = tickNoise;
+      src.playbackRate.value = 0.9 + Math.random() * 0.2;
+      const bp = audioCtx.createBiquadFilter();
+      bp.type = 'bandpass';
+      bp.frequency.value = freq;
+      bp.Q.value = 4.5;
+      const g = audioCtx.createGain();
+      g.gain.setValueAtTime(0.0001, at);
+      g.gain.exponentialRampToValueAtTime(level, at + 0.0008);
+      g.gain.exponentialRampToValueAtTime(0.0001, at + len);
+      src.connect(bp).connect(g).connect(audioCtx.destination);
+      src.start(at, Math.random() * 0.01, len + 0.005);
+    };
+    const t0 = audioCtx.currentTime + 0.002;
+    const base = (dir > 0 ? 3400 : 2900) * (0.94 + Math.random() * 0.12);
+    click(t0, base, 0.55, 0.014);               // the tooth snaps
+    click(t0 + 0.007, base * 0.62, 0.18, 0.02); // the pawl settles
+  } catch {}
+}
 function wheelSettle(d) {
   cancelAnimationFrame(d._raf);
   let x = d._dy || 0, v = d._v || 0, last = performance.now();
@@ -1343,6 +1379,7 @@ function bindDials() {
         const dir = dy > 0 ? 1 : -1; // finger down = bigger
         if ((dir > 0 && settings[key] >= lim.max) || (dir < 0 && settings[key] <= lim.min)) break;
         changeSetting(key, dir);
+        tickSound(dir);
         base += dir * WHEEL_ROW;
         dy -= dir * WHEEL_ROW;
       }
