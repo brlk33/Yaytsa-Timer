@@ -448,6 +448,8 @@ const timerCore = () => ({
   remaining: timer.running ? 0 : timer.remaining,
   startedAt: timer.startedAt || 0,
   label: $('#label').value.trim(),
+  // the schedule, without this device's own bookkeeping
+  series: series ? { start: series.start, count: series.count, work: series.work, brk: series.brk, pausedAt: series.pausedAt || 0 } : null,
 });
 
 // Called from renderOuter (about once a second): sends the state when it changed here.
@@ -474,17 +476,25 @@ function applyRemoteTimer(v) {
   if (v.phase !== 'work' && v.phase !== 'break') return;
   const now = Date.now();
   // A phase that ran out long ago (the other device was closed): its end is not news.
-  if (v.running && v.endAt < now - 60000) return;
+  if (v.running && v.endAt < now - 60000 && !v.series) return;
   // This device is ending the same phase right now: let it finish (alert, log) on its own.
   if (timer.running && now >= timer.endAt - 1500 && v.phase !== timer.phase) return;
   tU = Number(v.u);
   const wasRunning = timer.running;
-  timer.phase = v.phase;
-  timer.total = Number(v.total) || phaseMinutes(v.phase) * 60000;
-  timer.running = !!v.running;
-  timer.endAt = timer.running ? Number(v.endAt) : 0;
-  timer.remaining = timer.running ? Math.max(0, timer.endAt - now) : Number(v.remaining) || timer.total;
-  timer.startedAt = Number(v.startedAt) || 0;
+  if (v.series && v.series.count > 0) {
+    const same = series && series.start === v.series.start && series.count === v.series.count;
+    series = { ...v.series, logged: same ? series.logged : 0 };
+    seriesPos = '';
+    applySeries(true);
+  } else if (series) { series = null; seriesPos = ''; }
+  if (!series) {
+    timer.phase = v.phase;
+    timer.total = Number(v.total) || phaseMinutes(v.phase) * 60000;
+    timer.running = !!v.running;
+    timer.endAt = timer.running ? Number(v.endAt) : 0;
+    timer.remaining = timer.running ? Math.max(0, timer.endAt - now) : Number(v.remaining) || timer.total;
+    timer.startedAt = Number(v.startedAt) || 0;
+  }
   if (typeof v.label === 'string' && document.activeElement !== $('#label') && $('#label').value.trim() !== v.label) {
     $('#label').value = v.label;
     renderLabelMeta();

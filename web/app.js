@@ -44,6 +44,10 @@ const I18N = {
     tabProjects: 'Проекты', tabApps: 'Программы',
     projLead: 'Проект — это название в поле «Над чем работаете?». Время каждого захода засчитывается в его проект.',
     projNewPh: 'Новый проект', add: 'Добавить', done: 'Готово',
+    seriesN: n => `${n} ${plural(n, 'заход', 'захода', 'заходов')}`, seriesOf: (i, n) => `Заход ${i} из ${n}`,
+    seriesStartsIn: (left, at) => `Старт в ${at} · через ${left}`, seriesDoneTitle: 'Серия завершена', seriesDoneBody: 'Все заходы сделаны. Отличная работа!',
+    seriesCountL: 'Заходы', seriesNow: 'Сейчас', seriesAt: at => `В ${at}`, seriesStart: 'Начало', seriesWaitTitle: 'Серия начнётся через',
+    bgTitle: 'Разрешите работу в фоне', bgText: 'Иначе телефон может приглушить сигнал конца захода или серию, пока приложение закрыто.', bgGo: 'Открыть настройки', bgLater: 'Позже',
     alertSound: 'Звук сигнала', choose: 'Выбрать', soundDefault: 'Стандартный', soundSystem: 'Звуки телефона', soundFile: 'Свой файл',
     soundSet: n => `Звук: ${n}`, updTitle: v => `Доступна версия ${v}`, updText: 'Обновление уже скачано, установка займёт несколько секунд.', updInstall: 'Обновить', updLater: 'Позже',
     projEmpty: 'Напишите на вкладке «Таймер», над чем работаете, или добавьте проект здесь',
@@ -104,6 +108,10 @@ scale: 'Масштаб', appsPickTitle: 'Добавить программу', a
     tabProjects: 'Projects', tabApps: 'Apps',
     projLead: 'A project is the name in “What are you working on?”. Every focus session counts toward its project.',
     projNewPh: 'New project', add: 'Add', done: 'Done',
+    seriesN: n => `${n} session${n === 1 ? '' : 's'}`, seriesOf: (i, n) => `Session ${i} of ${n}`,
+    seriesStartsIn: (left, at) => `Starts at ${at} · in ${left}`, seriesDoneTitle: 'Series complete', seriesDoneBody: 'All sessions done. Great work!',
+    seriesCountL: 'Sessions', seriesNow: 'Now', seriesAt: at => `At ${at}`, seriesStart: 'Start', seriesWaitTitle: 'Series starts in',
+    bgTitle: 'Allow running in the background', bgText: 'Otherwise the phone may silence the end-of-session alert or a series while the app is closed.', bgGo: 'Open settings', bgLater: 'Later',
     alertSound: 'Alert sound', choose: 'Choose', soundDefault: 'Default', soundSystem: 'Phone sounds', soundFile: 'Your own file',
     soundSet: n => `Sound: ${n}`, updTitle: v => `Version ${v} is available`, updText: 'The update is already downloaded, installing takes a few seconds.', updInstall: 'Update', updLater: 'Later',
     projEmpty: 'Type what you’re working on in the Timer tab, or add a project here',
@@ -138,13 +146,14 @@ const ANDROID = !!api.android;
 const DEFAULTS = {
   work: 25, brk: 5, autoStart: false, sound: true, notify: true,
   lang: 'ru', theme: 'dark', goal: 4, alwaysOnTop: false, popup: true, closeToTray: true,
-  zoom: 1, chartMode: 'bars', heatRange: 13,
+  zoom: 1, chartMode: 'bars', heatRange: 13, seriesCount: 1,
 };
 const ZOOM = { min: 0.7, max: 1.6, step: 0.1 };
 const LIMITS = {
   work: { min: 5, max: 180, step: 5 },
   brk: { min: 5, max: 60, step: 5 },
   goal: { min: 0, max: 12, step: 0.5 },
+  seriesCount: { min: 1, max: 12, step: 1 },
 };
 
 let settings = { ...DEFAULTS };
@@ -173,7 +182,7 @@ const t = k => I18N[settings.lang][k];
 
 /* ================= Persistence ================= */
 let saveTimer = null;
-const snapshot = () => ({ settings, sessions, projects, current: { label: $('#label').value }, sync: syncSnapshot() });
+const snapshot = () => ({ settings, sessions, projects, current: { label: $('#label').value, series }, sync: syncSnapshot() });
 function persist() {
   clearTimeout(saveTimer);
   saveTimer = setTimeout(() => {
@@ -281,6 +290,17 @@ function setPhase(phase) {
 
 function start() {
   if (timer.running) return;
+  if (series) {
+    const now = Date.now();
+    if (series.pausedAt) { series.start += now - series.pausedAt; series.pausedAt = 0; }
+    else if (seriesPos.startsWith('wait')) series.start = now; // start the planned series right away
+    api.closeAlert();
+    seriesPos = '';
+    applySeries(true);
+    persist();
+    render();
+    return;
+  }
   if (timer.phase === 'work' && !timer.startedAt) timer.startedAt = Date.now();
   timer.endAt = Date.now() + timer.remaining;
   timer.running = true;
@@ -291,12 +311,27 @@ function start() {
 }
 function pause() {
   if (!timer.running) return;
+  if (series) {
+    series.pausedAt = Date.now();
+    seriesPos = '';
+    applySeries(true);
+    persist();
+    render();
+    return;
+  }
   timer.remaining = Math.max(0, timer.endAt - Date.now());
   timer.running = false;
   api.schedule(0);
   render();
 }
-const toggle = () => (timer.running ? pause() : start());
+const toggle = () => {
+  // From an untouched timer, more than one session or a start time means a series
+  if (!series && !timer.running && isUntouched() && timer.phase === 'work' && (settings.seriesCount > 1 || seriesStartAt)) {
+    startSeries(settings.seriesCount, seriesStartAt);
+    return;
+  }
+  if (timer.running) pause(); else start();
+};
 
 function logWork(full, sync) {
   const elapsedMs = timer.total - currentRemaining();
@@ -326,9 +361,9 @@ function complete() {
 }
 
 let alertIsTest = false;
-function alertTexts(finished, test) {
+function alertTexts(finished, test, forceAuto) {
   const next = finished === 'work' ? 'break' : 'work';
-  const auto = test ? false : settings.autoStart;
+  const auto = test ? false : (forceAuto || settings.autoStart);
   return {
     next, auto,
     title: test ? t('testTitle') : (next === 'break' ? t('nBreakTitle') : t('nWorkTitle')),
@@ -339,9 +374,9 @@ function alertTexts(finished, test) {
     okLabel: auto ? t('gotIt') : t('later'),
   };
 }
-function alertPhaseEnd(finished, test) {
+function alertPhaseEnd(finished, test, forceAuto) {
   alertIsTest = !!test;
-  const { next, auto, title, body, goLabel, okLabel } = alertTexts(finished, test);
+  const { next, auto, title, body, goLabel, okLabel } = alertTexts(finished, test, forceAuto);
   if (settings.popup || test) {
     api.showAlert({
       next, title, body, goLabel, okLabel,
@@ -397,6 +432,20 @@ function syncTray() {
 
 function skip() {
   api.closeAlert();
+  if (series) {
+    const now = Date.now(), at = series.pausedAt || now, p = seriesAt(series, at);
+    if (p.waiting) series.start = now;
+    else {
+      if (p.phase === 'work' && timer.startedAt) { logWork(false); series.logged = p.idx + 1; }
+      series.start -= p.end - at; // the next phase begins now
+      if (series.pausedAt) series.pausedAt = now;
+    }
+    seriesPos = '';
+    applySeries(true);
+    persist();
+    render();
+    return;
+  }
   if (timer.phase === 'work' && timer.startedAt) logWork(false);
   setPhase(timer.phase === 'work' ? 'break' : 'work');
   if (settings.autoStart) start();
@@ -405,9 +454,119 @@ function skip() {
 
 function reset() {
   api.closeAlert();
+  if (series) { stopSeries(); return; }
   if (timer.phase === 'work' && timer.startedAt) logWork(false);
   setPhase(timer.phase);
   render();
+}
+
+/* ================= Series =================
+   A run of N work sessions with breaks between them, from a chosen start time (or now).
+   It is a schedule, not a chain of events: work k runs from start + k*(work+brk) for `work`
+   ms, then its break. So any device, at any moment — even after being closed for an hour —
+   knows exactly where the series is, logs the sessions that passed, and carries on.
+   Pause moves the whole schedule later; skip moves it earlier. No break after the last one. */
+let series = null; // {start, count, work, brk, logged, pausedAt}
+let seriesPos = '';
+let seriesStartAt = 0; // start time picked in the setup (0 = now)
+
+function seriesAt(s, at) {
+  const c = s.work + s.brk;
+  if (at < s.start) return { waiting: true, idx: 0, phase: 'work', start: s.start, end: s.start + s.work };
+  const k = Math.floor((at - s.start) / c), within = at - s.start - k * c;
+  if (k >= s.count || (k === s.count - 1 && within >= s.work)) return { done: true, idx: s.count };
+  const base = s.start + k * c;
+  return within < s.work
+    ? { idx: k, phase: 'work', start: base, end: base + s.work }
+    : { idx: k, phase: 'break', start: base + s.work, end: base + c };
+}
+const seriesWorksDone = (s, at) => {
+  const p = seriesAt(s, at);
+  return p.done ? s.count : p.waiting ? 0 : p.idx + (p.phase === 'break' ? 1 : 0);
+};
+
+// Brings the timer in line with the schedule; logs work sessions that ended meanwhile.
+// Returns true when the phase changed since the last call.
+function applySeries(quiet) {
+  const s = series;
+  if (!s) return false;
+  const now = Date.now(), at = s.pausedAt || now;
+  const finished = seriesWorksDone(s, at);
+  const label = $('#label').value.trim();
+  let logged = false;
+  for (let w = s.logged; w < finished; w++) {
+    const start = s.start + w * (s.work + s.brk);
+    const one = { start, end: start + s.work, dur: Math.round(s.work / 1000), label, full: true };
+    if (!sessions.some(x => sessionKey(x) === sessionKey(one))) { sessions.push({ id: newId(), ...one }); logged = true; }
+  }
+  if (finished > s.logged) { s.logged = finished; if (logged) { persistNow(); renderLabelMeta(); } }
+  const p = seriesAt(s, at);
+  const key = p.done ? 'done' : `${p.waiting ? 'wait' : p.phase}${p.idx}`;
+  const changed = key !== seriesPos;
+  const prev = seriesPos;
+  seriesPos = key;
+  if (p.done) {
+    series = null;
+    seriesPos = '';
+    setPhase('work');
+    persist();
+    // only a boundary that just happened rings here; older ones already rang (phone host) or are stale
+    const lastEnd = s.start + (s.count - 1) * (s.work + s.brk) + s.work;
+    if (!quiet && prev && now - lastEnd < 4000) alertSeriesDone();
+    render();
+    return true;
+  }
+  timer.phase = p.phase;
+  timer.total = p.phase === 'work' ? s.work : s.brk;
+  timer.startedAt = p.phase === 'work' && !p.waiting ? p.start : 0;
+  timer.running = !p.waiting && !s.pausedAt;
+  timer.endAt = timer.running ? p.end : 0;
+  timer.remaining = p.waiting ? timer.total : Math.max(0, p.end - at);
+  if (changed && !quiet && prev && now - p.start < 4000) {
+    // a new phase began while we watched: the same alert as a normal phase end, already running
+    alertPhaseEnd(p.phase === 'work' ? 'break' : 'work', false, true);
+  }
+  if (changed) api.schedule(timer.running ? Math.max(0, p.end - now) : p.waiting ? Math.max(0, p.start - now) : 0);
+  return changed;
+}
+
+function startSeries(count, at) {
+  const now = Date.now();
+  series = {
+    start: at && at > now ? at : now, count,
+    work: settings.work * 60000, brk: settings.brk * 60000, logged: 0, pausedAt: 0,
+  };
+  seriesPos = '';
+  seriesStartAt = 0;
+  api.closeAlert();
+  applySeries(true);
+  persist();
+  render();
+}
+function stopSeries() {
+  if (!series) return;
+  const s = series;
+  series = null;
+  seriesPos = '';
+  // log the work in progress, as reset does for a single session
+  if (timer.phase === 'work' && timer.startedAt) logWork(false);
+  setPhase('work');
+  persist();
+  render();
+  void s;
+}
+function alertSeriesDone() {
+  api.showAlert({
+    next: 'break', title: t('seriesDoneTitle'), body: t('seriesDoneBody'),
+    goLabel: '', okLabel: t('gotIt'), hideGo: true, sound: settings.sound, repeatSec: 15,
+    theme: effectiveTheme(), lang: settings.lang,
+  });
+}
+// "In 12 min · 14:00" for a series that has not started yet
+function seriesWaitText() {
+  if (!series || !seriesPos.startsWith('wait')) return '';
+  const left = Math.max(0, series.start - Date.now());
+  return t('seriesStartsIn')(fmtClock(left), hm(series.start));
 }
 
 // Light on resources: while the window is hidden in the tray only the title, tray tooltip and
@@ -415,6 +574,7 @@ function reset() {
 let winVisible = true;
 let lastTick = 0;
 function tick() {
+  if (series) applySeries();
   if (timer.running && Date.now() >= timer.endAt) {
     timer.remaining = 0;
     complete();
@@ -443,10 +603,16 @@ function syncHost() {
     startedAt: timer.startedAt,
     label: $('#label').value.trim(),
     sound: settings.sound, popup: settings.popup,
+    series,
     text: {
       phase: timer.phase === 'work' ? t('work') : t('break'), paused: t('paused'),
       pause: t('pause'), resume: t('resume'), reset: t('reset'),
       doneTitle: a.title, doneBody: a.body, go: a.auto ? '' : a.goLabel, ok: a.okLabel,
+      // texts the host uses when it moves a series on by itself
+      toBreakTitle: t('nBreakTitle'), toBreakBody: t('aBreakAuto')(settings.brk),
+      toWorkTitle: t('nWorkTitle'), toWorkBody: t('aWorkAuto')(settings.work),
+      seriesDoneTitle: t('seriesDoneTitle'), seriesDoneBody: t('seriesDoneBody'), gotIt: t('gotIt'), waitTitle: t('seriesWaitTitle'),
+      work: t('work'), brk: t('break'),
     },
   };
   const key = JSON.stringify(state);
@@ -454,6 +620,8 @@ function syncHost() {
 }
 function applyHostTimer(s) {
   if (!s || (s.phase !== 'work' && s.phase !== 'break') || !(s.total > 0)) return false;
+  if (s.series && s.series.count > 0) { series = { logged: 0, pausedAt: 0, ...(series || {}), ...s.series }; seriesPos = ''; applySeries(true); return true; }
+  if (series && !s.series) { series = null; seriesPos = ''; }
   TIMER_KEYS.forEach(k => { if (k in s) timer[k] = s[k]; });
   timer.running = !!timer.running;
   if (!timer.running && !(timer.remaining >= 0)) timer.remaining = timer.total;
@@ -487,7 +655,9 @@ function renderTimer() {
   tag.textContent = isWork ? t('work') : t('break');
   tag.classList.toggle('break', !isWork);
 
-  let info = t('session')(completedToday() + (isWork ? 1 : 0));
+  let info = series
+    ? (seriesPos.startsWith('wait') ? seriesWaitText() : t('seriesOf')(Math.min(series.count, seriesAt(series, series.pausedAt || Date.now()).idx + 1), series.count))
+    : t('session')(completedToday() + (isWork ? 1 : 0));
   if (touched && !timer.running) info += ` · ${t('paused')}`;
   $('#cycleInfo').textContent = info;
 
@@ -514,7 +684,12 @@ function renderTimer() {
   const goalH = settings.goal;
   const tSec = todaySec();
   $('#todayVal').textContent = goalH > 0 ? `${fmtDur(tSec)} / ${fmtHours(goalH)}` : fmtDur(tSec);
-  if (ANDROID) $('#faceToday').textContent = $('#todayVal').textContent;
+  if (ANDROID) $('#faceToday').textContent = series ? info : $('#todayVal').textContent;
+  // idle (nothing started): the phone shows the setup wheels instead of the ring
+  const idle = !series && isUntouched() && timer.phase === 'work';
+  $('#view-timer').classList.toggle('idle', idle);
+  $('#view-timer').classList.toggle('in-series', !!series);
+  renderWhen();
 
   // Running time in the title bar while another tab is open
   const status = touched && view !== 'timer' ? `${isWork ? 'w' : 'b'}${timer.running ? '' : 'p'}|${fmtClock(rem)}` : '';
@@ -536,7 +711,7 @@ function renderSteppers() {
     const key = el.dataset.key;
     const lim = LIMITS[key];
     const v = settings[key];
-    const label = key === 'goal' ? fmtHours(v) : fmtMinutes(v);
+    const label = key === 'goal' ? fmtHours(v) : key === 'seriesCount' ? t('seriesN')(v) : fmtMinutes(v);
     if (!el.firstChild) {
       el.innerHTML = '<button class="dec" aria-label="−">−</button><span class="val"></span><button class="inc" aria-label="+">+</button>';
       el.querySelector('.dec').addEventListener('click', () => changeSetting(key, -1));
@@ -1182,7 +1357,7 @@ function setPager(animate, offset = 0) {
   const main = $('main');
   main.style.transition = animate ? 'transform .4s cubic-bezier(.22, .9, .3, 1)' : 'none';
   main.style.transform = `translate3d(calc(${-pagerIndex() * 100}% + ${offset}px), 0, 0)`;
-  drawBlob(pagerIndex() - offset / (main.clientWidth || innerWidth));
+  drawBlob(pagerIndex() - offset / (main.clientWidth || innerWidth || 1));
 }
 
 /* Bouncy tab highlight. The two edges are springs chasing the tab under the finger: the edge
@@ -1195,6 +1370,7 @@ function blobRects() {
   return list.map(b => { const r = b.getBoundingClientRect(); return [r.left - bar.left + 4, r.right - bar.left - 4]; });
 }
 function drawBlob(f) {
+  if (!Number.isFinite(f)) f = pagerIndex();
   const el = $('.tab-blob');
   if (!el) return;
   const rects = blobRects(), n = rects.length;
@@ -1288,7 +1464,7 @@ function bindSwipe() {
 
 /* Phase lengths: a small wheel. Pull it down to go up (bigger numbers sit above), like
    scrolling a list; it snaps to a step with a little bounce. */
-const WHEEL_ROW = 34;
+const WHEEL_ROW = 60;
 // The window works like a lens: a number grows and brightens as it rolls into the middle.
 // Five numbers per wheel, so this is a handful of style writes per frame.
 function wheelPlace(d, dy) {
@@ -1299,8 +1475,8 @@ function wheelPlace(d, dy) {
     const dist = Math.abs((i - 2) * WHEEL_ROW + dy) / WHEEL_ROW; // 0 = in the middle of the lens
     const k = Math.max(0, 1 - dist);
     const lens = k * k * (3 - 2 * k); // smooth bulge
-    r.style.transform = `scale(${(0.56 + 0.44 * lens).toFixed(3)})`;
-    r.style.opacity = (0.28 + 0.72 * lens).toFixed(3);
+    r.style.transform = `scale(${(0.6 + 0.4 * lens).toFixed(3)})`;
+    r.style.opacity = (0.22 + 0.78 * lens).toFixed(3);
   });
 }
 // Let go: the drum springs back to the step with a small bounce.
@@ -1326,7 +1502,7 @@ function tickSound(dir) {
       const bp = audioCtx.createBiquadFilter();
       bp.type = 'bandpass';
       bp.frequency.value = freq;
-      bp.Q.value = 4.5;
+      bp.Q.value = 2.2;
       const g = audioCtx.createGain();
       g.gain.setValueAtTime(0.0001, at);
       g.gain.exponentialRampToValueAtTime(level, at + 0.0008);
@@ -1335,9 +1511,9 @@ function tickSound(dir) {
       src.start(at, Math.random() * 0.01, len + 0.005);
     };
     const t0 = audioCtx.currentTime + 0.002;
-    const base = (dir > 0 ? 3400 : 2900) * (0.94 + Math.random() * 0.12);
-    click(t0, base, 0.55, 0.014);               // the tooth snaps
-    click(t0 + 0.007, base * 0.62, 0.18, 0.02); // the pawl settles
+    const base = (dir > 0 ? 1700 : 1500) * (0.95 + Math.random() * 0.1);
+    click(t0, base, 0.42, 0.016);               // a soft, muted tok
+    click(t0 + 0.004, base * 0.32, 0.22, 0.024); // and its body
   } catch {}
 }
 function wheelSettle(d) {
@@ -1411,12 +1587,43 @@ function renderDials() {
       }).join('');
       wheelPlace(d, d._dy || 0);
     }
-    d.querySelector('.dial-unit').textContent = t('min');
+    d.querySelector('.dial-unit').textContent = key === 'work' ? t('work') : key === 'brk' ? t('break') : t('seriesCountL');
   });
 }
 
 // Play and pause drawn as two halves with the same points, so CSS can morph one into the other.
-const PLAY_PAUSE_SVG = '<svg class="pp" viewBox="0 0 24 24"><path class="pp-a"/><path class="pp-b"/></svg>';
+const PLAY_PAUSE_SVG = '<svg class="pp" viewBox="0 0 24 24"><defs><linearGradient id="ppG" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#4f8bff"/><stop offset="1" stop-color="#8a5cff"/></linearGradient></defs><path class="pp-a"/><path class="pp-b"/></svg>';
+
+// Series start time: "now" or a time of day (today, or tomorrow if it has passed)
+function renderWhen() {
+  const el = $('#seriesWhenText');
+  if (!el) return;
+  if (seriesStartAt && seriesStartAt <= Date.now()) seriesStartAt = 0;
+  const txt = seriesStartAt ? t('seriesAt')(hm(seriesStartAt)) : t('seriesNow');
+  if (el.textContent !== txt) el.textContent = txt;
+  $('#seriesWhenX').hidden = !seriesStartAt;
+  $('#seriesWhen').classList.toggle('set', !!seriesStartAt);
+}
+function bindWhen() {
+  const input = $('#seriesTime');
+  input.addEventListener('change', () => {
+    const [h, m] = input.value.split(':').map(Number);
+    if (Number.isNaN(h)) seriesStartAt = 0;
+    else {
+      const d = new Date();
+      d.setHours(h, m || 0, 0, 0);
+      if (d.getTime() <= Date.now() + 30000) d.setDate(d.getDate() + 1);
+      seriesStartAt = d.getTime();
+    }
+    render();
+  });
+  $('#seriesWhen').addEventListener('click', e => {
+    if (e.target === input) return;
+    e.preventDefault();
+    try { input.showPicker(); } catch { input.focus(); input.click(); }
+  });
+  $('#seriesWhenX').addEventListener('click', () => { seriesStartAt = 0; input.value = ''; render(); });
+}
 
 // Little reactions to presses (phone): restart a CSS animation on the pressed thing.
 function kick(el, cls) {
@@ -1503,7 +1710,7 @@ async function importFile(file) {
    When the window is too short, parts disappear in a fixed order (least important first).
    Each step is decided from the full layout, so shrinking never brings a hidden part back;
    only growing the window can. Works at any zoom: WebView2 zoom changes CSS px itself. */
-const FIT_STEPS = ['test', 'meta', 'today', 't-md', 'brk', 'work', 'label', 't-sm', 'phase'];
+const FIT_STEPS = ['test', 'meta', 'when', 'series', 'today', 't-md', 'brk', 'work', 'label', 't-sm', 'phase'];
 let fitLevel = -1;
 
 function fitTimer() {
@@ -1861,6 +2068,11 @@ function bind() {
     };
   }
   if (ANDROID) {
+    api.onBgHelp(() => {
+      const ask = () => confirmModal(t('bgTitle'), t('bgText'), t('bgGo'), { safe: true, cancel: t('bgLater') })
+        .then(ok => { if (ok) api.fixBackground(); });
+      if ($('#modal').hidden) ask(); else setTimeout(ask, 4000);
+    });
     bindSwipe();
     bindDials();
     $('#btnReset').addEventListener('click', () => kick($('#btnReset'), 'spin'));
@@ -1919,8 +2131,11 @@ function bind() {
   applyI18n();
   setPhase('work');
   if (ANDROID) applyHostTimer(data.timer);
+  const savedSeries = ANDROID && data.timer && data.timer.series ? data.timer.series : (data.current && data.current.series);
+  if (savedSeries && savedSeries.count > 0 && savedSeries.work > 0) { series = { logged: 0, pausedAt: 0, ...savedSeries }; applySeries(true); }
   if (ANDROID && settings.theme === 'system') settings.theme = systemDark ? 'dark' : 'light'; // the phone offers light and dark only
   bind();
+  bindWhen();
   syncInit(data);
   render();
   renderAutostart();

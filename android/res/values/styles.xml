@@ -6,6 +6,6 @@
         <item name="android:statusBarColor">@color/bg</item>
         <item name="android:navigationBarColor">@color/bg</item>
     </style>
-    <color name="bg">#191919</color>
+    <color name="bg">#0E0E0F</color>
     <color name="icon_bg">#37352F</color>
 </resources>

@@ -32,9 +32,9 @@ public class TimerReceiver extends BroadcastReceiver {
             case Intent.ACTION_BOOT_COMPLETED:
             case Intent.ACTION_MY_PACKAGE_REPLACED: {
                 JSONObject s = Host.timer(c);
-                if (!s.optBoolean("running")) {
+                if (!s.optBoolean("running") && s.optJSONObject("series") == null) {
                     Host.showTimer(c, s);
-                } else if (s.optLong("endAt") <= System.currentTimeMillis()) {
+                } else if (s.optBoolean("running") && s.optLong("endAt") <= System.currentTimeMillis()) {
                     Host.phaseDue(c);
                 } else {
                     Host.setTimer(c, s);

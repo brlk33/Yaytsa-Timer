@@ -1345,3 +1345,100 @@ html.android .dial[data-key="brk"] { background: linear-gradient(160deg, rgba(47
 html.android #view-timer .icon-btn { background: linear-gradient(165deg, var(--block-2), var(--block)); }
 html.android .tag { background: linear-gradient(135deg, rgba(61, 139, 255, .22), rgba(138, 92, 255, .18)); color: var(--text-strong); }
 html.android .tag.break { background: linear-gradient(135deg, rgba(47, 191, 143, .22), rgba(61, 183, 214, .18)); }
+
+/* ======================= 2.9: MIUI-inspired phone UI + series ======================= */
+/* PC: series rows only while nothing runs */
+#view-timer:not(.idle) .prop[data-p="series"], #view-timer:not(.idle) .prop[data-p="when"] { display: none; }
+.when { display: inline-flex; align-items: center; gap: 4px; }
+.when-chip {
+  position: relative; display: inline-flex; align-items: center; gap: 6px;
+  padding: 4px 12px; border-radius: 999px; cursor: pointer;
+  color: var(--text); background: var(--hover); font-size: 14px; font-variant-numeric: tabular-nums;
+}
+.when-chip.set { color: #fff; background: linear-gradient(135deg, #4f8bff, #8a5cff); }
+.when-ico { width: 15px; height: 15px; flex: none; }
+.when-input { position: absolute; inset: 0; opacity: 0; width: 100%; height: 100%; border: 0; padding: 0; cursor: pointer; }
+.when-x { width: 26px; height: 26px; border: 0; border-radius: 50%; background: transparent; color: var(--text-2); display: grid; place-items: center; }
+.when-x svg { width: 14px; height: 14px; }
+
+/* Palette: MIUI greys — a light page with white groups, or near-black with dark groups */
+html.android { --bg: #0e0e0f; --block: #1c1c1e; --block-2: #2a2a2d; --accent-grad: linear-gradient(135deg, #4f8bff, #8a5cff); }
+html.android[data-theme="light"] { --bg: #f5f5f7; --block: #ffffff; --block-2: #efeff1; --text-strong: #111; }
+
+/* No grey gradients anywhere: flat surfaces; colour only where it means something */
+html.android .card, html.android .proj, html.android #view-settings .set, html.android #syncBox .sync-actions,
+html.android #syncBox .sync-form, html.android #syncBox .sync-msg, html.android #view-timer .label-input,
+html.android #view-timer .icon-btn, html.android .ghost, html.android .add-btn, html.android .dial {
+  background: var(--block); background-image: none;
+}
+html.android .card, html.android .proj, html.android .dial { box-shadow: none; }
+html.android #view-settings .set + .set:not([data-desktop]) { box-shadow: none; }
+html.android .set-ico { background: none; }
+html.android .tag, html.android .tag.break { background: none; padding: 0; color: var(--text-2); font-weight: 500; font-size: 14px; }
+
+/* Type: light, large numbers like the MIUI clock */
+html.android #view-timer .time { font-weight: 300; letter-spacing: -0.02em; font-size: clamp(56px, 18vw, 80px); }
+html.android h1 { font-weight: 500; font-size: 30px; letter-spacing: -0.01em; }
+html.android .card-val, html.android .proj-total { font-weight: 500; }
+html.android .group-title { color: var(--text-2); font-weight: 500; font-size: 13px; }
+
+/* Timer page */
+html.android #view-timer { justify-content: center; gap: 0; }
+html.android .face::before { display: none; }
+html.android .ring-track { stroke: var(--block-2); stroke-width: 2.2; }
+html.android .ring-fill { stroke-width: 3; }
+html.android #view-timer.idle .face { display: none; }
+html.android #view-timer:not(.idle) .dials { display: none !important; }
+html.android #view-timer .label-wrap { order: 3; margin-top: 22px; }
+html.android #view-timer .dials { order: 1; }
+html.android #view-timer .props { order: 2; display: flex !important; justify-content: center; margin: 14px 0 0; padding: 0; border: 0; }
+html.android #view-timer .props .prop { display: none; }
+html.android #view-timer.idle .props .prop[data-p="when"] { display: flex; min-height: 0; }
+html.android #view-timer .props .prop[data-p="when"] .prop-key { display: none; }
+html.android .when-chip { padding: 9px 16px; font-size: 15px; background: var(--block); color: var(--text-strong); }
+html.android .when-chip.set { background: var(--accent-grad); color: #fff; }
+html.android .when-x { width: 36px; height: 36px; background: var(--block); }
+html.android #view-timer .controls { order: 4; margin: 26px 0 0; gap: 40px; }
+html.android .face { order: 0; }
+
+/* Play: a white (or dark) disc with a violet triangle, soft violet shadow — the MIUI key */
+html.android #btnStart, html.android #btnStart.secondary {
+  width: 80px; height: 80px; border-radius: 50%;
+  background: var(--block); color: #6f6bff;
+  box-shadow: 0 10px 28px rgba(92, 96, 255, .22), 0 1px 0 rgba(255, 255, 255, .04) inset;
+}
+html.android[data-theme="light"] #btnStart { box-shadow: 0 10px 26px rgba(92, 110, 255, .2); }
+.pp path { fill: url(#ppG); stroke: url(#ppG); }
+html.android .pp { width: 36px; height: 36px; }
+html.android #view-timer .icon-btn { width: 60px; height: 60px; background: var(--block); color: var(--text-2); }
+html.android #view-timer .icon-btn svg { width: 22px; height: 22px; }
+
+/* Wheels: three columns divided by hairlines, light numbers, label underneath */
+html.android .dials { width: 100%; max-width: 440px; gap: 0; margin: 0; }
+html.android .dial {
+  flex: 1; height: auto; padding: 0; border-radius: 0; background: none !important;
+  flex-direction: column; justify-content: center; gap: 6px; cursor: ns-resize;
+}
+html.android .dial + .dial { box-shadow: -1px 0 0 var(--border); }
+html.android .dial-ico { display: none; }
+html.android .wheel { flex: none; width: 100%; height: 300px; }
+html.android .wheel::before, html.android .wheel::after { display: none; }
+html.android .wheel-col { margin-top: -150px; }
+html.android .wr, html.android .wr.cur { height: 60px; line-height: 60px; font-size: 50px; font-weight: 300; letter-spacing: -0.02em; color: var(--text-strong); }
+html.android .dial-unit { width: auto; text-align: center; font-size: 13px; color: var(--text-3); }
+
+/* Bottom bar: MIUI-like — grey icons, the current one in the accent colour */
+html.android .tab { color: var(--text-strong); }
+html.android .tab.active { color: #6f6bff; }
+html.android .tab-blob { background: rgba(111, 107, 255, .12); }
+html.android .tabs { border-top: 0; background: var(--bg); }
+
+/* Settings and lists: white groups on a grey page, no lines */
+html.android #view-settings .set { padding: 12px 16px; }
+html.android .toggle.on { background: var(--accent-grad); }
+html.android .seg { background: var(--block-2); }
+html.android .seg button.on { background: var(--block); color: var(--text-strong); }
+html.android .proj-acts .icon-btn.sm { background: var(--block-2); }
+html.android .banner { background: var(--block); }
+
+.prop .when { width: 140px; justify-content: center; }

@@ -67,5 +67,7 @@
     openUrl: u => post('openUrl', u),
     soundInfo: () => call('soundInfo'),
     pickSound: kind => call('pickSound', kind),
+    onBgHelp: on('bg-help'),
+    fixBackground: () => post('fixBackground'),
   };
 })();

@@ -100,6 +100,25 @@ final class Host {
         JSONObject s = timer(c);
         if (s.optLong("total") <= 0) return s;
         long now = System.currentTimeMillis();
+        JSONObject sr = s.optJSONObject("series");
+        if (sr != null) {
+            try {
+                if (s.optBoolean("running")) {
+                    sr.put("pausedAt", now);
+                    s.put("remaining", Math.max(0, s.optLong("endAt") - now));
+                    s.put("running", false);
+                    s.put("endAt", 0);
+                } else {
+                    long pausedAt = sr.optLong("pausedAt");
+                    if (pausedAt > 0) sr.put("start", sr.optLong("start") + now - pausedAt);
+                    else sr.put("start", now); // a planned series: start it now
+                    sr.put("pausedAt", 0);
+                    applySeries(s, sr, now);
+                }
+            } catch (Exception ignored) {}
+            setTimer(c, s);
+            return s;
+        }
         try {
             if (s.optBoolean("running")) {
                 s.put("remaining", Math.max(0, s.optLong("endAt") - now));
@@ -126,11 +145,14 @@ final class Host {
     static void schedule(Context c, JSONObject s) {
         AlarmManager am = (AlarmManager) c.getSystemService(Context.ALARM_SERVICE);
         PendingIntent pi = alarmIntent(c);
-        if (!s.optBoolean("running")) {
+        long at;
+        JSONObject sr = s.optJSONObject("series");
+        if (s.optBoolean("running")) at = s.optLong("endAt");
+        else if (sr != null && sr.optLong("pausedAt") == 0 && sr.optLong("start") > 0) at = sr.optLong("start");
+        else {
             am.cancel(pi);
             return;
         }
-        long at = s.optLong("endAt");
         try {
             if (Build.VERSION.SDK_INT >= 31 && !am.canScheduleExactAlarms()) {
                 am.setAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, at, pi);
@@ -145,6 +167,13 @@ final class Host {
     /** The alarm went off: the phase is over even if the page is not running. */
     static void phaseDue(Context c) {
         JSONObject s = timer(c);
+        JSONObject sr = s.optJSONObject("series");
+        if (sr != null) {
+            seriesDue(c, s, sr);
+            MainActivity a = live;
+            if (a != null) a.emit("phase-due", null);
+            return;
+        }
         if (!s.optBoolean("running")) return;
         long endAt = s.optLong("endAt");
         if (endAt > System.currentTimeMillis() + 2000) {
@@ -153,7 +182,7 @@ final class Host {
         }
         nm(c).cancel(ID_TIMER);
         if (prefs(c).getLong("alertedEndAt", 0) != endAt) {
-            prefs(c).edit().putLong("alertedEndAt", endAt).apply();
+            prefs(c).edit().putLong("alertedEndAt", endAt).putLong("alertedAt", System.currentTimeMillis()).apply();
             JSONObject t = s.optJSONObject("text");
             if (t == null) t = new JSONObject();
             boolean popup = s.optBoolean("popup", true);
@@ -166,8 +195,69 @@ final class Host {
 
     /** True when the alarm already announced the end of the phase the page is completing now. */
     static boolean alreadyAlerted(Context c) {
+        if (System.currentTimeMillis() - prefs(c).getLong("alertedAt", 0) < 5000) return true;
         JSONObject s = timer(c);
         return s.optBoolean("running") && prefs(c).getLong("alertedEndAt", 0) == s.optLong("endAt");
+    }
+
+    /* ---------------- series (same schedule maths as app.js) ---------------- */
+
+    /** Puts the phase the schedule says into s. Returns "wait", "work", "break" or "done". */
+    static String applySeries(JSONObject s, JSONObject sr, long now) throws Exception {
+        long work = sr.optLong("work"), brk = sr.optLong("brk"), start = sr.optLong("start"), c = work + brk;
+        int count = sr.optInt("count");
+        long pausedAt = sr.optLong("pausedAt");
+        long at = pausedAt > 0 ? pausedAt : now;
+        if (c <= 0 || count <= 0) return "done";
+        if (at < start) {
+            s.put("phase", "work").put("total", work).put("running", false).put("endAt", 0).put("remaining", work).put("startedAt", 0);
+            return "wait";
+        }
+        long k = (at - start) / c, within = at - start - k * c;
+        if (k >= count || (k == count - 1 && within >= work)) return "done";
+        long base = start + k * c;
+        boolean isWork = within < work;
+        long pStart = isWork ? base : base + work, pEnd = isWork ? base + work : base + c;
+        s.put("phase", isWork ? "work" : "break").put("total", isWork ? work : brk);
+        s.put("startedAt", isWork ? pStart : 0);
+        if (pausedAt > 0) s.put("running", false).put("endAt", 0).put("remaining", Math.max(0, pEnd - at));
+        else s.put("running", true).put("endAt", pEnd).put("remaining", 0);
+        s.put("phaseStart", pStart);
+        return isWork ? "work" : "break";
+    }
+
+    /** A series boundary passed while the page may be asleep: move on, ring, re-arm. */
+    static void seriesDue(Context c, JSONObject s, JSONObject sr) {
+        long now = System.currentTimeMillis();
+        if (sr.optLong("pausedAt") > 0) return;
+        JSONObject t = s.optJSONObject("text");
+        if (t == null) t = new JSONObject();
+        String before = s.optString("phase") + s.optLong("endAt") + s.optBoolean("running");
+        String state;
+        try {
+            state = applySeries(s, sr, now);
+            if ("done".equals(state)) {
+                s.remove("series");
+                s.put("phase", "work").put("running", false).put("endAt", 0).put("startedAt", 0);
+                s.put("total", sr.optLong("work")).put("remaining", sr.optLong("work"));
+            }
+        } catch (Exception e) {
+            return;
+        }
+        boolean changed = !before.equals(s.optString("phase") + s.optLong("endAt") + s.optBoolean("running"));
+        boolean fresh = now - s.optLong("phaseStart", now) < 60000; // after a long sleep, no stale rings
+        if (changed && ("done".equals(state) || fresh)) {
+            prefs(c).edit().putLong("alertedAt", now).putLong("alertedEndAt", s.optLong("endAt")).apply();
+            boolean sound = s.optBoolean("sound", true);
+            if ("done".equals(state)) postAlert(c, t.optString("seriesDoneTitle"), t.optString("seriesDoneBody"), "", t.optString("gotIt"), sound);
+            else if ("work".equals(state)) postAlert(c, t.optString("toWorkTitle"), t.optString("toWorkBody"), "", t.optString("gotIt"), sound);
+            else if ("break".equals(state)) postAlert(c, t.optString("toBreakTitle"), t.optString("toBreakBody"), "", t.optString("gotIt"), sound);
+        }
+        try {
+            JSONObject tx = s.optJSONObject("text");
+            if (tx != null && !"done".equals(state)) tx.put("phase", "work".equals(s.optString("phase")) ? tx.optString("work") : tx.optString("brk"));
+        } catch (Exception ignored) {}
+        setTimer(c, s);
     }
 
     /* ---------------- notifications ---------------- */
@@ -244,6 +334,17 @@ final class Host {
         boolean running = s.optBoolean("running");
         long remaining = running ? Math.max(0, s.optLong("endAt") - System.currentTimeMillis()) : s.optLong("remaining", total);
         boolean touched = running || (total > 0 && remaining < total);
+        JSONObject plan = s.optJSONObject("series");
+        if (!running && plan != null && plan.optLong("pausedAt") == 0 && plan.optLong("start") > System.currentTimeMillis()) {
+            JSONObject tx = s.optJSONObject("text");
+            Notification.Builder w = new Notification.Builder(c, CH_TIMER)
+                    .setSmallIcon(R.drawable.ic_stat).setColor(0xFF6F6BFF).setOngoing(true).setOnlyAlertOnce(true)
+                    .setContentTitle(tx != null ? tx.optString("waitTitle", "") : "")
+                    .setWhen(plan.optLong("start")).setShowWhen(true).setUsesChronometer(true).setChronometerCountDown(true)
+                    .setContentIntent(openApp(c, null, 10));
+            nm(c).notify(ID_TIMER, w.build());
+            return;
+        }
         if (!touched || (running && remaining == 0)) {
             nm(c).cancel(ID_TIMER);
             return;

@@ -65,9 +65,9 @@ public class MainActivity extends Activity {
         pendingAuth = authFrom(getIntent());
 
         root = new FrameLayout(this);
-        root.setBackgroundColor(0xFF191919);
+        root.setBackgroundColor(0xFF0E0E0F);
         web = new WebView(this);
-        web.setBackgroundColor(0xFF191919);
+        web.setBackgroundColor(0xFF0E0E0F);
         web.setOverScrollMode(View.OVER_SCROLL_NEVER);
         root.addView(web, new FrameLayout.LayoutParams(-1, -1));
         setContentView(root);
@@ -158,7 +158,7 @@ public class MainActivity extends Activity {
     @SuppressWarnings("deprecation")
     private void applyTheme() {
         boolean dark = "dark".equals(theme) || ("system".equals(theme) && systemDark());
-        int bg = dark ? 0xFF191919 : 0xFFFFFFFF;
+        int bg = dark ? 0xFF0E0E0F : 0xFFF5F5F7;
         root.setBackgroundColor(bg);
         web.setBackgroundColor(bg);
         Window w = getWindow();
@@ -220,7 +220,11 @@ public class MainActivity extends Activity {
     }
 
     private boolean started;
-    @Override protected void onResume() { super.onResume(); started = true; }
+    @Override protected void onResume() {
+        super.onResume();
+        started = true;
+        if (bgStep == 1) { bgStep = 2; ui.postDelayed(this::fixBackground, 400); } // back from the battery screen: next stop
+    }
     @Override protected void onPause() { started = false; super.onPause(); }
     private boolean isStartedNow() { return started; }
 
@@ -312,6 +316,63 @@ public class MainActivity extends Activity {
             requestPermissions(new String[]{Manifest.permission.POST_NOTIFICATIONS}, REQ_NOTIFY);
         }
         checkUpdate();
+        ui.postDelayed(this::bgCheck, 3500); // after the launch animation
+    }
+
+    /* ---------------- background work ----------------
+       Phones (Xiaomi especially) hold back alarms and kill apps they think are idle. When the
+       app is still under battery optimisation, or on MIUI where autostart is off by default,
+       the page explains why and one button walks through the right system screens. */
+    private int bgStep; // 0 idle, 1 battery screen open, 2 next screen
+    private static final long BG_ASK_EVERY = 3 * 24 * 3600_000L;
+
+    private static boolean isMiui() {
+        String m = Build.MANUFACTURER == null ? "" : Build.MANUFACTURER.toLowerCase();
+        return m.contains("xiaomi") || m.contains("redmi") || m.contains("poco");
+    }
+
+    private boolean batteryRestricted() {
+        android.os.PowerManager pm = (android.os.PowerManager) getSystemService(POWER_SERVICE);
+        return pm != null && !pm.isIgnoringBatteryOptimizations(getPackageName());
+    }
+
+    private boolean exactAlarmsBlocked() {
+        if (Build.VERSION.SDK_INT < 31) return false;
+        android.app.AlarmManager am = (android.app.AlarmManager) getSystemService(ALARM_SERVICE);
+        return am != null && !am.canScheduleExactAlarms();
+    }
+
+    private void bgCheck() {
+        android.content.SharedPreferences p = Host.prefs(this);
+        boolean miuiPending = isMiui() && !p.getBoolean("miuiAutostartShown", false);
+        if (!batteryRestricted() && !miuiPending && !exactAlarmsBlocked()) return;
+        if (System.currentTimeMillis() - p.getLong("bgAskedAt", 0) < BG_ASK_EVERY) return;
+        p.edit().putLong("bgAskedAt", System.currentTimeMillis()).apply();
+        emit("bg-help", null);
+    }
+
+    private boolean tryStart(Intent i) {
+        try {
+            startActivity(i);
+            return true;
+        } catch (Exception e) {
+            return false;
+        }
+    }
+
+    @android.annotation.SuppressLint("BatteryLife")
+    private void fixBackground() {
+        if (bgStep < 1 && batteryRestricted()) {
+            bgStep = 1;
+            if (tryStart(new Intent(android.provider.Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS, Uri.parse("package:" + getPackageName())))) return;
+        }
+        bgStep = 0;
+        if (exactAlarmsBlocked() && tryStart(new Intent(android.provider.Settings.ACTION_REQUEST_SCHEDULE_EXACT_ALARM, Uri.parse("package:" + getPackageName())))) return;
+        if (isMiui() && !Host.prefs(this).getBoolean("miuiAutostartShown", false)) {
+            Host.prefs(this).edit().putBoolean("miuiAutostartShown", true).apply();
+            Intent auto = new Intent().setComponent(new android.content.ComponentName("com.miui.securitycenter", "com.miui.permcenter.autostart.AutoStartManagementActivity"));
+            if (!tryStart(auto)) tryStart(new Intent(android.provider.Settings.ACTION_APPLICATION_DETAILS_SETTINGS, Uri.parse("package:" + getPackageName())));
+        }
     }
 
     /** Commands from bridge.js; run on the UI thread in the order the page sent them. */
@@ -370,6 +431,9 @@ public class MainActivity extends Activity {
                 break;
             case "pickSound":
                 pickSound(id, args.optString(0));
+                break;
+            case "fixBackground":
+                fixBackground();
                 break;
             case "installUpdate":
                 Updater.install(this);
