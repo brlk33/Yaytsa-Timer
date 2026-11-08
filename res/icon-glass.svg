@@ -1,0 +1,55 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024">
+  <!-- Яйцетаймер, liquid-glass icon. Rendered to PNG/ICO by tools/icons (see README). -->
+  <defs>
+    <clipPath id="tile"><rect x="96" y="96" width="832" height="832" rx="214"/></clipPath>
+    <linearGradient id="glass" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#ffffff"/>
+      <stop offset=".55" stop-color="#f1f3f8"/>
+      <stop offset="1" stop-color="#e2e6ef"/>
+    </linearGradient>
+    <linearGradient id="spec" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#fff" stop-opacity=".95"/>
+      <stop offset="1" stop-color="#fff" stop-opacity="0"/>
+    </linearGradient>
+    <linearGradient id="iriA" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#00e0ff"/>
+      <stop offset=".35" stop-color="#2d5bff"/>
+      <stop offset=".7" stop-color="#ff2a8a"/>
+      <stop offset="1" stop-color="#ff8a3c"/>
+    </linearGradient>
+    <linearGradient id="iriB" x1="1" y1="1" x2="0" y2="0">
+      <stop offset="0" stop-color="#00e0ff"/>
+      <stop offset=".35" stop-color="#2d5bff"/>
+      <stop offset=".7" stop-color="#ff2a8a"/>
+      <stop offset="1" stop-color="#ffb03c"/>
+    </linearGradient>
+    <filter id="b40" x="-30%" y="-30%" width="160%" height="160%"><feGaussianBlur stdDeviation="40"/></filter>
+    <filter id="b16" x="-30%" y="-30%" width="160%" height="160%"><feGaussianBlur stdDeviation="16"/></filter>
+    <filter id="b7" x="-30%" y="-30%" width="160%" height="160%"><feGaussianBlur stdDeviation="7"/></filter>
+    <path id="egg" fill-rule="evenodd" d="M512 262C404 262 306 425 306 560c0 125 90 222 206 222s206-97 206-222C718 425 620 262 512 262zM512 452a122 122 0 1 1 0 244a122 122 0 1 1 0-244z"/>
+  </defs>
+
+  <!-- soft shadow under the tile -->
+  <rect x="150" y="190" width="724" height="760" rx="200" fill="#20284a" opacity=".22" filter="url(#b40)"/>
+
+  <g clip-path="url(#tile)">
+    <rect x="96" y="96" width="832" height="832" fill="url(#glass)"/>
+    <!-- light bent at the rim: iridescent glows on two corners -->
+    <path d="M560 112C780 104 914 210 912 470" fill="none" stroke="url(#iriA)" stroke-width="58" stroke-linecap="round" filter="url(#b16)" opacity=".95"/>
+    <path d="M112 560C104 800 230 914 470 912" fill="none" stroke="url(#iriB)" stroke-width="58" stroke-linecap="round" filter="url(#b16)" opacity=".95"/>
+    <!-- top specular sheen and a bright inner edge -->
+    <rect x="96" y="96" width="832" height="430" fill="url(#spec)" opacity=".6"/>
+    <rect x="108" y="108" width="808" height="808" rx="202" fill="none" stroke="#fff" stroke-width="14" opacity=".85"/>
+  </g>
+  <rect x="97" y="97" width="830" height="830" rx="213" fill="none" stroke="#b9c1d3" stroke-width="2.5" opacity=".75"/>
+
+  <!-- the glyph seen through glass: colour fringes, then the black egg timer -->
+  <g filter="url(#b7)" opacity=".8">
+    <use href="#egg" transform="translate(-12 10)" fill="#00c8ff"/>
+    <use href="#egg" transform="translate(12 -9)" fill="#ff2a8a"/>
+  </g>
+  <rect x="480" y="230" width="64" height="44" rx="14" fill="#0c0c11"/>
+  <use href="#egg" fill="#0c0c11"/>
+  <path d="M512 574L512 476A98 98 0 1 1 414 574Z" fill="#0c0c11"/>
+  <circle cx="512" cy="574" r="14" fill="#0c0c11"/>
+</svg>

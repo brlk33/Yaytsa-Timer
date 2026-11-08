@@ -1594,6 +1594,60 @@ function renderDials() {
 // Play and pause drawn as two halves with the same points, so CSS can morph one into the other.
 const PLAY_PAUSE_SVG = '<svg class="pp" viewBox="0 0 24 24"><defs><linearGradient id="ppG" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#4f8bff"/><stop offset="1" stop-color="#8a5cff"/></linearGradient></defs><path class="pp-a"/><path class="pp-b"/></svg>';
 
+/* ---------- Start-time picker for the PC (the system one is a white Windows panel) ---------- */
+let tpState = null;
+function openTimePicker(anchor) {
+  const d = seriesStartAt ? new Date(seriesStartAt) : new Date(Date.now() + 15 * 60000);
+  tpState = { h: d.getHours(), m: (Math.ceil(d.getMinutes() / 5) * 5) % 60 };
+  const tp = $('#tp');
+  renderTimePicker();
+  tp.hidden = false;
+  const r = anchor.getBoundingClientRect();
+  const w = tp.offsetWidth, h = tp.offsetHeight;
+  const x = Math.min(Math.max(10, r.left + r.width / 2 - w / 2), window.innerWidth - w - 10);
+  let y = r.bottom + 8;
+  if (y + h > window.innerHeight - 10) y = Math.max(10, r.top - h - 8);
+  tp.style.left = `${x}px`;
+  tp.style.top = `${y}px`;
+  tp.querySelectorAll('.tp-c.sel').forEach(b => b.parentElement.scrollTop = b.offsetTop - b.parentElement.clientHeight / 2 + b.offsetHeight / 2);
+}
+function renderTimePicker() {
+  const tp = $('#tp');
+  const keep = Array.from(tp.querySelectorAll('.tp-col'), c => c.scrollTop);
+  const col = (vals, key, sel) => `<div class="tp-col">${vals.map(v =>
+    `<button class="tp-c${v === sel ? ' sel' : ''}" data-${key}="${v}">${pad(v)}</button>`).join('')}</div>`;
+  tp.innerHTML = `
+    <div class="tp-head">${esc(t('seriesStart'))}</div>
+    <div class="tp-cols">${col(Array.from({ length: 24 }, (_, i) => i), 'h', tpState.h)}<span class="tp-sep">:</span>${col(Array.from({ length: 12 }, (_, i) => i * 5), 'm', tpState.m)}</div>
+    <div class="cal-foot"><button class="ghost" data-act="now">${esc(t('seriesNow'))}</button><button class="ghost tp-ok" data-act="ok">${esc(t('done'))}</button></div>`;
+  tp.querySelectorAll('.tp-col').forEach((c, i) => { if (keep[i] != null) c.scrollTop = keep[i]; });
+}
+function closeTimePicker() {
+  $('#tp').hidden = true;
+  tpState = null;
+}
+function bindTimePicker() {
+  $('#tp').addEventListener('click', e => {
+    const b = e.target.closest('button');
+    if (!b || !tpState) return;
+    if (b.dataset.h != null) { tpState.h = Number(b.dataset.h); renderTimePicker(); return; }
+    if (b.dataset.m != null) { tpState.m = Number(b.dataset.m); renderTimePicker(); return; }
+    if (b.dataset.act === 'now') seriesStartAt = 0;
+    if (b.dataset.act === 'ok') {
+      const d = new Date();
+      d.setHours(tpState.h, tpState.m, 0, 0);
+      if (d.getTime() <= Date.now() + 30000) d.setDate(d.getDate() + 1);
+      seriesStartAt = d.getTime();
+    }
+    closeTimePicker();
+    render();
+  });
+  document.addEventListener('mousedown', e => {
+    if (tpState && !e.target.closest('#tp') && !e.target.closest('#seriesWhen')) closeTimePicker();
+  });
+  document.addEventListener('keydown', e => { if (e.key === 'Escape' && tpState) closeTimePicker(); });
+}
+
 // Series start time: "now" or a time of day (today, or tomorrow if it has passed)
 function renderWhen() {
   const el = $('#seriesWhenText');
@@ -1618,6 +1672,7 @@ function bindWhen() {
     render();
   });
   $('#seriesWhen').addEventListener('click', e => {
+    if (!ANDROID) { e.preventDefault(); if (tpState) closeTimePicker(); else openTimePicker($('#seriesWhen')); return; }
     if (e.target === input) return;
     e.preventDefault();
     try { input.showPicker(); } catch { input.focus(); input.click(); }
@@ -2136,6 +2191,7 @@ function bind() {
   if (ANDROID && settings.theme === 'system') settings.theme = systemDark ? 'dark' : 'light'; // the phone offers light and dark only
   bind();
   bindWhen();
+  bindTimePicker();
   syncInit(data);
   render();
   renderAutostart();

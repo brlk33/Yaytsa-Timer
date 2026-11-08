@@ -1442,3 +1442,24 @@ html.android .proj-acts .icon-btn.sm { background: var(--block-2); }
 html.android .banner { background: var(--block); }
 
 .prop .when { width: 140px; justify-content: center; }
+
+/* Start-time picker (PC), same look as the calendar */
+html:not(.android) .when-input { pointer-events: none; }
+.tp { width: 220px; padding: 14px; }
+.tp-head { font-weight: 650; font-size: 15px; color: var(--text-strong); padding: 0 6px 10px; }
+.tp-cols { display: flex; align-items: stretch; gap: 6px; height: 196px; }
+.tp-sep { align-self: center; color: var(--text-3); font-weight: 600; }
+.tp-col { flex: 1; overflow-y: auto; scrollbar-width: none; display: flex; flex-direction: column; gap: 2px; padding: 2px; }
+.tp-col::-webkit-scrollbar { display: none; }
+.tp-c {
+  flex: none; height: 34px; border: 0; border-radius: 10px;
+  background: transparent; color: var(--text); font-size: 14px; font-variant-numeric: tabular-nums;
+  transition: background .12s var(--ease), color .12s var(--ease);
+}
+.tp-c:hover { background: var(--hover); color: var(--text-strong); }
+.tp-c.sel { background: var(--accent); color: #fff; font-weight: 600; }
+.tp .tp-ok { color: var(--accent); }
+
+/* Title bar logo: the liquid-glass app icon itself */
+.brand-logo, :root[data-theme="light"] .brand-logo { background: none; box-shadow: none; border-radius: 0; width: 28px; height: 28px; }
+.brand-logo img { width: 28px; height: 28px; display: block; }
