@@ -48,6 +48,9 @@ const I18N = {
     seriesStartsIn: (left, at) => `Старт в ${at} · через ${left}`, seriesDoneTitle: 'Серия завершена', seriesDoneBody: 'Все заходы сделаны. Отличная работа!',
     seriesCountL: 'Заходы', seriesNow: 'Сейчас', seriesAt: at => `В ${at}`, seriesStart: 'Начало', seriesWaitTitle: 'Серия начнётся через',
     bgTitle: 'Разрешите работу в фоне', bgText: 'Иначе телефон может приглушить сигнал конца захода или серию, пока приложение закрыто.', bgGo: 'Открыть настройки', bgLater: 'Позже',
+    atTitle: 'Добавить время вручную', atProjectPh: 'Проект или задача', atHow: 'Сколько', atWhen: 'Когда', atSave: 'Добавить',
+    atAdded: d => `Добавлено: ${d}`, atManual: 'вручную',
+    stopSeries: 'Остановить серию', stopSeriesQ: 'Остановить серию?', stopSeriesText: 'Уже сделанные заходы останутся в истории, текущий запишется как есть.',
     alertSound: 'Звук сигнала', choose: 'Выбрать', soundDefault: 'Стандартный', soundSystem: 'Звуки телефона', soundFile: 'Свой файл',
     soundSet: n => `Звук: ${n}`, updTitle: v => `Доступна версия ${v}`, updText: 'Обновление уже скачано, установка займёт несколько секунд.', updInstall: 'Обновить', updLater: 'Позже',
     projEmpty: 'Напишите на вкладке «Таймер», над чем работаете, или добавьте проект здесь',
@@ -112,6 +115,9 @@ scale: 'Масштаб', appsPickTitle: 'Добавить программу', a
     seriesStartsIn: (left, at) => `Starts at ${at} · in ${left}`, seriesDoneTitle: 'Series complete', seriesDoneBody: 'All sessions done. Great work!',
     seriesCountL: 'Sessions', seriesNow: 'Now', seriesAt: at => `At ${at}`, seriesStart: 'Start', seriesWaitTitle: 'Series starts in',
     bgTitle: 'Allow running in the background', bgText: 'Otherwise the phone may silence the end-of-session alert or a series while the app is closed.', bgGo: 'Open settings', bgLater: 'Later',
+    atTitle: 'Add time by hand', atProjectPh: 'Project or task', atHow: 'How long', atWhen: 'When', atSave: 'Add',
+    atAdded: d => `Added: ${d}`, atManual: 'by hand',
+    stopSeries: 'Stop series', stopSeriesQ: 'Stop the series?', stopSeriesText: 'Finished sessions stay in your history; the current one is saved as it is.',
     alertSound: 'Alert sound', choose: 'Choose', soundDefault: 'Default', soundSystem: 'Phone sounds', soundFile: 'Your own file',
     soundSet: n => `Sound: ${n}`, updTitle: v => `Version ${v} is available`, updText: 'The update is already downloaded, installing takes a few seconds.', updInstall: 'Update', updLater: 'Later',
     projEmpty: 'Type what you’re working on in the Timer tab, or add a project here',
@@ -182,7 +188,7 @@ const t = k => I18N[settings.lang][k];
 
 /* ================= Persistence ================= */
 let saveTimer = null;
-const snapshot = () => ({ settings, sessions, projects, current: { label: $('#label').value, series }, sync: syncSnapshot() });
+const snapshot = () => ({ settings, sessions, projects, current: { label: $('#label').value, series, timer: TIMER_KEYS.reduce((o, k) => (o[k] = timer[k], o), {}) }, sync: syncSnapshot() });
 function persist() {
   clearTimeout(saveTimer);
   saveTimer = setTimeout(() => {
@@ -312,6 +318,7 @@ function start() {
 function pause() {
   if (!timer.running) return;
   if (series) {
+    if (!series.pausedAt) return; // series do not pause; only a pause already saved (older version) is kept
     series.pausedAt = Date.now();
     seriesPos = '';
     applySeries(true);
@@ -328,6 +335,11 @@ const toggle = () => {
   // From an untouched timer, more than one session or a start time means a series
   if (!series && !timer.running && isUntouched() && timer.phase === 'work' && (settings.seriesCount > 1 || seriesStartAt)) {
     startSeries(settings.seriesCount, seriesStartAt);
+    return;
+  }
+  if (series && series.pausedAt) { start(); return; } // a pause saved by 2.9 resumes
+  if (series && !seriesPos.startsWith('wait')) {
+    confirmModal(t('stopSeriesQ'), t('stopSeriesText'), t('stopSeries')).then(ok => { if (ok) stopSeries(); });
     return;
   }
   if (timer.running) pause(); else start();
@@ -628,9 +640,13 @@ function applyHostTimer(s) {
   return true;
 }
 
+let lastSavedTimer = '';
 function renderOuter() {
   syncHost();
   syncTimer();
+  // keep the running timer on disk too, so quitting or updating the app does not stop it
+  const tk = `${timer.phase}|${timer.total}|${timer.running}|${timer.running ? timer.endAt : timer.remaining}|${timer.startedAt}`;
+  if (tk !== lastSavedTimer) { if (lastSavedTimer) persist(); lastSavedTimer = tk; }
   const rem = currentRemaining();
   const isWork = timer.phase === 'work';
   const touched = !isUntouched();
@@ -673,10 +689,15 @@ function renderTimer() {
   $('#face').classList.toggle('running', timer.running);
 
   const btn = $('#btnStart');
-  const btnText = timer.running ? t('pause') : (touched ? t('resume') : t('start'));
+  const seriesOn = !!series && !seriesPos.startsWith('wait');
+  const btnText = seriesOn ? t('stopSeries') : timer.running ? t('pause') : (touched ? t('resume') : t('start'));
+  // in a series: no skip, no reset; while it waits for its start time, reset cancels it
+  $('#btnSkip').hidden = !!series;
+  $('#btnReset').hidden = seriesOn;
   if (ANDROID) {
     if (!btn.dataset.ico) { btn.dataset.ico = '1'; btn.innerHTML = PLAY_PAUSE_SVG; }
-    btn.classList.toggle('is-running', timer.running); // the triangle flows into two bars (CSS)
+    btn.classList.toggle('is-running', timer.running && !seriesOn); // the triangle flows into two bars (CSS)
+    btn.classList.toggle('is-stop', seriesOn); // ...or into a stop square
     btn.setAttribute('aria-label', btnText);
   } else btn.textContent = btnText;
   btn.classList.toggle('secondary', timer.running);
@@ -707,7 +728,7 @@ function renderTimer() {
 
 function renderSteppers() {
   if (ANDROID) renderDials();
-  $$('.stepper').forEach(el => {
+  $$('.stepper[data-key]').forEach(el => {
     const key = el.dataset.key;
     const lim = LIMITS[key];
     const v = settings[key];
@@ -924,7 +945,7 @@ function renderHistory() {
     return `<div class="day-head"><span>${esc(dayTitle(list[0].start))}</span><span>${fmtDur(total)}</span></div>` +
       list.map(s => `<div class="row">
         <span class="r-time">${hm(s.start)}–${hm(s.end)}</span>
-        <span class="r-label${s.label ? '' : ' empty'}">${esc(s.label || t('noLabel'))}</span>
+        <span class="r-label${s.label ? '' : ' empty'}">${esc(s.label || t('noLabel'))}${s.manual ? ` <span class="r-man">${t('atManual')}</span>` : ''}</span>
         <span class="r-dur">${fmtDur(s.dur)}</span>
         <button class="del" data-id="${s.id}" title="×"><svg width="12" height="12" viewBox="0 0 12 12"><path d="M3 3l6 6M9 3l-6 6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg></button>
       </div>`).join('');
@@ -1031,6 +1052,7 @@ const ICONS = {
   show: '<svg viewBox="0 0 24 24"><path d="M3 12s3.3-6 9-6 9 6 9 6-3.3 6-9 6-9-6-9-6z" fill="none" stroke="currentColor" stroke-width="1.8"/><circle cx="12" cy="12" r="2.6" fill="currentColor"/></svg>',
   trash: '<svg viewBox="0 0 24 24"><path d="M4.5 7h15M10 4h4M6.5 7l.9 12a1.6 1.6 0 0 0 1.6 1.5h6a1.6 1.6 0 0 0 1.6-1.5l.9-12" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>',
   cal: '<svg viewBox="0 0 20 20"><rect x="3.5" y="4.5" width="13" height="12" rx="2.5" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="M3.5 8.5h13M7 3v3M13 3v3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>',
+  clockPlus: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M20 11.5A8 8 0 1 0 12.5 20"/><path d="M12 7.5V12l2.5 1.5M18 15v6M15 18h6"/></svg>',
   x: '<svg width="12" height="12" viewBox="0 0 12 12"><path d="M3 3l6 6M9 3l-6 6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>',
   prev: '<svg viewBox="0 0 20 20"><path d="M12 5l-5 5 5 5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>',
   next: '<svg viewBox="0 0 20 20"><path d="M8 5l5 5-5 5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>',
@@ -1046,7 +1068,7 @@ function projRow(p) {
   const btn = (act, icon, title, cls = '') => `<button class="icon-btn sm${cls}" data-act="${act}" title="${esc(title)}">${icon}</button>`;
   const acts = p.hidden
     ? btn('unhide', ICONS.show, t('unhide')) + btn('delete', ICONS.trash, t('delete'), ' danger')
-    : btn('work', ICONS.play, t('workOn')) + btn('rename', ICONS.edit, t('rename')) + btn('hide', ICONS.hide, t('hide')) + btn('delete', ICONS.trash, t('delete'), ' danger');
+    : btn('work', ICONS.play, t('workOn')) + btn('addtime', ICONS.clockPlus, t('atTitle')) + btn('rename', ICONS.edit, t('rename')) + btn('hide', ICONS.hide, t('hide')) + btn('delete', ICONS.trash, t('delete'), ' danger');
   return `<div class="proj${p.hidden ? ' hidden' : ''}${p.current ? ' current' : ''}" data-key="${esc(p.key)}">
     <div class="proj-top">
       <div class="proj-name"><span class="pn">${esc(p.name)}</span>${p.current ? `<span class="tag mini">${esc(t('current'))}</span>` : ''}</div>
@@ -1134,6 +1156,9 @@ async function onProjectClick(e) {
       break;
     case 'rename':
       startRename(row);
+      return;
+    case 'addtime':
+      openAddTime(name);
       return;
     case 'hide':
       meta(key, name).hidden = true;
@@ -1688,6 +1713,85 @@ function kick(el, cls) {
   el.classList.add(cls);
 }
 
+/* ---------- Add time by hand: work done without the timer, from memory ---------- */
+let atState = null;
+function openAddTime(label) {
+  atState = { h: 1, m: 0, day: dayKey(Date.now()) };
+  $('#atProject').value = label != null ? label : $('#label').value.trim();
+  renderAddTime();
+  $('#addTime').hidden = false;
+  if (!ANDROID && label == null) setTimeout(() => $('#atProject').focus(), 30);
+}
+function closeAddTime() {
+  $('#addTime').hidden = true;
+  closeCalendar();
+  atState = null;
+}
+function renderAddTime() {
+  const s = atState;
+  $('#atH').textContent = `${s.h} ${t('h')}`;
+  $('#atM').textContent = `${s.m} ${t('min')}`;
+  $('#atDay').querySelector('span').textContent = s.day === dayKey(Date.now()) ? t('today') : fmtDate(s.day);
+  const recent = projectList().filter(p => !p.hidden).sort((a, b) => (b.last || 0) - (a.last || 0)).slice(0, 6);
+  const cur = projKey($('#atProject').value);
+  $('#atChips').innerHTML = recent.map(p =>
+    `<button type="button" class="at-chip${p.key === cur ? ' on' : ''}" data-name="${esc(p.name)}">${esc(p.name)}</button>`).join('');
+  $$('#atQuick button').forEach(b => {
+    const v = Number(b.dataset.min);
+    b.textContent = v < 60 ? `${v} ${t('min')}` : `${v / 60} ${t('h')}`;
+    b.classList.toggle('on', v === s.h * 60 + s.m);
+  });
+  $('#atSave').disabled = s.h * 60 + s.m < 1;
+}
+function saveAddTime() {
+  const s = atState;
+  const dur = (s.h * 60 + s.m) * 60;
+  if (dur < 60) return;
+  const now = Date.now();
+  // Today: it just ended. Another day: it ends at 20:00 that day (never in the future).
+  const end = s.day === dayKey(now) ? now : Math.min(now, parseDay(s.day) + 20 * 3600000);
+  const label = cleanName($('#atProject').value);
+  sessions.push({ id: newId(), start: end - dur * 1000, end, dur, label, full: false, manual: true });
+  sessions.sort((a, b) => a.start - b.start);
+  closeAddTime();
+  persistNow();
+  render();
+  renderLabelMeta();
+  if (view === 'stats') renderStats();
+  if (view === 'projects') renderProjects();
+  toast(t('atAdded')(fmtDur(dur)));
+}
+function bindAddTime() {
+  const step = (k, d) => {
+    if (k === 'h') atState.h = Math.min(16, Math.max(0, atState.h + d));
+    else {
+      atState.m += d * 5;
+      if (atState.m >= 60) { atState.m = 0; atState.h = Math.min(16, atState.h + 1); }
+      if (atState.m < 0) { atState.m = atState.h > 0 ? 55 : 0; if (atState.h > 0) atState.h--; }
+    }
+    renderAddTime();
+  };
+  $('#addTime').addEventListener('click', e => {
+    if (e.target.id === 'addTime') { closeAddTime(); return; }
+    const b = e.target.closest('button');
+    if (!b || !atState) return;
+    if (b.dataset.step) step(b.dataset.step, Number(b.dataset.d));
+    else if (b.dataset.min) { const v = Number(b.dataset.min); atState.h = Math.floor(v / 60); atState.m = v % 60; renderAddTime(); }
+    else if (b.dataset.name != null && b.classList.contains('at-chip')) { $('#atProject').value = b.dataset.name; renderAddTime(); }
+    else if (b.id === 'atDay') {
+      openCalendar(b, atState.day, v => {
+        const today = dayKey(Date.now());
+        atState.day = v && v <= today ? v : today; // no future days
+        renderAddTime();
+      });
+    } else if (b.id === 'atCancel') closeAddTime();
+  });
+  $('#atProject').addEventListener('input', () => { if (atState) renderAddTime(); });
+  $('#atForm').addEventListener('submit', e => { e.preventDefault(); if (atState) saveAddTime(); });
+  $('#btnAddTime').addEventListener('click', () => openAddTime());
+  document.addEventListener('keydown', e => { if (e.key === 'Escape' && atState && $('#cal').hidden) closeAddTime(); });
+}
+
 /* ---------- CSV import (our own export format, RU ";" or EN ",") ---------- */
 function parseCsvLine(line, sep) {
   const out = [];
@@ -2116,6 +2220,8 @@ function bind() {
     // System back: close what is open, then go back to the timer; false lets the app go to background
     window.__back = () => {
       if (!$('#sheet').hidden) { closeSheet(null); return true; }
+      if (!$('#cal').hidden) { closeCalendar(); return true; }
+      if (!$('#addTime').hidden) { closeAddTime(); return true; }
       if (!$('#modal').hidden) { closeModal(false); return true; }
       if (!$('#cal').hidden) { closeCalendar(); return true; }
       if (view !== 'timer') { $('.tab[data-view="timer"]').click(); return true; }
@@ -2148,16 +2254,9 @@ function bind() {
   api.onSystemTheme(dark => { systemDark = dark; if (settings.theme === 'system') applyTheme(); });
 
   // Called by the host right before quitting
-  window.__beforeQuit = () => {
-    if (timer.phase === 'work' && timer.startedAt) logWork(false, true);
-    else api.saveSync(snapshot());
-  };
-  // Log an in-progress work session if the app is closed mid-session
-  window.addEventListener('beforeunload', () => {
-    if (ANDROID) { api.saveSync(snapshot()); return; }
-    if (timer.phase === 'work' && timer.startedAt) logWork(false, true);
-    else api.saveSync(snapshot());
-  });
+  // Quitting does not end a session any more: the timer is saved (and in the cloud) and goes on
+  window.__beforeQuit = () => { api.saveSync(snapshot()); };
+  window.addEventListener('beforeunload', () => { api.saveSync(snapshot()); });
 
   // Refresh stats around midnight / while visible
   setInterval(() => {
@@ -2188,9 +2287,18 @@ function bind() {
   if (ANDROID) applyHostTimer(data.timer);
   const savedSeries = ANDROID && data.timer && data.timer.series ? data.timer.series : (data.current && data.current.series);
   if (savedSeries && savedSeries.count > 0 && savedSeries.work > 0) { series = { logged: 0, pausedAt: 0, ...savedSeries }; applySeries(true); }
+  else if (!ANDROID && data.current && data.current.timer) {
+    applyHostTimer(data.current.timer); // the timer kept going while the app was closed
+    if (timer.running && Date.now() > timer.endAt + 120000) {
+      // it ran out long ago: log it with its real end, quietly, and move to the next phase
+      if (timer.phase === 'work') logWork(true);
+      setPhase(timer.phase === 'work' ? 'break' : 'work');
+    }
+  }
   if (ANDROID && settings.theme === 'system') settings.theme = systemDark ? 'dark' : 'light'; // the phone offers light and dark only
   bind();
   bindWhen();
+  bindAddTime();
   bindTimePicker();
   syncInit(data);
   render();

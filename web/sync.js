@@ -82,7 +82,7 @@ function sig(o) {
 // Database keys cannot hold . $ # [ ] /
 const dbKey = k => encodeURIComponent(k).replace(/\./g, '%2E');
 const unKey = k => { try { return decodeURIComponent(k); } catch { return k; } };
-const sessCore = s => ({ start: s.start, end: s.end, dur: s.dur, label: s.label || '', full: !!s.full });
+const sessCore = s => ({ start: s.start, end: s.end, dur: s.dur, label: s.label || '', full: !!s.full, ...(s.manual ? { manual: true } : {}) });
 const projCore = p => ({ name: p.name || '', deadline: p.deadline || '', hidden: !!p.hidden, created: p.created || 0 });
 const setCore = () => Object.fromEntries(SYNC_SETTINGS.map(k => [k, settings[k]]));
 

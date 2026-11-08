@@ -30,7 +30,7 @@ import java.nio.charset.StandardCharsets;
 final class Host {
     static final String CH_TIMER = "timer";
     static final String CH_ALERT = "alert";
-    static final String CH_ALERT_QUIET = "alert_quiet";
+    static final String CH_ALERT_QUIET = "alert_quiet2";
     static final int ID_TIMER = 1;
     static final int ID_ALERT = 2;
 
@@ -93,6 +93,25 @@ final class Host {
         prefs(c).edit().putString("timer", s.toString()).apply();
         schedule(c, s);
         showTimer(c, s);
+        tickBar(c);
+    }
+
+    /* The bar in the notification fills from left to right as the phase goes (work and break
+       alike); it is redrawn every few seconds while this process is alive. */
+    private static final android.os.Handler barHandler = new android.os.Handler(android.os.Looper.getMainLooper());
+    private static Runnable barTick;
+    static void tickBar(Context c) {
+        Context app = c.getApplicationContext();
+        if (barTick != null) barHandler.removeCallbacks(barTick);
+        barTick = new Runnable() {
+            @Override public void run() {
+                JSONObject s = timer(app);
+                if (!s.optBoolean("running") || s.optLong("endAt") <= System.currentTimeMillis()) return;
+                showTimer(app, s);
+                barHandler.postDelayed(this, 5000);
+            }
+        };
+        barHandler.postDelayed(barTick, 5000);
     }
 
     /** Pause / resume without the page, with the same rules as start() and pause() in app.js. */
@@ -267,7 +286,7 @@ final class Host {
     }
 
     /* A channel's sound cannot change after it is created, so a new sound means a new channel id. */
-    static String alertChannel(Context c) { return prefs(c).getString("alertChannel", CH_ALERT); }
+    static String alertChannel(Context c) { return prefs(c).getString("alertChannel", CH_ALERT + "2"); }
 
     static android.net.Uri soundUri(Context c) {
         String s = prefs(c).getString("soundUri", "");
@@ -289,6 +308,17 @@ final class Host {
 
     static void createChannels(Context c) {
         NotificationManager nm = nm(c);
+        // v2: channels no longer vibrate on their own (one long buzz is made by hand in postAlert).
+        // A channel cannot change after it exists, so the old ones are replaced once.
+        if (prefs(c).getInt("chVer", 1) < 2) {
+            String old = prefs(c).getString("alertChannel", CH_ALERT);
+            nm.deleteNotificationChannel(old);
+            nm.deleteNotificationChannel(CH_ALERT);
+            nm.deleteNotificationChannel("alert_quiet");
+            android.content.SharedPreferences.Editor e = prefs(c).edit().putInt("chVer", 2);
+            if (prefs(c).contains("alertChannel")) e.putString("alertChannel", "alert_" + System.currentTimeMillis());
+            e.commit();
+        }
         NotificationChannel timer = new NotificationChannel(CH_TIMER, "Таймер", NotificationManager.IMPORTANCE_LOW);
         timer.setDescription("Обратный отсчёт текущего захода");
         timer.setShowBadge(false);
@@ -296,8 +326,7 @@ final class Host {
 
         NotificationChannel alert = new NotificationChannel(alertChannel(c), "Конец захода", NotificationManager.IMPORTANCE_HIGH);
         alert.setDescription("Сигнал, когда работа или перерыв закончились");
-        alert.enableVibration(true);
-        alert.setVibrationPattern(new long[]{0, 250, 150, 250});
+        alert.enableVibration(false);
         alert.setSound(soundUri(c),
                 new AudioAttributes.Builder().setUsage(AudioAttributes.USAGE_ALARM)
                         .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION).build());
@@ -305,8 +334,7 @@ final class Host {
 
         NotificationChannel quiet = new NotificationChannel(CH_ALERT_QUIET, "Конец захода без звука", NotificationManager.IMPORTANCE_HIGH);
         quiet.setDescription("Когда звук в настройках таймера выключен");
-        quiet.enableVibration(true);
-        quiet.setVibrationPattern(new long[]{0, 250, 150, 250});
+        quiet.enableVibration(false);
         quiet.setSound(null, null);
         nm.createNotificationChannel(quiet);
     }
@@ -366,8 +394,9 @@ final class Host {
             b.setContentTitle(label.isEmpty() ? phase : phase + " · " + label)
                     .setWhen(s.optLong("endAt"))
                     .setUsesChronometer(true)
-                    .setChronometerCountDown(true)
-                    .addAction(new Notification.Action.Builder(null, t.optString("pause", "Пауза"), broadcast(c, ACTION_TOGGLE, 11)).build());
+                    .setChronometerCountDown(true);
+            // a series has no pause
+            if (s.optJSONObject("series") == null) b.addAction(new Notification.Action.Builder(null, t.optString("pause", "Пауза"), broadcast(c, ACTION_TOGGLE, 11)).build());
         } else {
             b.setContentTitle(phase + " — " + t.optString("paused", "пауза") + " · " + clock(remaining))
                     .setUsesChronometer(false)
@@ -375,7 +404,7 @@ final class Host {
                     .addAction(new Notification.Action.Builder(null, t.optString("resume", "Продолжить"), broadcast(c, ACTION_TOGGLE, 11)).build());
             if (!label.isEmpty()) b.setContentText(label);
         }
-        if (total > 0) b.setProgress(1000, (int) (1000 * (total - remaining) / total), false);
+        if (total > 0) b.setProgress(1000, (int) Math.max(0, Math.min(1000, 1000 * (total - remaining) / total)), false); // filled = time gone
         nm(c).notify(ID_TIMER, b.build());
     }
 
@@ -397,6 +426,24 @@ final class Host {
             b.addAction(new Notification.Action.Builder(null, ok, broadcast(c, ACTION_DISMISS, 22)).build());
         }
         nm(c).notify(ID_ALERT, b.build());
+        buzz(c);
+    }
+
+    /** One long, soft buzz at the end of a phase — "bzzzzt", not a rattle. */
+    static void buzz(Context c) {
+        try {
+            android.os.Vibrator v;
+            if (Build.VERSION.SDK_INT >= 31) {
+                android.os.VibratorManager vm = (android.os.VibratorManager) c.getSystemService(Context.VIBRATOR_MANAGER_SERVICE);
+                v = vm != null ? vm.getDefaultVibrator() : null;
+            } else {
+                v = (android.os.Vibrator) c.getSystemService(Context.VIBRATOR_SERVICE);
+            }
+            if (v == null || !v.hasVibrator()) return;
+            android.media.AudioAttributes aa = new android.media.AudioAttributes.Builder()
+                    .setUsage(android.media.AudioAttributes.USAGE_ALARM).build();
+            v.vibrate(android.os.VibrationEffect.createOneShot(700, android.os.VibrationEffect.DEFAULT_AMPLITUDE), aa);
+        } catch (Exception ignored) {}
     }
 
     static void cancelAlert(Context c) { nm(c).cancel(ID_ALERT); }

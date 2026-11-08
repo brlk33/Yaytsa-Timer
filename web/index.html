@@ -214,6 +214,7 @@
       <div class="hist-head">
         <h2 data-i18n="history"></h2>
         <div class="btn-row">
+          <button class="ghost with-ico" id="btnAddTime" data-i18n-title="atTitle"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 11.5A8 8 0 1 0 12.5 20"/><path d="M12 7.5V12l2.5 1.5M18 15v6M15 18h6"/></svg><span data-i18n="atSave"></span></button>
           <button class="ghost with-ico" id="btnImport"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 4v10.5M7.5 10 12 14.5 16.5 10M5 19.5h14"/></svg><span data-i18n="importCsv"></span></button>
           <button class="ghost with-ico" id="btnExport"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 14.5V4M7.5 8.5 12 4l4.5 4.5M5 19.5h14"/></svg><span data-i18n="exportCsv"></span></button>
         </div>
@@ -313,6 +314,26 @@
       <p id="modalText"></p>
       <div class="modal-btns"><button class="ghost" id="modalCancel"></button><button class="danger-btn" id="modalOk"></button></div>
     </div>
+  </div>
+  <div class="modal" id="addTime" hidden>
+    <form class="modal-card at-card" id="atForm" autocomplete="off">
+      <h3 data-i18n="atTitle"></h3>
+      <input class="text-input" id="atProject" maxlength="120" data-i18n-ph="atProjectPh">
+      <div class="at-chips" id="atChips"></div>
+      <div class="at-row">
+        <span class="at-l" data-i18n="atHow"></span>
+        <div class="stepper at-step"><button type="button" data-step="h" data-d="-1">−</button><span class="val" id="atH"></span><button type="button" data-step="h" data-d="1">+</button></div>
+        <div class="stepper at-step"><button type="button" data-step="m" data-d="-1">−</button><span class="val" id="atM"></span><button type="button" data-step="m" data-d="1">+</button></div>
+      </div>
+      <div class="at-quick" id="atQuick">
+        <button type="button" data-min="15">15 ′</button><button type="button" data-min="30">30 ′</button><button type="button" data-min="60">1 h</button><button type="button" data-min="120">2 h</button><button type="button" data-min="240">4 h</button>
+      </div>
+      <div class="at-row">
+        <span class="at-l" data-i18n="atWhen"></span>
+        <button type="button" class="when-chip" id="atDay"><svg class="when-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="4" y="5" width="16" height="15" rx="3"/><path d="M4 10h16M8.5 3v4M15.5 3v4"/></svg><span></span></button>
+      </div>
+      <div class="modal-btns"><button type="button" class="ghost" id="atCancel" data-i18n="cancel"></button><button type="submit" class="danger-btn safe" id="atSave" data-i18n="atSave"></button></div>
+    </form>
   </div>
   <div class="sheet-wrap" id="sheet" hidden>
     <div class="sheet"><h3 id="sheetTitle"></h3><div id="sheetItems"></div><button class="sheet-cancel" id="sheetCancel" data-i18n="cancel"></button></div>
