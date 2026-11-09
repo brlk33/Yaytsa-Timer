@@ -1706,3 +1706,6 @@ html.android .ad-card { border-radius: 24px; }
 .hist-scroll { overflow-y: auto; margin: 0 -6px; padding: 0 6px; }
 html.android .hs { background: var(--block); }
 html.android .hist-card { border-radius: 24px; }
+
+/* entering Stats no longer pops every square one by one (that was the lag); ranges still unfold */
+.anim .hc:not(.future) { animation: none; }

@@ -20,7 +20,7 @@ import (
 )
 
 const (
-	Version     = "2.14.0"
+	Version     = "2.14.1"
 	AppName     = "Яйцетаймер"
 	mainClass   = "YaytsaTimerMain"
 	alertClass  = "YaytsaTimerAlert"
@@ -857,6 +857,7 @@ func main() {
 	go updateLoop()
 	loadApps()
 	go appTrackLoop()
+	autostartDefault()
 
 	var m msgT
 	for {

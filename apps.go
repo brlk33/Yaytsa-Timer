@@ -427,6 +427,23 @@ func appCandidates() []appInfo {
 const runKey = `Software\Microsoft\Windows\CurrentVersion\Run`
 const runValue = "YaytsaTimer"
 
+// Launch with Windows is on by default: the first start of this version turns it on once
+// (starting hidden in the tray). If the user turns it off later, it stays off.
+func autostartDefault() {
+	k, _, err := registry.CreateKey(registry.CURRENT_USER, `Software\YaytsaTimer`, registry.QUERY_VALUE|registry.SET_VALUE)
+	if err != nil {
+		return
+	}
+	defer k.Close()
+	if v, _, err := k.GetIntegerValue("AutostartDefault"); err == nil && v == 1 {
+		return
+	}
+	if setAutostart(true) {
+		k.SetDWordValue("AutostartDefault", 1)
+		logf("autostart turned on by default")
+	}
+}
+
 func autostartEnabled() bool {
 	k, err := registry.OpenKey(registry.CURRENT_USER, runKey, registry.QUERY_VALUE)
 	if err != nil {

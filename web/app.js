@@ -971,6 +971,7 @@ function renderBars(today0, goalSec, live) {
 
 function renderHistory() {
   renderHistoryShort();
+  if ($('#histAll').hidden) return; // the full list is built only while its card is open
   const hist = $('#historyFull');
   if (!sessions.length) {
     hist.innerHTML = `<div class="empty-state">${t('noData')}</div>`;
@@ -1834,15 +1835,15 @@ function renderAppDetail() {
       days.unshift({ day: wk[0].day, run: wk.reduce((x, d) => x + (d.run || 0), 0), active: wk.reduce((x, d) => x + (d.active || 0), 0), week: true });
     }
   }
-  const max = Math.max(60, ...days.map(d => d.run || 0));
+  const max = Math.max(60, ...days.map(d => d.active || 0));
   const short = days.length <= 7;
   $('#adChart').innerHTML = days.map((d, i) => {
     const ts = parseDay(d.day);
     const lab = d.week ? (i === 0 || new Date(ts).getMonth() !== new Date(parseDay(days[i - 1].day)).getMonth() ? t('monthsShort')[new Date(ts).getMonth()] : '')
       : short ? t('daysMon')[(new Date(ts).getDay() + 6) % 7].slice(0, 2) : (i % 5 === 4 || i === days.length - 1 ? new Date(ts).getDate() : '');
-    const tip = `${dayTitle(ts)} · ${fmtDur(d.active || 0)} / ${fmtDur(d.run || 0)}`;
+    const tip = `${dayTitle(ts)} · ${fmtDur(d.active || 0)}`;
     return `<div class="adc${d.day === dayKey(Date.now()) ? ' today' : ''}" title="${esc(tip)}">
-      <div class="adc-bar"><i class="o" style="height:${((d.run || 0) / max * 100).toFixed(1)}%"></i><i class="a" style="height:${((d.active || 0) / max * 100).toFixed(1)}%"></i></div>
+      <div class="adc-bar"><i class="a" style="height:${((d.active || 0) / max * 100).toFixed(1)}%"></i></div>
       <span>${lab}</span></div>`;
   }).join('');
 }
@@ -1874,8 +1875,8 @@ function renderHistoryShort() {
   const box = $('#history');
   const items = historyItems([...sessions].sort((a, b) => b.start - a.start)).slice(0, 3);
   $('#btnHistAll').style.display = sessions.length ? '' : 'none';
-  if (!items.length) { box.innerHTML = `<div class="empty-state">${t('noData')}</div>`; return; }
-  box.innerHTML = items.map(g => {
+  if (!items.length) { box.dataset.html = ''; box.innerHTML = `<div class="empty-state">${t('noData')}</div>`; return; }
+  const html = items.map(g => {
     const day = startOfDay(g.start) === startOfDay() ? '' : `${dayTitle(g.start)} · `;
     const title = g.n > 1
       ? `${t('seriesRow')(g.n)}${g.label ? ` · ${esc(g.label)}` : ''}`
@@ -1886,11 +1887,15 @@ function renderHistoryShort() {
       <span class="hs-dur">${fmtDur(g.dur)}</span>
     </div>`;
   }).join('');
+  // only when something changed: re-rendering the same list replayed its entrance animation
+  if (box.dataset.html === html) return;
+  box.dataset.html = html;
+  box.innerHTML = html;
 }
 function openHistory() {
   historyLimit = 7;
-  renderHistory();
   $('#histAll').hidden = false;
+  renderHistory();
 }
 function closeHistory() { $('#histAll').hidden = true; }
 
@@ -2177,7 +2182,7 @@ async function loadApps() {
 }
 
 function renderApps() {
-  const list = [...appStats].sort((a, b) => (b.today.run - a.today.run) || (b.total.run - a.total.run));
+  const list = [...appStats].sort((a, b) => (b.today.active - a.today.active) || (b.total.active - a.total.active));
   $('#appList').innerHTML = list.length ? list.map(a => `<div class="app" data-exe="${esc(a.exe)}">
       ${avatar(a.name, a.exe, a.icon)}
       <div class="app-main">
