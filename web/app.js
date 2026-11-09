@@ -846,8 +846,10 @@ function renderHeat() {
   // up), as many as fit at a comfortable size. Rows go down in time, newest on top, so a longer
   // range only adds rows at the bottom and the page grows downwards.
   const gap = ANDROID ? 3 : 4;
-  const labelW = 34;
-  const avail = Math.max(140, (el.clientWidth || el.parentElement.clientWidth || 600) - labelW);
+  const labelW = 0; // just squares: no weekday or month labels
+  // width only decides how many weeks share a row; the columns themselves stretch to fit (a scrollbar
+  // appearing later can never push the last one out)
+  const avail = Math.max(140, (el.clientWidth || el.parentElement.clientWidth || 600) - labelW - 14);
   const perWeek = k => 7 * k;
   let k = Math.max(1, Math.floor((avail + gap) / (perWeek(1) * (15 + gap))));
   k = Math.min(k, Math.ceil(weeks / 2)); // keep at least two rows
@@ -865,11 +867,11 @@ function renderHeat() {
     // row r covers k weeks; the last row (r = 0) ends with this week
     const rowStart = addDays(monday0, -(r * k + k - 1) * 7);
     const m = new Date(rowStart).getMonth();
-    cells += `<span class="hm" style="grid-row:${r + 1}">${m !== lastMonth ? t('monthsShort')[m] : ''}</span>`;
+    void m;
     lastMonth = m;
     for (let c = 0; c < cols; c++) {
       const ts = addDays(rowStart, c);
-      const pos = `grid-row:${r + 1};grid-column:${c + 2}`;
+      const pos = `grid-row:${r + 1};grid-column:${c + 1}`;
       if (ts > today0) { cells += `<i class="hc future" style="${pos}"></i>`; continue; }
       const sec = byDay.get(dayKey(ts)) || 0;
       if (sec >= 60) activeDays++;
@@ -892,7 +894,6 @@ function renderHeat() {
   el.style.setProperty('--lw', `${labelW}px`);
   el.classList.remove('dense');
   el.innerHTML = `
-    <div class="heat-head">${head}</div>
     <div class="heat-wrap"><div class="heat-grid">${cells}</div></div>
     <div class="heat-foot">
       <span class="muted">${t('activeDays')(activeDays)}${streak > 1 ? ` · ${t('streak')(streak)}` : ''}</span>
@@ -900,7 +901,7 @@ function renderHeat() {
     </div>`;
   // a longer range opens downwards smoothly: one element changes height, new rows unfold in
   const wrap = el.querySelector('.heat-wrap');
-  const toH = rows * cell + (rows - 1) * gap;
+  const toH = wrap.getBoundingClientRect().height; // the grid sizes itself (fluid columns)
   const sig = `${weeks}|${!!fromH}`;
   if (heatSig && sig !== heatSig && fromH) {
     wrap.style.height = `${fromH}px`;
@@ -1813,7 +1814,10 @@ function renderAppDetail() {
   const share = tt.run > 0 ? Math.round((tt.active / tt.run) * 100) : 0;
   swapText($('#adShare'), `${share}%`);
   $('#adBarFill').style.width = `${share}%`;
-  // day by day for a week or a month; week by week for three months and all time
+  // all time has no bars: the chart folds away
+  $('#adChart').classList.toggle('folded', adRange === 0);
+  if (adRange === 0) return;
+  // day by day for a week or a month; week by week for three months
   const recent = Array.isArray(a.recent) ? a.recent : [];
   let days = recent.slice(adRange === 7 ? -7 : -30);
   if (adRange === 90 || adRange === 0) {

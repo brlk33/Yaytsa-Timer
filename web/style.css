@@ -1663,3 +1663,26 @@ html.android .ad-card { border-radius: 24px; }
 
 .apps-cap { font-size: 12.5px; color: var(--text-3); margin: 0 2px 8px; text-align: right; }
 .app-total.none > div { color: var(--text-3); font-weight: 400; }
+
+/* 2.13.1: fluid square columns — they always fill the width exactly, whatever the window does */
+.heat-head, .heat-grid { grid-template-columns: var(--lw) repeat(var(--cols), minmax(0, 1fr)); }
+.heat-grid { grid-auto-rows: auto; }
+.heat .heat-grid .hc { width: 100%; height: auto; aspect-ratio: 1; }
+.heat .heat-legend .hc { width: 11px; height: 11px; aspect-ratio: auto; }
+.heat-wrap { width: 100% !important; }
+
+/* Program card: active time is the headline; the rest is quieter */
+.ad-main { display: flex; flex-direction: column; gap: 2px; margin-top: 2px; }
+.ad-main b {
+  font-size: 40px; font-weight: 700; line-height: 1.05; letter-spacing: -0.02em; font-variant-numeric: tabular-nums;
+  background: linear-gradient(135deg, #5a8dff, #8b5cff); -webkit-background-clip: text; background-clip: text; color: transparent;
+}
+.ad-main span { font-size: 13px; color: var(--text-2); }
+.ad-nums { grid-template-columns: repeat(2, auto); justify-content: start; column-gap: 28px; opacity: .6; }
+.ad-nums b { font-size: 15px; font-weight: 600; }
+.ad-chart { transition: height .42s cubic-bezier(.22, .9, .3, 1), opacity .3s var(--ease), margin .42s cubic-bezier(.22, .9, .3, 1); overflow: hidden; }
+.ad-chart.folded { height: 0; opacity: 0; margin-top: -14px; }
+
+/* just squares: no label column */
+.heat-grid { grid-template-columns: repeat(var(--cols), minmax(0, 1fr)); }
+.heat-head { display: none; }
