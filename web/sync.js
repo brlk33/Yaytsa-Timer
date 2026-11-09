@@ -263,6 +263,7 @@ function applyAt(seg, v, full) {
   }
   const [kind, key, ...rest] = seg;
   if (kind === 't') { if (!key) applyRemoteTimer(v); else syncConnect(); return; }
+  if (kind === 'apps') { applyRemoteApps(seg.length === 1 ? v : null); return; }
   if (!['s', 'p', 'set'].includes(kind)) return;
   if (kind === 'set') { if (!key) applySettings(v); else syncConnect(); return; }
   if (!key) { Object.entries(v || {}).forEach(([k, x]) => applyItem(kind, k, x)); return; }
@@ -277,6 +278,7 @@ function mergeAll(d) {
   Object.entries(p).forEach(([k, v]) => applyItem('p', k, v));
   if (d.set) applySettings(d.set);
   if (d.t) applyRemoteTimer(d.t);
+  if (d.apps) applyRemoteApps(d.apps);
   for (const x of sessions) if (!s[dbKey(x.id)]) delete syncSent.s[x.id];
   for (const k of Object.keys(projects)) if (!p[dbKey(k)]) delete syncSent.p[k];
   if (!d.set) syncSent.set = '';
@@ -505,6 +507,38 @@ function applyRemoteTimer(v) {
   render();
 }
 
+/* ---------- program stats: tracked on the PC, shown on the phone too ---------- */
+let appsRemote = null, appsSent = '', appsSentAt = 0;
+function syncApps(list) {
+  if (ANDROID || !account || !syncLoaded || !Array.isArray(list)) return;
+  const g = sig(list.map(a => [a.exe, a.name, Math.round(a.total.run / 60), Math.round(a.total.active / 60), (a.icon || '').length]));
+  if (g === appsSent || Date.now() - appsSentAt < 60000) return; // at most once a minute, only when it changed
+  appsSent = g;
+  appsSentAt = Date.now();
+  const body = { u: Date.now(), list: list.map(a => ({ exe: a.exe, name: a.name, icon: a.icon || '', today: a.today, week: a.week, month: a.month, quarter: a.quarter, total: a.total, recent: a.recent || [] })) };
+  idToken().then(tok => fetch(`${SYNC.db}/timer/${account.uid}/apps.json?auth=${encodeURIComponent(tok)}`, {
+    method: 'PUT', headers: { 'content-type': 'application/json' }, body: JSON.stringify(body),
+  })).catch(() => { appsSent = ''; });
+}
+function applyRemoteApps(v) {
+  if (!ANDROID) return;
+  appsRemote = v && Array.isArray(v.list) ? v.list : [];
+  // "today" and "7 days" were counted on the PC when it sent them; recount from the days if that was another day
+  const today = dayKey(Date.now());
+  appsRemote.forEach(a => {
+    const rec = Array.isArray(a.recent) ? a.recent : [];
+    const sum = n => rec.slice(-n).reduce((o, d) => ({ run: o.run + (d.run || 0), active: o.active + (d.active || 0) }), { run: 0, active: 0 });
+    if (rec.length && rec[rec.length - 1].day !== today) {
+      const idx = rec.findIndex(d => d.day === today);
+      a.today = idx >= 0 ? rec[idx] : { run: 0, active: 0 };
+    }
+    a.week = a.week || sum(7);
+    a.month = a.month || sum(30);
+  });
+  appStats = appsRemote;
+  if (typeof renderApps === 'function') renderApps();
+}
+
 /* ---------- settings UI ---------- */
 function renderSync() {
   const box = $('#syncBox');
@@ -618,4 +652,10 @@ function syncInit(data) {
   renderSync();
   if (account) syncConnect();
   else setTimeout(maybeNag, ANDROID ? 2600 : 1500); // after the launch animation
+  // the PC sends its program stats every few minutes, so the phone sees them without opening Apps here
+  if (!ANDROID && api.appsStats) {
+    const push = async () => { if (account && syncLoaded) syncApps((await api.appsStats()) || []); };
+    setTimeout(push, 20000);
+    setInterval(push, 5 * 60000);
+  }
 }

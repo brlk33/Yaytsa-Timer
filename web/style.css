@@ -1621,3 +1621,45 @@ html.android .when-chip:not(.set) #seriesWhenText { display: none; }
 /* the hidden native time input never takes taps now (own pickers on both platforms) */
 .when-input { pointer-events: none; }
 .danger-btn.safe { background: linear-gradient(135deg, #4f8bff, #8a5cff); }
+
+/* 2.13: squares fill the width; rows run down in time (newest on top); a longer range adds rows */
+.heat-head, .heat-grid { display: grid; grid-template-columns: var(--lw) repeat(var(--cols), var(--cell)); column-gap: var(--gap); }
+.heat-grid { grid-auto-rows: var(--cell); row-gap: var(--gap); align-items: stretch; }
+.heat-head { margin-bottom: 6px; font-size: 10.5px; line-height: 1; color: var(--text-3); }
+.heat-head span { text-align: center; white-space: nowrap; overflow: visible; }
+.heat-grid .hm { grid-column: 1; font-size: 11px; color: var(--text-3); align-self: center; white-space: nowrap; }
+.heat-wrap { display: block; width: auto !important; overflow: hidden; transition: height .5s cubic-bezier(.22, .9, .3, 1); }
+.heat .hc { width: var(--cell); height: var(--cell); }
+.heat.unfold .hc:not(.future) { animation-delay: calc(var(--r, 0) * 40ms + var(--c, 0) * 4ms); }
+.heat .heat-legend .hc { width: 11px; height: 11px; }
+
+/* Program detail card */
+.app { cursor: pointer; }
+.ad-card { width: min(440px, 100%); display: flex; flex-direction: column; gap: 14px; }
+.ad-head { display: flex; align-items: center; gap: 12px; }
+.ad-head h3 { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ad-head .app-ico { width: 36px; height: 36px; }
+#adRange { align-self: flex-start; }
+.ad-nums { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+.ad-nums div { display: flex; flex-direction: column; gap: 2px; }
+.ad-nums b { font-size: 20px; font-weight: 650; color: var(--text-strong); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.ad-nums span { font-size: 12px; color: var(--text-3); }
+.ad-bar { height: 6px; border-radius: 6px; background: var(--track); overflow: hidden; }
+.ad-bar i { display: block; height: 100%; border-radius: 6px; background: linear-gradient(90deg, #4f8bff, #8a5cff); transition: width .5s cubic-bezier(.22, .9, .3, 1); }
+.ad-chart { display: flex; align-items: flex-end; gap: 3px; height: 120px; }
+.adc { flex: 1; min-width: 0; height: 100%; display: flex; flex-direction: column; align-items: center; gap: 4px; }
+.adc-bar { position: relative; flex: 1; width: 100%; max-width: 26px; }
+.adc-bar i { position: absolute; left: 0; right: 0; bottom: 0; border-radius: 4px; transition: height .45s cubic-bezier(.22, .9, .3, 1); }
+.adc-bar .o { background: var(--hover); box-shadow: inset 0 0 0 1px var(--border); }
+.adc-bar .a { background: linear-gradient(180deg, #8a5cff, #4f8bff); }
+.adc span { font-size: 10.5px; color: var(--text-3); height: 12px; }
+.adc.today span { color: var(--text-strong); font-weight: 600; }
+
+/* Phone: programs come from the PC — show them, nothing to add or remove here */
+html.android #view-apps { display: block !important; }
+html.android #btnAddApp, html.android #appPicker, html.android .app .del { display: none !important; }
+html.android .app { padding: 12px 14px; border-radius: 18px; background: var(--block); margin-bottom: 8px; }
+html.android .ad-card { border-radius: 24px; }
+
+.apps-cap { font-size: 12.5px; color: var(--text-3); margin: 0 2px 8px; text-align: right; }
+.app-total.none > div { color: var(--text-3); font-weight: 400; }

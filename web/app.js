@@ -51,6 +51,8 @@ const I18N = {
     atTitle: 'Добавить время вручную', atProjectPh: 'Проект или задача', atHow: 'Сколько', atWhen: 'Когда', atSave: 'Добавить',
     atAdded: d => `Добавлено: ${d}`, atManual: 'вручную',
     stopSeries: 'Остановить серию', stopSeriesQ: 'Остановить серию?', stopSeriesText: 'Уже сделанные заходы останутся в истории, текущий запишется как есть.',
+    appsNoneA: 'Здесь появятся программы, которые отслеживает Яйцетаймер на компьютере. Нужна синхронизация.',
+    adToday: 'Сегодня', ad7: 'Неделя', ad30: 'Месяц', ad90: '3 месяца', adAll: 'Всё время', appsTodayL: 'Сегодня · активно / открыта', adActiveL: 'активно', adOpenL: 'открыта', adShareL: 'активность',
     alertSound: 'Звук сигнала', choose: 'Выбрать', soundDefault: 'Стандартный', soundSystem: 'Звуки телефона', soundFile: 'Свой файл',
     soundSet: n => `Звук: ${n}`, updTitle: v => `Доступна версия ${v}`, updText: 'Обновление уже скачано, установка займёт несколько секунд.', updInstall: 'Обновить', updLater: 'Позже',
     projEmpty: 'Напишите на вкладке «Таймер», над чем работаете, или добавьте проект здесь',
@@ -118,6 +120,8 @@ scale: 'Масштаб', appsPickTitle: 'Добавить программу', a
     atTitle: 'Add time by hand', atProjectPh: 'Project or task', atHow: 'How long', atWhen: 'When', atSave: 'Add',
     atAdded: d => `Added: ${d}`, atManual: 'by hand',
     stopSeries: 'Stop series', stopSeriesQ: 'Stop the series?', stopSeriesText: 'Finished sessions stay in your history; the current one is saved as it is.',
+    appsNoneA: 'Programs tracked by Яйцетаймер on your PC show up here. Sync needs to be on.',
+    adToday: 'Today', ad7: 'Week', ad30: 'Month', ad90: '3 months', adAll: 'All time', appsTodayL: 'Today · active / open', adActiveL: 'active', adOpenL: 'open', adShareL: 'active share',
     alertSound: 'Alert sound', choose: 'Choose', soundDefault: 'Default', soundSystem: 'Phone sounds', soundFile: 'Your own file',
     soundSet: n => `Sound: ${n}`, updTitle: v => `Version ${v} is available`, updText: 'The update is already downloaded, installing takes a few seconds.', updInstall: 'Update', updLater: 'Later',
     projEmpty: 'Type what you’re working on in the Timer tab, or add a project here',
@@ -834,35 +838,44 @@ function renderHeat() {
   const weeks = settings.heatRange;
   const today0 = startOfDay();
   const dow = (new Date(today0).getDay() + 6) % 7; // Monday = 0
-  const start = addDays(today0, -(weeks - 1) * 7 - dow);
+  const monday0 = addDays(today0, -dow);
   const byDay = workByDay();
   const maxSec = Math.max(0, ...byDay.values());
 
-  // Columns are 1fr and cells are square, so any range always fits the width (no scrolling).
-  let cells = '';
-  let months = '';
-  let prevMonth = -1, lastLabel = -9;
-  let activeDays = 0;
+  // The squares always fill the width: columns are whole weeks (a multiple of 7, so weekdays line
+  // up), as many as fit at a comfortable size. Rows go down in time, newest on top, so a longer
+  // range only adds rows at the bottom and the page grows downwards.
+  const gap = ANDROID ? 3 : 4;
+  const labelW = 34;
+  const avail = Math.max(140, (el.clientWidth || el.parentElement.clientWidth || 600) - labelW);
+  const perWeek = k => 7 * k;
+  let k = Math.max(1, Math.floor((avail + gap) / (perWeek(1) * (15 + gap))));
+  k = Math.min(k, Math.ceil(weeks / 2)); // keep at least two rows
+  const cols = perWeek(k);
+  const cell = (avail - (cols - 1) * gap) / cols;
+  const rows = Math.ceil(weeks / k);
+
   const dayNames = t('daysMon');
-  [0, 2, 4].forEach(r => { cells += `<span class="hd" style="grid-row:${r + 1}">${dayNames[r]}</span>`; });
-  for (let w = 0; w < weeks; w++) {
-    const colStart = addDays(start, w * 7);
-    const m = new Date(colStart).getMonth();
-    if (m !== prevMonth) {
-      // skip a month label squeezed into the last two columns
-      // labels need about three columns of room, or they run into each other on narrow screens
-      if ((prevMonth === -1 || w < weeks - (weeks > 30 ? 2 : 0)) && w - lastLabel >= 3) { months += `<span style="grid-column:${w + 2}">${t('monthsShort')[m]}</span>`; lastLabel = w; }
-      prevMonth = m;
-    }
-    for (let r = 0; r < 7; r++) {
-      const ts = addDays(colStart, r);
-      const pos = `grid-column:${w + 2};grid-row:${r + 1}`;
+  let head = '<span></span>';
+  for (let c = 0; c < cols; c++) head += `<span>${c < 7 ? dayNames[c].slice(0, 2) : ''}</span>`;
+  let cells = '';
+  let activeDays = 0;
+  let lastMonth = -1;
+  for (let r = 0; r < rows; r++) {
+    // row r covers k weeks; the last row (r = 0) ends with this week
+    const rowStart = addDays(monday0, -(r * k + k - 1) * 7);
+    const m = new Date(rowStart).getMonth();
+    cells += `<span class="hm" style="grid-row:${r + 1}">${m !== lastMonth ? t('monthsShort')[m] : ''}</span>`;
+    lastMonth = m;
+    for (let c = 0; c < cols; c++) {
+      const ts = addDays(rowStart, c);
+      const pos = `grid-row:${r + 1};grid-column:${c + 2}`;
       if (ts > today0) { cells += `<i class="hc future" style="${pos}"></i>`; continue; }
       const sec = byDay.get(dayKey(ts)) || 0;
       if (sec >= 60) activeDays++;
       const lv = dayLevel(sec, maxSec);
       const tip = `${dayTitle(ts)} · ${sec >= 60 ? fmtDur(sec) : t('noWork')}`;
-      cells += `<i class="hc l${lv}${ts === today0 ? ' today' : ''}" data-tip="${esc(tip)}" style="${pos};--d:${w * 7 + r};--r:${r};--c:${w}"></i>`;
+      cells += `<i class="hc l${lv}${ts === today0 ? ' today' : ''}" data-tip="${esc(tip)}" style="${pos};--r:${r};--c:${c}"></i>`;
     }
   }
 
@@ -871,32 +884,32 @@ function renderHeat() {
   for (let ts = (byDay.get(dayKey(today0)) || 0) >= 60 ? today0 : addDays(today0, -1); (byDay.get(dayKey(ts)) || 0) >= 60; ts = addDays(ts, -1)) streak++;
 
   const legend = [0, 1, 2, 3, 4].map(l => `<i class="hc l${l}"></i>`).join('');
-  // Real squares of one size: the size that fits half a year; a year gets smaller ones only if it must.
-  const gap = weeks > 30 ? 2 : 4;
-  const avail = (el.clientWidth || el.parentElement.clientWidth || 600) - 26;
-  let cell = Math.max(9, Math.min(20, Math.floor(avail / 26 - 4)));
-  cell = Math.max(5, Math.min(cell, Math.floor((avail - weeks * gap) / weeks)));
-  const width = 26 + weeks * (cell + gap);
   const old = el.querySelector('.heat-wrap');
-  const fromW = old ? old.getBoundingClientRect().width : 0;
-  el.style.setProperty('--weeks', weeks);
-  el.style.setProperty('--cell', `${cell}px`);
+  const fromH = old ? old.getBoundingClientRect().height : 0;
+  el.style.setProperty('--cols', cols);
+  el.style.setProperty('--cell', `${cell.toFixed(2)}px`);
   el.style.setProperty('--gap', `${gap}px`);
-  el.classList.toggle('dense', weeks > 30);
+  el.style.setProperty('--lw', `${labelW}px`);
+  el.classList.remove('dense');
   el.innerHTML = `
-    <div class="heat-wrap"><div class="heat-inner" style="width:${width}px">
-    <div class="heat-months">${months}</div>
-    <div class="heat-grid">${cells}</div>
-    </div></div>
+    <div class="heat-head">${head}</div>
+    <div class="heat-wrap"><div class="heat-grid">${cells}</div></div>
     <div class="heat-foot">
       <span class="muted">${t('activeDays')(activeDays)}${streak > 1 ? ` · ${t('streak')(streak)}` : ''}</span>
       <span class="heat-legend">${t('less')}${legend}${t('more')}</span>
     </div>`;
-  // the frame opens (or closes) smoothly to its new width; only one element animates
-  el.querySelector('.heat-wrap').style.width = `${width}px`;
-  // a new range (or the squares just shown) unfolds from the top row down
-  const sig = `${weeks}|${!!fromW}`;
-  if (heatSig && sig !== heatSig) { kick(el, 'unfold'); clearTimeout(heatT); heatT = setTimeout(() => el.classList.remove('unfold'), 1200); }
+  // a longer range opens downwards smoothly: one element changes height, new rows unfold in
+  const wrap = el.querySelector('.heat-wrap');
+  const toH = rows * cell + (rows - 1) * gap;
+  const sig = `${weeks}|${!!fromH}`;
+  if (heatSig && sig !== heatSig && fromH) {
+    wrap.style.height = `${fromH}px`;
+    void wrap.offsetHeight;
+    wrap.style.height = `${toH}px`;
+    kick(el, 'unfold');
+    clearTimeout(heatT);
+    heatT = setTimeout(() => { el.classList.remove('unfold'); wrap.style.height = ''; }, 1200);
+  }
   heatSig = sig;
 }
 let heatSig = '', heatT = null;
@@ -1779,6 +1792,58 @@ function bindTimeSheet() {
   $('#timeSheet').addEventListener('click', e => { if (e.target.id === 'timeSheet') closeTimeSheet(); });
 }
 
+/* ---------- One program in detail: open vs active time for a period, day by day ---------- */
+let adExe = null, adRange = 7;
+function openAppDetail(exe) {
+  if (!appStats.some(a => a.exe === exe)) return;
+  adExe = exe;
+  renderAppDetail();
+  $('#appDetail').hidden = false;
+}
+function closeAppDetail() { $('#appDetail').hidden = true; adExe = null; }
+function renderAppDetail() {
+  const a = appStats.find(x => x.exe === adExe);
+  if (!a) { closeAppDetail(); return; }
+  $('#adIco').innerHTML = avatar(a.name, a.exe, a.icon);
+  $('#adName').textContent = a.name;
+  $$('#adRange button').forEach(b => b.classList.toggle('on', Number(b.dataset.r) === adRange));
+  const tt = { 1: a.today, 7: a.week, 30: a.month, 90: a.quarter || a.month, 0: a.total }[adRange] || a.week;
+  swapText($('#adActive'), fmtLong(tt.active || 0));
+  swapText($('#adOpen'), fmtLong(tt.run || 0));
+  const share = tt.run > 0 ? Math.round((tt.active / tt.run) * 100) : 0;
+  swapText($('#adShare'), `${share}%`);
+  $('#adBarFill').style.width = `${share}%`;
+  // day by day for a week or a month; week by week for three months and all time
+  const recent = Array.isArray(a.recent) ? a.recent : [];
+  let days = recent.slice(adRange === 7 ? -7 : -30);
+  if (adRange === 90 || adRange === 0) {
+    days = [];
+    for (let i = recent.length; i > 0; i -= 7) {
+      const wk = recent.slice(Math.max(0, i - 7), i);
+      days.unshift({ day: wk[0].day, run: wk.reduce((x, d) => x + (d.run || 0), 0), active: wk.reduce((x, d) => x + (d.active || 0), 0), week: true });
+    }
+  }
+  const max = Math.max(60, ...days.map(d => d.run || 0));
+  const short = days.length <= 7;
+  $('#adChart').innerHTML = days.map((d, i) => {
+    const ts = parseDay(d.day);
+    const lab = d.week ? (i === 0 || new Date(ts).getMonth() !== new Date(parseDay(days[i - 1].day)).getMonth() ? t('monthsShort')[new Date(ts).getMonth()] : '')
+      : short ? t('daysMon')[(new Date(ts).getDay() + 6) % 7].slice(0, 2) : (i % 5 === 4 || i === days.length - 1 ? new Date(ts).getDate() : '');
+    const tip = `${dayTitle(ts)} · ${fmtDur(d.active || 0)} / ${fmtDur(d.run || 0)}`;
+    return `<div class="adc${d.day === dayKey(Date.now()) ? ' today' : ''}" title="${esc(tip)}">
+      <div class="adc-bar"><i class="o" style="height:${((d.run || 0) / max * 100).toFixed(1)}%"></i><i class="a" style="height:${((d.active || 0) / max * 100).toFixed(1)}%"></i></div>
+      <span>${lab}</span></div>`;
+  }).join('');
+}
+function bindAppDetail() {
+  $('#appDetail').addEventListener('click', e => {
+    if (e.target.id === 'appDetail' || e.target.closest('#adClose')) { closeAppDetail(); return; }
+    const r = e.target.closest('#adRange button');
+    if (r) { adRange = Number(r.dataset.r); renderAppDetail(); }
+  });
+  document.addEventListener('keydown', e => { if (e.key === 'Escape' && adExe) closeAppDetail(); });
+}
+
 // Series start time: "now" or a time of day (today, or tomorrow if it has passed)
 function renderWhen() {
   const el = $('#seriesWhenText');
@@ -2054,21 +2119,24 @@ function avatar(name, exe, icon) {
 }
 
 async function loadApps() {
+  // the phone does not track programs: it shows what the PC sent through sync
+  if (ANDROID) { appStats = appsRemote || []; renderApps(); return; }
   appStats = (await api.appsStats()) || [];
   renderApps();
+  syncApps(appStats);
 }
 
 function renderApps() {
-  const list = [...appStats].sort((a, b) => b.total.run - a.total.run);
+  const list = [...appStats].sort((a, b) => (b.today.run - a.today.run) || (b.total.run - a.total.run));
   $('#appList').innerHTML = list.length ? list.map(a => `<div class="app" data-exe="${esc(a.exe)}">
       ${avatar(a.name, a.exe, a.icon)}
       <div class="app-main">
         <div class="app-name"><span>${esc(a.name)}</span>${a.running ? `<span class="dot" title="${esc(t('running'))}"></span>` : ''}</div>
-        ${a.today.run >= 60 ? `<div class="app-sub">${t('aToday')} ${fmtDur(a.today.run)}</div>` : ''}
       </div>
-      <div class="app-total" title="${esc(t('aActive'))}"><div>${fmtLong(a.total.active)}</div><div class="app-total-sub">${t('aOf')} ${fmtLong(a.total.run)}</div></div>
+      <div class="app-total${a.today.run >= 60 ? '' : ' none'}" title="${esc(t('aActive'))}">${a.today.run >= 60 ? `<div>${fmtDur(a.today.active)}</div><div class="app-total-sub">${t('aOf')} ${fmtDur(a.today.run)}</div>` : `<div>—</div>`}</div>
       <button class="del" data-exe="${esc(a.exe)}" title="${esc(t('stopTrack'))}">${ICONS.x}</button>
-    </div>`).join('') : `<div class="empty-state">${t('appsNone')}</div>`;
+    </div>`).join('') : `<div class="empty-state">${t(ANDROID ? 'appsNoneA' : 'appsNone')}</div>`;
+  if (adExe) renderAppDetail();
 }
 
 let appInstalled = [];
@@ -2244,7 +2312,7 @@ function bind() {
   $('#btnBrowse').addEventListener('click', async () => addApp(await api.appsBrowse(t('appsBrowseTitle'))));
   $('#appList').addEventListener('click', async e => {
     const b = e.target.closest('.del');
-    if (!b) return;
+    if (!b) { const row = e.target.closest('.app'); if (row) openAppDetail(row.dataset.exe); return; }
     appStats = (await api.appsUntrack(b.dataset.exe)) || appStats;
     renderApps();
   });
@@ -2368,6 +2436,7 @@ function bind() {
     window.__back = () => {
       if (!$('#sheet').hidden) { closeSheet(null); return true; }
       if (tsOpen) { closeTimeSheet(); return true; }
+      if (adExe) { closeAppDetail(); return true; }
       if (!$('#cal').hidden) { closeCalendar(); return true; }
       if (!$('#addTime').hidden) { closeAddTime(); return true; }
       if (!$('#modal').hidden) { closeModal(false); return true; }
@@ -2446,6 +2515,7 @@ function bind() {
   if (ANDROID && settings.theme === 'system') settings.theme = systemDark ? 'dark' : 'light'; // the phone offers light and dark only
   bind();
   bindWhen();
+  bindAppDetail();
   bindTimeSheet();
   bindAddTime();
   bindTimePicker();

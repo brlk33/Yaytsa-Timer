@@ -208,8 +208,16 @@ type appStat struct {
 	Today   appTimes `json:"today"`
 	Week    appTimes `json:"week"`
 	Month   appTimes `json:"month"`
+	Quarter appTimes `json:"quarter"` // last 90 days
 	Total   appTimes `json:"total"`
 	Days    int      `json:"days"` // days with any use
+	Recent  []dayTimes `json:"recent"` // the last 90 days, oldest first (for the detail card)
+}
+
+type dayTimes struct {
+	Day    string  `json:"day"`
+	Run    float64 `json:"run"`
+	Active float64 `json:"active"`
 }
 
 func appsStats() []appStat {
@@ -219,6 +227,7 @@ func appsStats() []appStat {
 	today := dayKeyOf(now)
 	weekFrom := dayKeyOf(now.AddDate(0, 0, -6))
 	monthFrom := dayKeyOf(now.AddDate(0, 0, -29))
+	quarterFrom := dayKeyOf(now.AddDate(0, 0, -89))
 	running := map[string]bool{}
 	for _, e := range strings.Split(appsLast, "|") {
 		running[e] = true
@@ -237,6 +246,9 @@ func appsStats() []appStat {
 			if t.Run >= 60 {
 				s.Days++
 			}
+			if day >= quarterFrom {
+				add(&s.Quarter)
+			}
 			if day >= monthFrom {
 				add(&s.Month)
 			}
@@ -246,6 +258,14 @@ func appsStats() []appStat {
 			if day == today {
 				add(&s.Today)
 			}
+		}
+		for i := 89; i >= 0; i-- {
+			day := dayKeyOf(now.AddDate(0, 0, -i))
+			d := dayTimes{Day: day}
+			if t := apps.Days[day][a.Exe]; t != nil {
+				d.Run, d.Active = t.Run, t.Active
+			}
+			s.Recent = append(s.Recent, d)
 		}
 		out = append(out, s)
 	}
