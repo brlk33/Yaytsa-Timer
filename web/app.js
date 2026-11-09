@@ -63,7 +63,7 @@ const I18N = {
     appsLead: 'Как в Steam: время идёт, пока программа открыта. «Активно» — когда её окно на переднем плане, а вы за компьютером.',
     appsAdd: '+ Добавить программу', appsPick: 'Открыты сейчас', appsNone: 'Пока ничего не отслеживается',
     appsNoCand: 'Откройте нужную программу, и она появится в этом списке', running: 'запущена',
-    aToday: 'Сегодня', aWeek: '7 дней', aTotal: 'Всего', aActive: 'активно', stopTrack: 'Не отслеживать',
+    aToday: 'Сегодня', aWeek: '7 дней', aTotal: 'Всего', aActive: 'активно', aOf: 'из', stopTrack: 'Не отслеживать',
     gSystem: 'Система', launchAtStart: 'Запускать вместе с Windows', launchAtStartDesc: 'Стартует свёрнутой в трей',
 winMin: 'Свернуть', winMax: 'Развернуть', winClose: 'Закрыть', importCsv: 'Импорт CSV', imported: n => `Добавлено ${n} ${plural(n, 'заход', 'захода', 'заходов')}`, importNone: 'В файле нет новых заходов',    importBad: 'Не удалось прочитать файл', delete: 'Удалить', cancel: 'Отмена', delProjTitle: n => `Удалить проект «${n}»?`,    delProjText: 'Время заходов останется в статистике, но без названия проекта. Это нельзя отменить.', projDeleted: 'Проект удалён',    pTodayL: 'Сегодня', pWeekL: 'За 7 дней', calClear: 'Убрать', calToday: 'Сегодня', noProjects: 'Проектов пока нет',
     monthsNom: ['Январь', 'Февраль', 'Март', 'Апрель', 'Май', 'Июнь', 'Июль', 'Август', 'Сентябрь', 'Октябрь', 'Ноябрь', 'Декабрь'],
@@ -130,7 +130,7 @@ scale: 'Масштаб', appsPickTitle: 'Добавить программу', a
     appsLead: 'Like Steam: time counts while the program is open. “Active” is when its window is in front and you’re at the PC.',
     appsAdd: '+ Add a program', appsPick: 'Open right now', appsNone: 'Nothing is tracked yet',
     appsNoCand: 'Open the program you want and it will show up here', running: 'running',
-    aToday: 'Today', aWeek: '7 days', aTotal: 'Total', aActive: 'active', stopTrack: 'Stop tracking',
+    aToday: 'Today', aWeek: '7 days', aTotal: 'Total', aActive: 'active', aOf: 'of', stopTrack: 'Stop tracking',
     gSystem: 'System', launchAtStart: 'Launch with Windows', launchAtStartDesc: 'Starts hidden in the tray',
 winMin: 'Minimize', winMax: 'Maximize', winClose: 'Close', importCsv: 'Import CSV', imported: n => `Added ${n} session${n === 1 ? '' : 's'}`, importNone: 'No new sessions in the file',    importBad: 'Could not read the file', delete: 'Delete', cancel: 'Cancel', delProjTitle: n => `Delete project “${n}”?`,    delProjText: 'Session time stays in your stats, just without the project name. This can’t be undone.', projDeleted: 'Project deleted',    pTodayL: 'Today', pWeekL: 'Last 7 days', calClear: 'Clear', calToday: 'Today', noProjects: 'No projects yet',
     monthsNom: ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'],
@@ -709,7 +709,9 @@ function renderTimer() {
   if (ANDROID) $('#faceToday').textContent = series ? info : $('#todayVal').textContent;
   // idle (nothing started): the phone shows the setup wheels instead of the ring
   const idle = !series && isUntouched() && timer.phase === 'work';
+  const wasIdle = $('#view-timer').classList.contains('idle');
   $('#view-timer').classList.toggle('idle', idle);
+  if (ANDROID && wasIdle !== idle && lastTick) kick(idle ? $('.dials') : $('#face'), 'appear');
   $('#view-timer').classList.toggle('in-series', !!series);
   renderWhen();
 
@@ -743,7 +745,7 @@ function renderSteppers() {
     const prev = Number(el.dataset.v);
     el.dataset.v = v;
     val.textContent = label;
-    if (!Number.isNaN(prev) && el.dataset.v !== '' && prev !== v) kick(val, v > prev ? 'roll-up' : 'roll-down'); // the number rolls to its new value
+    if (!Number.isNaN(prev) && el.dataset.v !== '' && prev !== v) roll(val, v > prev); // the number rolls to its new value
     el.querySelector('.dec').disabled = v <= lim.min;
     el.querySelector('.inc').disabled = v >= lim.max;
   });
@@ -860,7 +862,7 @@ function renderHeat() {
       if (sec >= 60) activeDays++;
       const lv = dayLevel(sec, maxSec);
       const tip = `${dayTitle(ts)} · ${sec >= 60 ? fmtDur(sec) : t('noWork')}`;
-      cells += `<i class="hc l${lv}${ts === today0 ? ' today' : ''}" data-tip="${esc(tip)}" style="${pos};--d:${w * 7 + r}"></i>`;
+      cells += `<i class="hc l${lv}${ts === today0 ? ' today' : ''}" data-tip="${esc(tip)}" style="${pos};--d:${w * 7 + r};--r:${r};--c:${w}"></i>`;
     }
   }
 
@@ -891,13 +893,13 @@ function renderHeat() {
       <span class="heat-legend">${t('less')}${legend}${t('more')}</span>
     </div>`;
   // the frame opens (or closes) smoothly to its new width; only one element animates
-  const wrap = el.querySelector('.heat-wrap');
-  if (fromW && Math.abs(fromW - width) > 2) {
-    wrap.style.width = `${fromW}px`;
-    void wrap.offsetWidth;
-    wrap.style.width = `${width}px`;
-  } else wrap.style.width = `${width}px`;
+  el.querySelector('.heat-wrap').style.width = `${width}px`;
+  // a new range (or the squares just shown) unfolds from the top row down
+  const sig = `${weeks}|${!!fromW}`;
+  if (heatSig && sig !== heatSig) { kick(el, 'unfold'); clearTimeout(heatT); heatT = setTimeout(() => el.classList.remove('unfold'), 1200); }
+  heatSig = sig;
 }
+let heatSig = '', heatT = null;
 
 // one floating tooltip for all squares
 function initHeatTip() {
@@ -1715,12 +1717,75 @@ function bindTimePicker() {
   document.addEventListener('keydown', e => { if (e.key === 'Escape' && tpState) closeTimePicker(); });
 }
 
+/* ---------- Phone: start time picked on two number wheels (hours, minutes) in a bottom sheet ----------
+   Native scrolling with snap does the flick and the inertia; we only add the lens and the click. */
+const TS_ROW = 52;
+let tsOpen = false;
+function tsFill(col, values, sel) {
+  col.innerHTML = '<div class="ts-pad"></div>' + values.map(v => `<div class="ts-item" data-v="${v}">${pad(v)}</div>`).join('') + '<div class="ts-pad"></div>';
+  col.scrollTop = values.indexOf(sel) * TS_ROW;
+  tsLens(col);
+}
+function tsValue(col) {
+  const items = col.querySelectorAll('.ts-item');
+  const i = Math.max(0, Math.min(items.length - 1, Math.round(col.scrollTop / TS_ROW)));
+  return Number(items[i].dataset.v);
+}
+function tsLens(col) {
+  const mid = col.scrollTop + col.clientHeight / 2;
+  col.querySelectorAll('.ts-item').forEach(it => {
+    const c = it.offsetTop + TS_ROW / 2;
+    const k = Math.max(0, 1 - Math.abs(c - mid) / (TS_ROW * 1.6));
+    it.style.transform = `scale(${(0.66 + 0.34 * k).toFixed(3)})`;
+    it.style.opacity = (0.25 + 0.75 * k).toFixed(3);
+  });
+}
+function openTimeSheet() {
+  const d = seriesStartAt ? new Date(seriesStartAt) : new Date(Date.now() + 15 * 60000);
+  const sheet = $('#timeSheet');
+  sheet.hidden = false;
+  tsOpen = true;
+  tsFill($('#tsH'), Array.from({ length: 24 }, (_, i) => i), d.getHours());
+  tsFill($('#tsM'), Array.from({ length: 12 }, (_, i) => i * 5), (Math.ceil(d.getMinutes() / 5) * 5) % 60);
+}
+function closeTimeSheet() {
+  $('#timeSheet').hidden = true;
+  tsOpen = false;
+}
+function bindTimeSheet() {
+  ['#tsH', '#tsM'].forEach(sel => {
+    const col = $(sel);
+    let raf = 0, last = null;
+    col.addEventListener('scroll', () => {
+      if (raf) return;
+      raf = requestAnimationFrame(() => {
+        raf = 0;
+        tsLens(col);
+        const v = tsValue(col);
+        if (last !== null && v !== last) tickSound(v > last ? 1 : -1);
+        last = v;
+      });
+    }, { passive: true });
+  });
+  $('#tsOk').addEventListener('click', () => {
+    const d = new Date();
+    d.setHours(tsValue($('#tsH')), tsValue($('#tsM')), 0, 0);
+    if (d.getTime() <= Date.now() + 30000) d.setDate(d.getDate() + 1);
+    seriesStartAt = d.getTime();
+    closeTimeSheet();
+    render();
+  });
+  $('#tsNow').addEventListener('click', () => { seriesStartAt = 0; closeTimeSheet(); render(); });
+  $('#timeSheet').addEventListener('click', e => { if (e.target.id === 'timeSheet') closeTimeSheet(); });
+}
+
 // Series start time: "now" or a time of day (today, or tomorrow if it has passed)
 function renderWhen() {
   const el = $('#seriesWhenText');
   if (!el) return;
   if (seriesStartAt && seriesStartAt <= Date.now()) seriesStartAt = 0;
-  const txt = seriesStartAt ? t('seriesAt')(hm(seriesStartAt)) : t('seriesNow');
+  const txt = seriesStartAt ? (ANDROID ? hm(seriesStartAt) : t('seriesAt')(hm(seriesStartAt))) : (ANDROID ? '' : t('seriesNow'));
+  $('#seriesWhen').title = seriesStartAt ? t('seriesAt')(hm(seriesStartAt)) : t('seriesStart');
   if (el.textContent !== txt) el.textContent = txt;
   $('#seriesWhenX').hidden = !seriesStartAt;
   $('#seriesWhen').classList.toggle('set', !!seriesStartAt);
@@ -1740,9 +1805,8 @@ function bindWhen() {
   });
   $('#seriesWhen').addEventListener('click', e => {
     if (!ANDROID) { e.preventDefault(); if (tpState) closeTimePicker(); else openTimePicker($('#seriesWhen')); return; }
-    if (e.target === input) return;
     e.preventDefault();
-    try { input.showPicker(); } catch { input.focus(); input.click(); }
+    openTimeSheet();
   });
   $('#seriesWhenX').addEventListener('click', () => { seriesStartAt = 0; input.value = ''; render(); });
 }
@@ -1778,6 +1842,12 @@ function swapText(el, txt) {
   const first = !el.textContent;
   el.textContent = txt;
   if (!first) kick(el, 'swap');
+}
+function roll(el, up) {
+  if (!el) return;
+  el.classList.remove('roll-up', 'roll-down');
+  void el.offsetWidth;
+  el.classList.add(up ? 'roll-up' : 'roll-down');
 }
 function kick(el, cls) {
   if (!el) return;
@@ -1994,9 +2064,9 @@ function renderApps() {
       ${avatar(a.name, a.exe, a.icon)}
       <div class="app-main">
         <div class="app-name"><span>${esc(a.name)}</span>${a.running ? `<span class="dot" title="${esc(t('running'))}"></span>` : ''}</div>
-        <div class="app-sub">${t('aToday')} ${fmtDur(a.today.run)} · ${t('aWeek')} ${fmtLong(a.week.run)}</div>
+        ${a.today.run >= 60 ? `<div class="app-sub">${t('aToday')} ${fmtDur(a.today.run)}</div>` : ''}
       </div>
-      <div class="app-total"><div><span class="app-total-l">${t('aActive')}</span> ${fmtLong(a.total.active)}</div><div class="app-total-sub">${t('aTotal')} ${fmtLong(a.total.run)}</div></div>
+      <div class="app-total" title="${esc(t('aActive'))}"><div>${fmtLong(a.total.active)}</div><div class="app-total-sub">${t('aOf')} ${fmtLong(a.total.run)}</div></div>
       <button class="del" data-exe="${esc(a.exe)}" title="${esc(t('stopTrack'))}">${ICONS.x}</button>
     </div>`).join('') : `<div class="empty-state">${t('appsNone')}</div>`;
 }
@@ -2297,6 +2367,7 @@ function bind() {
     // System back: close what is open, then go back to the timer; false lets the app go to background
     window.__back = () => {
       if (!$('#sheet').hidden) { closeSheet(null); return true; }
+      if (tsOpen) { closeTimeSheet(); return true; }
       if (!$('#cal').hidden) { closeCalendar(); return true; }
       if (!$('#addTime').hidden) { closeAddTime(); return true; }
       if (!$('#modal').hidden) { closeModal(false); return true; }
@@ -2375,6 +2446,7 @@ function bind() {
   if (ANDROID && settings.theme === 'system') settings.theme = systemDark ? 'dark' : 'light'; // the phone offers light and dark only
   bind();
   bindWhen();
+  bindTimeSheet();
   bindAddTime();
   bindTimePicker();
   syncInit(data);

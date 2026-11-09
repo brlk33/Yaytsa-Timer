@@ -124,7 +124,7 @@
           </div>
           <div class="when">
             <label class="when-chip" id="seriesWhen">
-              <svg class="when-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="8"/><path d="M12 8v4l2.5 1.6"/></svg>
+              <svg class="when-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M20 11.5A8 8 0 1 0 12.5 20"/><path d="M12 7.5V12l2.5 1.5M18 15v6M15 18h6"/></svg>
               <span id="seriesWhenText"></span>
               <input type="time" id="seriesTime" class="when-input" aria-label="time">
             </label>
@@ -329,6 +329,18 @@
       </div>
       <div class="modal-btns"><button type="button" class="ghost" id="atCancel" data-i18n="cancel"></button><button type="submit" class="danger-btn safe" id="atSave" data-i18n="atSave"></button></div>
     </form>
+  </div>
+  <div class="sheet-wrap" id="timeSheet" hidden>
+    <div class="sheet ts">
+      <h3 data-i18n="seriesStart"></h3>
+      <div class="ts-cols">
+        <div class="ts-band"></div>
+        <div class="ts-col" id="tsH"></div>
+        <span class="ts-sep">:</span>
+        <div class="ts-col" id="tsM"></div>
+      </div>
+      <div class="ts-btns"><button class="ghost" id="tsNow" data-i18n="seriesNow"></button><button class="danger-btn safe" id="tsOk" data-i18n="done"></button></div>
+    </div>
   </div>
   <div class="sheet-wrap" id="sheet" hidden>
     <div class="sheet"><h3 id="sheetTitle"></h3><div id="sheetItems"></div><button class="sheet-cancel" id="sheetCancel" data-i18n="cancel"></button></div>

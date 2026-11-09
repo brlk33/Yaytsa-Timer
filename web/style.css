@@ -1566,3 +1566,58 @@ html.android .prop[data-p="series"] .stepper .val { min-width: 96px; font-size: 
 }
 html.android .face.done-pulse .ring { animation: ringGlow 1.1s ease-out; }
 @keyframes ringGlow { 30% { filter: drop-shadow(0 0 14px rgba(111, 107, 255, .8)); transform: rotate(-90deg) scale(1.03); } }
+
+/* 2.12: squares unfold from the top row down instead of the frame sliding sideways */
+.heat-wrap { transition: none; }
+.heat.unfold .hc:not(.future) {
+  transform-origin: 50% 0;
+  animation: unfold .42s cubic-bezier(.2, .9, .3, 1.15) both;
+  animation-delay: calc(var(--r, 0) * 55ms + var(--c, 0) * 5ms);
+}
+@keyframes unfold { from { opacity: 0; transform: translateY(-8px) scaleY(.2); } }
+
+/* no orange "soon" on deadlines — it only adds stress; overdue stays quietly red */
+.chip.soon, html.android .chip.soon { color: inherit; background: var(--hover); }
+.dl-text.soon { color: inherit; }
+
+/* Apps: one quiet line per program — name, today if any; active time on the right, "of" the open time under it */
+.app-main { display: flex; flex-direction: column; justify-content: center; gap: 1px; }
+.app-name { font-size: 15px; }
+.app-sub { font-size: 12.5px; color: var(--text-3); }
+.app-total > div:first-child { font-size: 16px; font-weight: 600; }
+.app-total-sub { font-size: 12px; color: var(--text-3); }
+
+/* Setup <-> running on the phone timer */
+.appear { animation: appear .5s cubic-bezier(.2, .9, .3, 1.1) both; }
+@keyframes appear { from { opacity: 0; transform: scale(.9); } }
+html.android #view-timer .controls, html.android #view-timer .label-wrap { transition: transform .45s cubic-bezier(.2, .9, .3, 1); }
+
+/* Phone start-time chip: just a clock with a plus; the time appears once set */
+html.android .when-chip { min-width: 44px; height: 44px; justify-content: center; padding: 0 14px; }
+html.android .when-chip:not(.set) { width: 44px; padding: 0; }
+html.android .when-chip .when-ico { width: 20px; height: 20px; }
+html.android .when-chip:not(.set) #seriesWhenText { display: none; }
+
+/* Phone start-time sheet: two number wheels */
+.ts-cols { position: relative; display: flex; align-items: center; justify-content: center; gap: 4px; height: 260px; margin: 6px 0 14px; }
+.ts-band { position: absolute; left: 14%; right: 14%; top: calc(50% - 26px); height: 52px; border-radius: 16px; background: var(--block-2, var(--hover)); }
+.ts-col {
+  position: relative; width: 96px; height: 260px; overflow-y: scroll; scrollbar-width: none;
+  scroll-snap-type: y mandatory; overscroll-behavior: contain;
+  -webkit-mask-image: linear-gradient(transparent, #000 28%, #000 72%, transparent);
+  mask-image: linear-gradient(transparent, #000 28%, #000 72%, transparent);
+}
+.ts-col::-webkit-scrollbar { display: none; }
+.ts-pad { height: 104px; }
+.ts-item {
+  height: 52px; line-height: 52px; text-align: center; scroll-snap-align: center;
+  font-size: 40px; font-weight: 300; color: var(--text-strong); font-variant-numeric: tabular-nums;
+  will-change: transform, opacity;
+}
+.ts-sep { position: relative; font-size: 34px; font-weight: 300; color: var(--text-2); }
+.ts-btns { display: flex; gap: 10px; }
+.ts-btns button { flex: 1; min-height: 48px; border-radius: 14px; font-size: 15px; }
+
+/* the hidden native time input never takes taps now (own pickers on both platforms) */
+.when-input { pointer-events: none; }
+.danger-btn.safe { background: linear-gradient(135deg, #4f8bff, #8a5cff); }
