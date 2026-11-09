@@ -82,7 +82,7 @@ function sig(o) {
 // Database keys cannot hold . $ # [ ] /
 const dbKey = k => encodeURIComponent(k).replace(/\./g, '%2E');
 const unKey = k => { try { return decodeURIComponent(k); } catch { return k; } };
-const sessCore = s => ({ start: s.start, end: s.end, dur: s.dur, label: s.label || '', full: !!s.full, ...(s.manual ? { manual: true } : {}) });
+const sessCore = s => ({ start: s.start, end: s.end, dur: s.dur, label: s.label || '', full: !!s.full, ...(s.manual ? { manual: true } : {}), ...(s.series ? { series: s.series } : {}) });
 const projCore = p => ({ name: p.name || '', deadline: p.deadline || '', hidden: !!p.hidden, created: p.created || 0 });
 const setCore = () => Object.fromEntries(SYNC_SETTINGS.map(k => [k, settings[k]]));
 
@@ -451,7 +451,7 @@ const timerCore = () => ({
   startedAt: timer.startedAt || 0,
   label: $('#label').value.trim(),
   // the schedule, without this device's own bookkeeping
-  series: series ? { start: series.start, count: series.count, work: series.work, brk: series.brk, pausedAt: series.pausedAt || 0 } : null,
+  series: series ? { id: series.id || '', start: series.start, count: series.count, work: series.work, brk: series.brk, pausedAt: series.pausedAt || 0 } : null,
 });
 
 // Called from renderOuter (about once a second): sends the state when it changed here.

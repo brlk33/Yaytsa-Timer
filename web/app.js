@@ -52,7 +52,8 @@ const I18N = {
     atAdded: d => `Добавлено: ${d}`, atManual: 'вручную',
     stopSeries: 'Остановить серию', stopSeriesQ: 'Остановить серию?', stopSeriesText: 'Уже сделанные заходы останутся в истории, текущий запишется как есть.',
     appsNoneA: 'Здесь появятся программы, которые отслеживает Яйцетаймер на компьютере. Нужна синхронизация.',
-    adToday: 'Сегодня', ad7: 'Неделя', ad30: 'Месяц', ad90: '3 месяца', adAll: 'Всё время', appsTodayL: 'Сегодня · активно / открыта', adActiveL: 'активно', adOpenL: 'открыта', adShareL: 'активность',
+    adToday: 'Сегодня', ad7: 'Неделя', ad30: 'Месяц', ad90: '3 месяца', adAll: 'Всё время', appsTodayL: 'Активно сегодня', adActiveL: 'активно', adOpenL: 'открыта', adShareL: 'активность',
+    seriesRow: n => `Серия · ${n} ${plural(n, 'заход', 'захода', 'заходов')}`, histAll: 'Вся история',
     alertSound: 'Звук сигнала', choose: 'Выбрать', soundDefault: 'Стандартный', soundSystem: 'Звуки телефона', soundFile: 'Свой файл',
     soundSet: n => `Звук: ${n}`, updTitle: v => `Доступна версия ${v}`, updText: 'Обновление уже скачано, установка займёт несколько секунд.', updInstall: 'Обновить', updLater: 'Позже',
     projEmpty: 'Напишите на вкладке «Таймер», над чем работаете, или добавьте проект здесь',
@@ -121,7 +122,8 @@ scale: 'Масштаб', appsPickTitle: 'Добавить программу', a
     atAdded: d => `Added: ${d}`, atManual: 'by hand',
     stopSeries: 'Stop series', stopSeriesQ: 'Stop the series?', stopSeriesText: 'Finished sessions stay in your history; the current one is saved as it is.',
     appsNoneA: 'Programs tracked by Яйцетаймер on your PC show up here. Sync needs to be on.',
-    adToday: 'Today', ad7: 'Week', ad30: 'Month', ad90: '3 months', adAll: 'All time', appsTodayL: 'Today · active / open', adActiveL: 'active', adOpenL: 'open', adShareL: 'active share',
+    adToday: 'Today', ad7: 'Week', ad30: 'Month', ad90: '3 months', adAll: 'All time', appsTodayL: 'Active today', adActiveL: 'active', adOpenL: 'open', adShareL: 'active share',
+    seriesRow: n => `Series · ${n} session${n === 1 ? '' : 's'}`, histAll: 'All history',
     alertSound: 'Alert sound', choose: 'Choose', soundDefault: 'Default', soundSystem: 'Phone sounds', soundFile: 'Your own file',
     soundSet: n => `Sound: ${n}`, updTitle: v => `Version ${v} is available`, updText: 'The update is already downloaded, installing takes a few seconds.', updInstall: 'Update', updLater: 'Later',
     projEmpty: 'Type what you’re working on in the Timer tab, or add a project here',
@@ -360,6 +362,7 @@ function logWork(full, sync) {
     dur,
     label: $('#label').value.trim(),
     full: !!full,
+    ...(series && series.id ? { series: series.id } : {}),
   });
   if (sync) api.saveSync(snapshot());
   else persistNow();
@@ -512,7 +515,7 @@ function applySeries(quiet) {
   let logged = false;
   for (let w = s.logged; w < finished; w++) {
     const start = s.start + w * (s.work + s.brk);
-    const one = { start, end: start + s.work, dur: Math.round(s.work / 1000), label, full: true };
+    const one = { start, end: start + s.work, dur: Math.round(s.work / 1000), label, full: true, ...(s.id ? { series: s.id } : {}) };
     if (!sessions.some(x => sessionKey(x) === sessionKey(one))) { sessions.push({ id: newId(), ...one }); logged = true; }
   }
   if (finished > s.logged) { s.logged = finished; if (logged) { persistNow(); renderLabelMeta(); } }
@@ -550,7 +553,7 @@ function applySeries(quiet) {
 function startSeries(count, at) {
   const now = Date.now();
   series = {
-    start: at && at > now ? at : now, count,
+    id: newId(), start: at && at > now ? at : now, count,
     work: settings.work * 60000, brk: settings.brk * 60000, logged: 0, pausedAt: 0,
   };
   seriesPos = '';
@@ -563,10 +566,10 @@ function startSeries(count, at) {
 function stopSeries() {
   if (!series) return;
   const s = series;
+  // log the work in progress (still part of the series), as reset does for a single session
+  if (timer.phase === 'work' && timer.startedAt) logWork(false);
   series = null;
   seriesPos = '';
-  // log the work in progress, as reset does for a single session
-  if (timer.phase === 'work' && timer.startedAt) logWork(false);
   setPhase('work');
   persist();
   render();
@@ -863,16 +866,17 @@ function renderHeat() {
   let cells = '';
   let activeDays = 0;
   let lastMonth = -1;
+  // calendar order: oldest week first, so every row is full and only the last one (ending today) may be short
+  const firstMonday = addDays(monday0, -(rows * k - 1) * 7);
   for (let r = 0; r < rows; r++) {
-    // row r covers k weeks; the last row (r = 0) ends with this week
-    const rowStart = addDays(monday0, -(r * k + k - 1) * 7);
+    const rowStart = addDays(firstMonday, r * k * 7);
     const m = new Date(rowStart).getMonth();
     void m;
     lastMonth = m;
     for (let c = 0; c < cols; c++) {
       const ts = addDays(rowStart, c);
       const pos = `grid-row:${r + 1};grid-column:${c + 1}`;
-      if (ts > today0) { cells += `<i class="hc future" style="${pos}"></i>`; continue; }
+      if (ts > today0) break; // the days still to come are simply not drawn
       const sec = byDay.get(dayKey(ts)) || 0;
       if (sec >= 60) activeDays++;
       const lv = dayLevel(sec, maxSec);
@@ -966,7 +970,8 @@ function renderBars(today0, goalSec, live) {
 }
 
 function renderHistory() {
-  const hist = $('#history');
+  renderHistoryShort();
+  const hist = $('#historyFull');
   if (!sessions.length) {
     hist.innerHTML = `<div class="empty-state">${t('noData')}</div>`;
     $('#btnMore').style.display = 'none';
@@ -1094,6 +1099,8 @@ const ICONS = {
   trash: '<svg viewBox="0 0 24 24"><path d="M4.5 7h15M10 4h4M6.5 7l.9 12a1.6 1.6 0 0 0 1.6 1.5h6a1.6 1.6 0 0 0 1.6-1.5l.9-12" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>',
   cal: '<svg viewBox="0 0 20 20"><rect x="3.5" y="4.5" width="13" height="12" rx="2.5" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="M3.5 8.5h13M7 3v3M13 3v3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>',
   clockPlus: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M20 11.5A8 8 0 1 0 12.5 20"/><path d="M12 7.5V12l2.5 1.5M18 15v6M15 18h6"/></svg>',
+  repeat: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 11a7 7 0 0 1 12-4.9L19 8M19 4v4h-4M19 13a7 7 0 0 1-12 4.9L5 16M5 20v-4h4"/></svg>',
+  dot: '<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="4" fill="currentColor"/></svg>',
   x: '<svg width="12" height="12" viewBox="0 0 12 12"><path d="M3 3l6 6M9 3l-6 6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>',
   prev: '<svg viewBox="0 0 20 20"><path d="M12 5l-5 5 5 5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>',
   next: '<svg viewBox="0 0 20 20"><path d="M8 5l5 5-5 5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>',
@@ -1848,6 +1855,45 @@ function bindAppDetail() {
   document.addEventListener('keydown', e => { if (e.key === 'Escape' && adExe) closeAppDetail(); });
 }
 
+/* ---------- History: the last few things done (a series counts as one), full list in a card ---------- */
+// Sessions newest first; the sessions of one series fold into a single entry.
+function historyItems(list) {
+  const out = [];
+  for (const s of list) {
+    const last = out[out.length - 1];
+    if (s.series && last && last.series === s.series) {
+      last.n++;
+      last.start = Math.min(last.start, s.start);
+      last.dur += s.dur;
+      if (!last.label && s.label) last.label = s.label;
+    } else out.push({ series: s.series || '', n: 1, start: s.start, end: s.end, dur: s.dur, label: s.label || '', manual: !!s.manual });
+  }
+  return out;
+}
+function renderHistoryShort() {
+  const box = $('#history');
+  const items = historyItems([...sessions].sort((a, b) => b.start - a.start)).slice(0, 3);
+  $('#btnHistAll').style.display = sessions.length ? '' : 'none';
+  if (!items.length) { box.innerHTML = `<div class="empty-state">${t('noData')}</div>`; return; }
+  box.innerHTML = items.map(g => {
+    const day = startOfDay(g.start) === startOfDay() ? '' : `${dayTitle(g.start)} · `;
+    const title = g.n > 1
+      ? `${t('seriesRow')(g.n)}${g.label ? ` · ${esc(g.label)}` : ''}`
+      : (g.label ? esc(g.label) : `<span class="muted">${t('noLabel')}</span>`);
+    return `<div class="hs${g.n > 1 ? ' series' : ''}">
+      <span class="hs-ico">${g.n > 1 ? ICONS.repeat : ICONS.dot}</span>
+      <span class="hs-main"><span class="hs-title">${title}</span><span class="hs-sub">${day}${hm(g.start)}–${hm(g.end)}${g.manual ? ` · ${t('atManual')}` : ''}</span></span>
+      <span class="hs-dur">${fmtDur(g.dur)}</span>
+    </div>`;
+  }).join('');
+}
+function openHistory() {
+  historyLimit = 7;
+  renderHistory();
+  $('#histAll').hidden = false;
+}
+function closeHistory() { $('#histAll').hidden = true; }
+
 // Series start time: "now" or a time of day (today, or tomorrow if it has passed)
 function renderWhen() {
   const el = $('#seriesWhenText');
@@ -2137,7 +2183,7 @@ function renderApps() {
       <div class="app-main">
         <div class="app-name"><span>${esc(a.name)}</span>${a.running ? `<span class="dot" title="${esc(t('running'))}"></span>` : ''}</div>
       </div>
-      <div class="app-total${a.today.run >= 60 ? '' : ' none'}" title="${esc(t('aActive'))}">${a.today.run >= 60 ? `<div>${fmtDur(a.today.active)}</div><div class="app-total-sub">${t('aOf')} ${fmtDur(a.today.run)}</div>` : `<div>—</div>`}</div>
+      <div class="app-total${a.today.active >= 60 ? '' : ' none'}" title="${esc(t('aActive'))}"><div>${a.today.active >= 60 ? fmtDur(a.today.active) : '—'}</div></div>
       <button class="del" data-exe="${esc(a.exe)}" title="${esc(t('stopTrack'))}">${ICONS.x}</button>
     </div>`).join('') : `<div class="empty-state">${t(ANDROID ? 'appsNoneA' : 'appsNone')}</div>`;
   if (adExe) renderAppDetail();
@@ -2343,7 +2389,9 @@ function bind() {
   let resizeT = null;
   window.addEventListener('resize', () => { clearTimeout(resizeT); resizeT = setTimeout(() => { if (view === 'stats') renderStats(); }, 120); });
 
-  $('#history').addEventListener('click', e => {
+  $('#btnHistAll').addEventListener('click', openHistory);
+  $('#histAll').addEventListener('click', e => { if (e.target.id === 'histAll' || e.target.closest('#histClose')) closeHistory(); });
+  $('#historyFull').addEventListener('click', e => {
     const btn = e.target.closest('.del');
     if (!btn) return;
     sessions = sessions.filter(s => s.id !== btn.dataset.id);
@@ -2352,7 +2400,7 @@ function bind() {
     renderTimer();
     toast(t('deleted'));
   });
-  $('#btnMore').addEventListener('click', () => { historyLimit += 14; renderStats(); });
+  $('#btnMore').addEventListener('click', () => { historyLimit += 14; renderHistory(); });
   $('#btnExport').addEventListener('click', exportCsv);
   $('#btnExport2').addEventListener('click', exportCsv);
   $('#btnFolder').addEventListener('click', () => api.openDataFolder());
@@ -2441,6 +2489,7 @@ function bind() {
       if (!$('#sheet').hidden) { closeSheet(null); return true; }
       if (tsOpen) { closeTimeSheet(); return true; }
       if (adExe) { closeAppDetail(); return true; }
+      if (!$('#histAll').hidden) { closeHistory(); return true; }
       if (!$('#cal').hidden) { closeCalendar(); return true; }
       if (!$('#addTime').hidden) { closeAddTime(); return true; }
       if (!$('#modal').hidden) { closeModal(false); return true; }
