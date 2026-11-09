@@ -365,7 +365,7 @@ function logWork(full, sync) {
 
 function complete() {
   const finished = timer.phase;
-  if (finished === 'work') logWork(true);
+  if (finished === 'work') { logWork(true); celebrate(timer.total); }
   setPhase(finished === 'work' ? 'break' : 'work');
   if (settings.autoStart) start();
   alertPhaseEnd(finished);
@@ -536,6 +536,7 @@ function applySeries(quiet) {
   timer.remaining = p.waiting ? timer.total : Math.max(0, p.end - at);
   if (changed && !quiet && prev && now - p.start < 4000) {
     // a new phase began while we watched: the same alert as a normal phase end, already running
+    if (p.phase === 'break') celebrate(s.work);
     alertPhaseEnd(p.phase === 'work' ? 'break' : 'work', false, true);
   }
   if (changed) api.schedule(timer.running ? Math.max(0, p.end - now) : p.waiting ? Math.max(0, p.start - now) : 0);
@@ -738,7 +739,11 @@ function renderSteppers() {
       el.querySelector('.dec').addEventListener('click', () => changeSetting(key, -1));
       el.querySelector('.inc').addEventListener('click', () => changeSetting(key, +1));
     }
-    el.querySelector('.val').textContent = label;
+    const val = el.querySelector('.val');
+    const prev = Number(el.dataset.v);
+    el.dataset.v = v;
+    val.textContent = label;
+    if (!Number.isNaN(prev) && el.dataset.v !== '' && prev !== v) kick(val, v > prev ? 'roll-up' : 'roll-down'); // the number rolls to its new value
     el.querySelector('.dec').disabled = v <= lim.min;
     el.querySelector('.inc').disabled = v >= lim.max;
   });
@@ -779,9 +784,9 @@ function esc(s) {
 function renderStats() {
   const today0 = startOfDay();
   const live = liveWorkSec();
-  $('#stToday').textContent = fmtDur(todaySec());
-  $('#stWeek').textContent = fmtDur(secondsSince(today0 - 6 * 86400000) + live);
-  $('#stMonth').textContent = fmtDur(secondsSince(today0 - 29 * 86400000) + live);
+  swapText($('#stToday'), fmtDur(todaySec()));
+  swapText($('#stWeek'), fmtDur(secondsSince(today0 - 6 * 86400000) + live));
+  swapText($('#stMonth'), fmtDur(secondsSince(today0 - 29 * 86400000) + live));
 
   // goal
   const goalSec = settings.goal * 3600;
@@ -790,7 +795,7 @@ function renderStats() {
     const done = todaySec();
     const pct = Math.min(100, (done / goalSec) * 100);
     $('#goalFill').style.width = `${pct}%`;
-    $('#goalText').textContent = `${fmtDur(done)} / ${fmtHours(settings.goal)} · ${Math.round((done / goalSec) * 100)}%`;
+    swapText($('#goalText'), `${fmtDur(done)} / ${fmtHours(settings.goal)} · ${Math.round((done / goalSec) * 100)}%`);
   }
 
   const squares = settings.chartMode === 'squares';
@@ -834,7 +839,7 @@ function renderHeat() {
   // Columns are 1fr and cells are square, so any range always fits the width (no scrolling).
   let cells = '';
   let months = '';
-  let prevMonth = -1;
+  let prevMonth = -1, lastLabel = -9;
   let activeDays = 0;
   const dayNames = t('daysMon');
   [0, 2, 4].forEach(r => { cells += `<span class="hd" style="grid-row:${r + 1}">${dayNames[r]}</span>`; });
@@ -843,7 +848,8 @@ function renderHeat() {
     const m = new Date(colStart).getMonth();
     if (m !== prevMonth) {
       // skip a month label squeezed into the last two columns
-      if (prevMonth === -1 || w < weeks - (weeks > 30 ? 2 : 0)) months += `<span style="grid-column:${w + 2}">${t('monthsShort')[m]}</span>`;
+      // labels need about three columns of room, or they run into each other on narrow screens
+      if ((prevMonth === -1 || w < weeks - (weeks > 30 ? 2 : 0)) && w - lastLabel >= 3) { months += `<span style="grid-column:${w + 2}">${t('monthsShort')[m]}</span>`; lastLabel = w; }
       prevMonth = m;
     }
     for (let r = 0; r < 7; r++) {
@@ -863,15 +869,34 @@ function renderHeat() {
   for (let ts = (byDay.get(dayKey(today0)) || 0) >= 60 ? today0 : addDays(today0, -1); (byDay.get(dayKey(ts)) || 0) >= 60; ts = addDays(ts, -1)) streak++;
 
   const legend = [0, 1, 2, 3, 4].map(l => `<i class="hc l${l}"></i>`).join('');
+  // Real squares of one size: the size that fits half a year; a year gets smaller ones only if it must.
+  const gap = weeks > 30 ? 2 : 4;
+  const avail = (el.clientWidth || el.parentElement.clientWidth || 600) - 26;
+  let cell = Math.max(9, Math.min(20, Math.floor(avail / 26 - 4)));
+  cell = Math.max(5, Math.min(cell, Math.floor((avail - weeks * gap) / weeks)));
+  const width = 26 + weeks * (cell + gap);
+  const old = el.querySelector('.heat-wrap');
+  const fromW = old ? old.getBoundingClientRect().width : 0;
   el.style.setProperty('--weeks', weeks);
+  el.style.setProperty('--cell', `${cell}px`);
+  el.style.setProperty('--gap', `${gap}px`);
   el.classList.toggle('dense', weeks > 30);
   el.innerHTML = `
+    <div class="heat-wrap"><div class="heat-inner" style="width:${width}px">
     <div class="heat-months">${months}</div>
     <div class="heat-grid">${cells}</div>
+    </div></div>
     <div class="heat-foot">
       <span class="muted">${t('activeDays')(activeDays)}${streak > 1 ? ` · ${t('streak')(streak)}` : ''}</span>
       <span class="heat-legend">${t('less')}${legend}${t('more')}</span>
     </div>`;
+  // the frame opens (or closes) smoothly to its new width; only one element animates
+  const wrap = el.querySelector('.heat-wrap');
+  if (fromW && Math.abs(fromW - width) > 2) {
+    wrap.style.width = `${fromW}px`;
+    void wrap.offsetWidth;
+    wrap.style.width = `${width}px`;
+  } else wrap.style.width = `${width}px`;
 }
 
 // one floating tooltip for all squares
@@ -1541,15 +1566,32 @@ function tickSound(dir) {
     click(t0 + 0.004, base * 0.32, 0.22, 0.024); // and its body
   } catch {}
 }
+// Let go: a flick keeps the drum turning and slowing down (each step clicks), then it
+// springs onto the nearest value with a small bounce.
 function wheelSettle(d) {
   cancelAnimationFrame(d._raf);
-  let x = d._dy || 0, v = d._v || 0, last = performance.now();
+  const key = d.dataset.key, lim = LIMITS[key];
+  let x = d._dy || 0, v = d._v || 0, last = performance.now(), gliding = Math.abs(v) > 220;
+  const atEnd = dir => (dir > 0 && settings[key] >= lim.max) || (dir < 0 && settings[key] <= lim.min);
   const step = now => {
     const dt = Math.min(0.032, (now - last) / 1000);
     last = now;
-    v += (-340 * x - 15 * v) * dt;
-    x += v * dt;
-    if (Math.abs(x) < 0.15 && Math.abs(v) < 3) { wheelPlace(d, 0); d._raf = 0; return; }
+    if (gliding) {
+      x += v * dt;
+      v *= Math.exp(-dt * 3.2); // friction
+      while (Math.abs(x) > WHEEL_ROW / 2) {
+        const dir = x > 0 ? 1 : -1; // pulled down = bigger
+        if (atEnd(dir)) { v = 0; break; }
+        changeSetting(key, dir);
+        tickSound(dir);
+        x -= dir * WHEEL_ROW;
+      }
+      if (Math.abs(v) < 160 || atEnd(v > 0 ? 1 : -1)) { gliding = false; v *= 0.4; }
+    } else {
+      v += (-340 * x - 15 * v) * dt;
+      x += v * dt;
+      if (Math.abs(x) < 0.15 && Math.abs(v) < 3) { wheelPlace(d, 0); d._raf = 0; return; }
+    }
     wheelPlace(d, x);
     d._raf = requestAnimationFrame(step);
   };
@@ -1593,7 +1635,7 @@ function bindDials() {
       if (e.pointerId !== id) return;
       id = null; lock = '';
       d.classList.remove('drag');
-      d._v = Math.max(-900, Math.min(900, d._v || 0)) * 0.25;
+      d._v = Math.max(-3200, Math.min(3200, d._v || 0));
       wheelSettle(d);
     };
     d.addEventListener('pointerup', up);
@@ -1706,6 +1748,37 @@ function bindWhen() {
 }
 
 // Little reactions to presses (phone): restart a CSS animation on the pressed thing.
+// Theme change: the new theme spreads from the pressed button as a growing circle
+function setThemeAnimated(val, e) {
+  const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  if (!document.startViewTransition || reduce || val === settings.theme) { setValue('theme', val); return; }
+  const r0 = e && e.currentTarget ? e.currentTarget.getBoundingClientRect() : null;
+  const x = r0 ? r0.left + r0.width / 2 : innerWidth / 2, y = r0 ? r0.top + r0.height / 2 : innerHeight / 2;
+  const r = Math.hypot(Math.max(x, innerWidth - x), Math.max(y, innerHeight - y));
+  const tr = document.startViewTransition(() => setValue('theme', val));
+  tr.ready.then(() => document.documentElement.animate(
+    { clipPath: [`circle(0px at ${x}px ${y}px)`, `circle(${r}px at ${x}px ${y}px)`] },
+    { duration: 560, easing: 'cubic-bezier(.4, 0, .2, 1)', pseudoElement: '::view-transition-new(root)' }
+  )).catch(() => {});
+}
+// A finished work session, like a planted tree: "+50 min" rises from the ring and the ring glows once
+function celebrate(ms) {
+  if (!ANDROID || !winVisible) return;
+  const face = $('#face');
+  const chip = document.createElement('span');
+  chip.className = 'plus-chip';
+  chip.textContent = '+' + fmtDur(Math.round(ms / 1000));
+  face.appendChild(chip);
+  setTimeout(() => chip.remove(), 1900);
+  kick(face, 'done-pulse');
+}
+// Text that changes softly: the old value fades out and the new one rises in
+function swapText(el, txt) {
+  if (!el || el.textContent === txt) return;
+  const first = !el.textContent;
+  el.textContent = txt;
+  if (!first) kick(el, 'swap');
+}
 function kick(el, cls) {
   if (!el) return;
   el.classList.remove(cls);
@@ -1923,7 +1996,7 @@ function renderApps() {
         <div class="app-name"><span>${esc(a.name)}</span>${a.running ? `<span class="dot" title="${esc(t('running'))}"></span>` : ''}</div>
         <div class="app-sub">${t('aToday')} ${fmtDur(a.today.run)} · ${t('aWeek')} ${fmtLong(a.week.run)}</div>
       </div>
-      <div class="app-total"><div>${fmtLong(a.total.run)}</div><div class="app-total-sub">${t('aActive')} ${fmtLong(a.total.active)}</div></div>
+      <div class="app-total"><div><span class="app-total-l">${t('aActive')}</span> ${fmtLong(a.total.active)}</div><div class="app-total-sub">${t('aTotal')} ${fmtLong(a.total.run)}</div></div>
       <button class="del" data-exe="${esc(a.exe)}" title="${esc(t('stopTrack'))}">${ICONS.x}</button>
     </div>`).join('') : `<div class="empty-state">${t('appsNone')}</div>`;
 }
@@ -2116,7 +2189,11 @@ function bind() {
   $('#label').addEventListener('keydown', e => { if (e.key === 'Enter') e.target.blur(); });
 
   $$('.toggle[data-key]').forEach(el => el.addEventListener('click', () => setValue(el.dataset.key, !settings[el.dataset.key])));
-  $$('.seg[data-key] button').forEach(b => b.addEventListener('click', () => setValue(b.closest('.seg').dataset.key, b.dataset.val)));
+  $$('.seg[data-key] button').forEach(b => b.addEventListener('click', e => {
+    const key = b.closest('.seg').dataset.key;
+    if (key === 'theme') setThemeAnimated(b.dataset.val, e);
+    else setValue(key, b.dataset.val);
+  }));
   $$('#chartRange button').forEach(b => b.addEventListener('click', () => { chartRange = Number(b.dataset.range); renderControls(); renderStats(); }));
   $$('#heatRange button').forEach(b => b.addEventListener('click', () => { settings.heatRange = Number(b.dataset.range); persist(); animateView(); renderControls(); renderStats(); }));
   $$('#chartMode button').forEach(b => b.addEventListener('click', () => { settings.chartMode = b.dataset.mode; persist(); animateView(); renderControls(); renderStats(); }));

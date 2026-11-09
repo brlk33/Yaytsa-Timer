@@ -1,8 +1,20 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256">
-  <rect x="0" y="0" width="256" height="256" rx="56" fill="#37352F"/>
-  <rect x="116" y="30" width="24" height="16" rx="5" fill="#D97757"/>
-  <path d="M128 40 C 82 40, 54 108, 54 150 C 54 194, 87 222, 128 222 C 169 222, 202 194, 202 150 C 202 108, 174 40, 128 40 Z" fill="#FAF9F5"/>
-  <circle cx="128" cy="152" r="53" fill="none" stroke="#37352F" stroke-opacity="0.12" stroke-width="5"/>
-  <path d="M128 152 L128 108 A44 44 0 1 1 86.65 167.05 Z" fill="#D97757"/>
-  <circle cx="128" cy="152" r="7" fill="#37352F"/>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024">
+  <!-- Яйцетаймер brand mark: a white egg with a timer dial on the app's violet gradient.
+       One bold shape, so it still reads at 16 px. Rendered to res/app.ico and the site PNG. -->
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#5a8dff"/>
+      <stop offset="1" stop-color="#8b5cff"/>
+    </linearGradient>
+    <linearGradient id="sheen" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#fff" stop-opacity=".22"/>
+      <stop offset=".5" stop-color="#fff" stop-opacity="0"/>
+    </linearGradient>
+  </defs>
+  <rect x="32" y="32" width="960" height="960" rx="228" fill="url(#bg)"/>
+  <rect x="32" y="32" width="960" height="960" rx="228" fill="url(#sheen)"/>
+  <!-- egg with a round dial cut out -->
+  <path fill="#fff" fill-rule="evenodd" d="M512 196C384 196 268 392 268 552c0 152 108 276 244 276s244-124 244-276C756 392 640 196 512 196zM512 418a148 148 0 1 1 0 296a148 148 0 1 1 0-296z"/>
+  <!-- the time left: a quarter of the dial -->
+  <path fill="#fff" d="M512 566V452a114 114 0 0 1 114 114z"/>
 </svg>
