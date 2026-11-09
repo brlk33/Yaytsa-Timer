@@ -162,9 +162,21 @@ func sampleApps(dt float64) {
 		apps.Days[day] = d
 	}
 	var names []string
-	for _, a := range apps.Tracked {
+	for i, a := range apps.Tracked {
 		if !running[a.Exe] {
 			continue
+		}
+		// a program that updated itself may have moved (Claude, Store apps): follow it, so its icon stays
+		if _, err := os.Stat(a.Path); a.Path == "" || err != nil {
+			for pid, exe := range procs {
+				if exe == a.Exe {
+					if p := processPath(pid); p != "" {
+						apps.Tracked[i].Path = p
+						appsDirty = true
+					}
+					break
+				}
+			}
 		}
 		names = append(names, a.Exe)
 		t := d[a.Exe]

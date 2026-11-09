@@ -67,17 +67,22 @@
       </div>
 
       <div class="controls">
-        <button class="icon-btn" id="btnReset" data-i18n-title="reset">
-          <svg viewBox="0 0 24 24"><path d="M10.7 4.6A7.5 7.5 0 1 1 4.95 9.43" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><path d="M13.2 2.1 10.7 4.6l2.6 2.4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
-        </button>
+        <div class="c-side l">
+          <button class="icon-btn" id="btnReset" data-i18n-title="stop">
+            <svg viewBox="0 0 24 24"><rect x="6.5" y="6.5" width="11" height="11" rx="2.6" fill="currentColor"/></svg>
+          </button>
+        </div>
         <button class="primary" id="btnStart"></button>
-        <button class="icon-btn" id="btnSkip" data-i18n-title="skip">
-          <svg viewBox="0 0 24 24"><path d="M6 5.2v13.6a.8.8 0 0 0 1.25.66l9.9-6.8a.8.8 0 0 0 0-1.32l-9.9-6.8A.8.8 0 0 0 6 5.2z" fill="currentColor"/><path d="M19 5v14" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/></svg>
-        </button>
+        <div class="c-side r">
+          <button class="icon-btn" id="btnSkip" data-i18n-title="skip">
+            <svg viewBox="0 0 24 24"><path d="M6 5.2v13.6a.8.8 0 0 0 1.25.66l9.9-6.8a.8.8 0 0 0 0-1.32l-9.9-6.8A.8.8 0 0 0 6 5.2z" fill="currentColor"/><path d="M19 5v14" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/></svg>
+          </button>
+        </div>
       </div>
 
       <div class="label-wrap" data-c="label">
         <input class="label-input" id="label" maxlength="120" data-i18n-ph="labelPh" autocomplete="off" spellcheck="false">
+        <svg class="label-chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 10l5 5 5-5"/></svg>
         <div class="suggest" id="labelSuggest" hidden></div>
       </div>
       <div class="label-meta" id="labelMeta" data-c="meta"></div>
@@ -117,6 +122,13 @@
           </div>
           <div class="stepper" data-key="seriesCount"></div>
         </div>
+        <div class="prop" data-p="today">
+          <div class="prop-key">
+            <svg viewBox="0 0 20 20"><rect x="3.5" y="4.5" width="13" height="12" rx="2" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="M3.5 8.5h13M7 3v3M13 3v3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+            <span data-i18n="today"></span>
+          </div>
+          <div class="prop-val" id="todayVal"></div>
+        </div>
         <div class="prop" data-p="when">
           <div class="prop-key">
             <svg viewBox="0 0 20 20"><circle cx="10" cy="10" r="6.5" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="M10 6.5V10h3" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
@@ -130,13 +142,6 @@
             </label>
             <button class="when-x" id="seriesWhenX" hidden aria-label="×"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M7 7l10 10M17 7 7 17"/></svg></button>
           </div>
-        </div>
-        <div class="prop" data-p="today">
-          <div class="prop-key">
-            <svg viewBox="0 0 20 20"><rect x="3.5" y="4.5" width="13" height="12" rx="2" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="M3.5 8.5h13M7 3v3M13 3v3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
-            <span data-i18n="today"></span>
-          </div>
-          <div class="prop-val" id="todayVal"></div>
         </div>
       </div>
 
@@ -152,15 +157,14 @@
         <button class="ghost add-btn" type="submit" data-i18n-title="add"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5.5v13M5.5 12h13"/></svg></button>
       </form>
       <div id="projList"></div>
-      <button class="ghost wide" id="btnHidden"></button>
-      <div id="projHidden" hidden></div>
+      <div class="arch-row"><button class="arch-link" id="btnArchive"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3.5" y="4.5" width="17" height="4.5" rx="1.5"/><path d="M5.5 9v8.5a2 2 0 0 0 2 2h9a2 2 0 0 0 2-2V9M10 13h4"/></svg><span></span></button></div>
     </section>
 
     <!-- APPS -->
     <section class="view" id="view-apps">
       <h1 data-i18n="tabApps"></h1>
       <p class="lead" data-i18n="appsLead"></p>
-      <div class="apps-cap" data-i18n="appsTodayL"></div>
+      <div class="apps-cap"><span class="apps-cap-l" data-i18n="appsActiveL"></span><button class="range-pick" id="appsRange"><span></span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 10l5 5 5-5"/></svg></button></div>
       <div id="appList"></div>
       <button class="ghost wide add-app" id="btnAddApp" data-i18n="appsAdd"></button>
       <div class="picker" id="appPicker" hidden>
@@ -177,6 +181,16 @@
     <!-- STATS -->
     <section class="view" id="view-stats">
       <h1 data-i18n="tabStats"></h1>
+      <div class="goal" id="goalBlock">
+        <div class="goal-head"><span data-i18n="goal"></span><span class="muted" id="goalText"></span></div>
+        <div class="bar"><div class="bar-fill" id="goalFill"></div></div>
+      </div>
+      <div class="cards">
+        <div class="card"><div class="card-label" data-i18n="today"></div><div class="card-val" id="stToday"></div></div>
+        <div class="card"><div class="card-label" data-i18n="last7"></div><div class="card-val" id="stWeek"></div></div>
+        <div class="card"><div class="card-label" data-i18n="last30"></div><div class="card-val" id="stMonth"></div></div>
+      </div>
+
       <div class="hist-head">
         <h2 data-i18n="history"></h2>
         <div class="btn-row">
@@ -187,18 +201,6 @@
       </div>
       <div id="history" class="hs-list"></div>
       <button class="ghost wide" id="btnHistAll" data-i18n="histAll"></button>
-
-
-      <div class="cards">
-        <div class="card"><div class="card-label" data-i18n="today"></div><div class="card-val" id="stToday"></div></div>
-        <div class="card"><div class="card-label" data-i18n="last7"></div><div class="card-val" id="stWeek"></div></div>
-        <div class="card"><div class="card-label" data-i18n="last30"></div><div class="card-val" id="stMonth"></div></div>
-      </div>
-
-      <div class="goal" id="goalBlock">
-        <div class="goal-head"><span data-i18n="goal"></span><span class="muted" id="goalText"></span></div>
-        <div class="bar"><div class="bar-fill" id="goalFill"></div></div>
-      </div>
 
       <div class="chart-head">
         <h2 data-i18n="byDay"></h2>
@@ -234,10 +236,6 @@
         <div class="stepper" data-key="brk"></div>
       </div>
       <div class="set">
-        <span class="set-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 11a7 7 0 0 1 12-4.9L19 8M19 4v4h-4M19 13a7 7 0 0 1-12 4.9L5 16M5 20v-4h4"/></svg></span><div class="set-text"><div class="set-name" data-i18n="autoStart"></div><div class="set-desc" data-i18n="autoStartDesc"></div></div>
-        <button class="toggle" data-key="autoStart"></button>
-      </div>
-      <div class="set">
         <span class="set-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="4"/><circle cx="12" cy="12" r=".9" fill="currentColor"/></svg></span><div class="set-text"><div class="set-name" data-i18n="goalSet"></div><div class="set-desc" data-i18n="goalDesc"></div></div>
         <div class="stepper" data-key="goal"></div>
       </div>
@@ -270,7 +268,7 @@
       <div class="set">
         <span class="set-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="8"/><path d="M12 4a8 8 0 0 1 0 16z" fill="currentColor"/></svg></span><div class="set-text"><div class="set-name" data-i18n="theme"></div></div>
         <div class="seg" data-key="theme">
-          <button data-val="dark" data-i18n-title="dark"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19.5 14.6A7.8 7.8 0 0 1 9.4 4.5a7.8 7.8 0 1 0 10.1 10.1z"/></svg><span data-i18n="dark"></span></button><button data-val="light" data-i18n-title="light"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3.8"/><path d="M12 3v1.8M12 19.2V21M3 12h1.8M19.2 12H21M5.6 5.6l1.3 1.3M17.1 17.1l1.3 1.3M5.6 18.4l1.3-1.3M17.1 6.9l1.3-1.3"/></svg><span data-i18n="light"></span></button><button data-val="system" data-i18n-title="system"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="8"/><path d="M12 4a8 8 0 0 1 0 16z" fill="currentColor"/></svg><span data-i18n="system"></span></button>
+          <button data-val="dark" data-i18n-title="dark"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19.5 14.6A7.8 7.8 0 0 1 9.4 4.5a7.8 7.8 0 1 0 10.1 10.1z"/></svg></button><button data-val="light" data-i18n-title="light"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3.8"/><path d="M12 3v1.8M12 19.2V21M3 12h1.8M19.2 12H21M5.6 5.6l1.3 1.3M17.1 17.1l1.3 1.3M5.6 18.4l1.3-1.3M17.1 6.9l1.3-1.3"/></svg></button>
         </div>
       </div>
       <div class="group-title" data-i18n="gSystem" data-desktop></div>
@@ -305,6 +303,7 @@
   <input type="file" id="csvFile" accept=".csv,text/csv" hidden>
   <div class="popover cal" id="cal" hidden></div>
   <div class="popover tp" id="tp" hidden></div>
+  <div class="popover menu" id="menu" hidden></div>
   <div class="modal" id="modal" hidden>
     <div class="modal-card">
       <h3 id="modalTitle"></h3>
@@ -338,17 +337,22 @@
       <div class="hist-scroll"><div id="historyFull"></div><button class="ghost wide" id="btnMore" data-i18n="showMore"></button></div>
     </div>
   </div>
+  <div class="modal" id="archive" hidden>
+    <div class="modal-card hist-card">
+      <div class="ad-head"><h3 data-i18n="archive"></h3><button class="when-x" id="archClose" aria-label="×"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M7 7l10 10M17 7 7 17"/></svg></button></div>
+      <div class="hist-scroll" id="archList"></div>
+    </div>
+  </div>
   <div class="modal" id="appDetail" hidden>
     <div class="modal-card ad-card">
       <div class="ad-head"><span id="adIco"></span><h3 id="adName"></h3><button class="when-x" id="adClose" aria-label="×"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M7 7l10 10M17 7 7 17"/></svg></button></div>
-      <div class="seg small" id="adRange"><button data-r="7" data-i18n="ad7"></button><button data-r="30" data-i18n="ad30"></button><button data-r="90" data-i18n="ad90"></button><button data-r="0" data-i18n="adAll"></button></div>
+      <div class="seg small" id="adRange"><button data-r="1" data-i18n="adToday"></button><button data-r="7" data-i18n="ad7"></button><button data-r="30" data-i18n="ad30"></button><button data-r="90" data-i18n="ad90"></button><button data-r="0" data-i18n="adAll"></button></div>
       <div class="ad-main"><b id="adActive"></b><span data-i18n="adActiveL"></span></div>
       <div class="ad-nums">
         <div><b id="adOpen"></b><span data-i18n="adOpenL"></span></div>
-        <div><b id="adShare"></b><span data-i18n="adShareL"></span></div>
       </div>
-      <div class="ad-bar"><i id="adBarFill"></i></div>
       <div class="ad-chart" id="adChart"></div>
+      <button class="ad-untrack" id="adUntrack" data-desktop data-i18n="stopTrack"></button>
     </div>
   </div>
   <div class="sheet-wrap" id="timeSheet" hidden>
@@ -372,7 +376,7 @@
     <button class="banner-go" id="syncBannerGo"></button>
     <button class="banner-x" id="syncBannerX" aria-label="×"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M7 7l10 10M17 7 7 17"/></svg></button>
   </div>
-  <div class="toast" id="toast"></div>
+  <div class="toast" id="toast"><span></span><button hidden></button></div>
   <div class="update" id="update" hidden><span></span><button></button></div>
 
   <script src="sync.js"></script>

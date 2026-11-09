@@ -71,6 +71,14 @@ const I18N = {
 winMin: 'Свернуть', winMax: 'Развернуть', winClose: 'Закрыть', importCsv: 'Импорт CSV', imported: n => `Добавлено ${n} ${plural(n, 'заход', 'захода', 'заходов')}`, importNone: 'В файле нет новых заходов',    importBad: 'Не удалось прочитать файл', delete: 'Удалить', cancel: 'Отмена', delProjTitle: n => `Удалить проект «${n}»?`,    delProjText: 'Время заходов останется в статистике, но без названия проекта. Это нельзя отменить.', projDeleted: 'Проект удалён',    pTodayL: 'Сегодня', pWeekL: 'За 7 дней', calClear: 'Убрать', calToday: 'Сегодня', noProjects: 'Проектов пока нет',
     monthsNom: ['Январь', 'Февраль', 'Март', 'Апрель', 'Май', 'Июнь', 'Июль', 'Август', 'Сентябрь', 'Октябрь', 'Ноябрь', 'Декабрь'],
 scale: 'Масштаб', appsPickTitle: 'Добавить программу', appsSearchPh: 'Поиск по программам на компьютере', appsBrowse: 'Выбрать .exe вручную…', appsBrowseTitle: 'Выберите программу',    appsFound: 'Найдено', appsAll: 'Все программы', appsNothing: 'Ничего не нашлось. Попробуйте выбрать .exe вручную', appsAdded: n => `«${n}» отслеживается`,    r3m: '3 мес', r6m: '6 мес', r1y: 'Год', modeBars: 'Столбики', modeSquares: 'Квадратики',    monthsShort: ['янв', 'фев', 'мар', 'апр', 'май', 'июн', 'июл', 'авг', 'сен', 'окт', 'ноя', 'дек'],    daysMon: ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс'], noWork: 'без работы',    activeDays: n => `${n} ${plural(n, 'рабочий день', 'рабочих дня', 'рабочих дней')}`, streak: n => `серия ${n} ${plural(n, 'день', 'дня', 'дней')} подряд`,    less: 'Меньше', more: 'Больше', byHour: 'По часам за неделю',
+    appsActiveL: 'Активное время', singleDoneTitle: 'Заход завершён', singleDoneBody: m => `${m} мин в копилке. Можно отдохнуть.`,
+    stop: 'Стоп', stopQ: 'Закончить раньше?', stopKeep: 'Продолжить', stopAnyway: 'Остановить',
+    stopText: (saved, left) => `До конца захода осталось ${left}. Лучше доделать до конца. Если остановиться сейчас, в историю запишется ${saved}.`,
+    stopTextShort: 'Прошло меньше 10 минут — такой заход не сохранится. Лучше доделать до конца.',
+    stopSeriesText2: (saved) => `Сделанные заходы останутся в истории. ${saved ? `Текущий запишется как ${saved}.` : 'Текущий заход короче 10 минут и не сохранится.'}`,
+    archive: 'Архив', archiveN: n => `Архив · ${n}`, archived: 'Проект выполнен и в архиве', markDone: 'Выполнено', restore: 'Вернуть из архива',
+    archEmpty: 'Здесь будут выполненные проекты', doneOn: d => `выполнен ${d}`, newProj: n => `Новый проект «${n}»`, pickProj: 'Выбрать проект',
+    startAt: 'Начать позже', clearStart: 'Начать сейчас',
   },
   en: {
     appName: 'Яйцетаймер', updReady: v => `Version ${v} downloaded`, updNow: 'Restart',
@@ -141,6 +149,14 @@ scale: 'Масштаб', appsPickTitle: 'Добавить программу', a
 winMin: 'Minimize', winMax: 'Maximize', winClose: 'Close', importCsv: 'Import CSV', imported: n => `Added ${n} session${n === 1 ? '' : 's'}`, importNone: 'No new sessions in the file',    importBad: 'Could not read the file', delete: 'Delete', cancel: 'Cancel', delProjTitle: n => `Delete project “${n}”?`,    delProjText: 'Session time stays in your stats, just without the project name. This can’t be undone.', projDeleted: 'Project deleted',    pTodayL: 'Today', pWeekL: 'Last 7 days', calClear: 'Clear', calToday: 'Today', noProjects: 'No projects yet',
     monthsNom: ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'],
 scale: 'Zoom', appsPickTitle: 'Add a program', appsSearchPh: 'Search programs on this PC', appsBrowse: 'Pick an .exe manually…', appsBrowseTitle: 'Choose a program',    appsFound: 'Found', appsAll: 'All programs', appsNothing: 'Nothing found. Try picking the .exe manually', appsAdded: n => `Tracking “${n}”`,    r3m: '3 mo', r6m: '6 mo', r1y: 'Year', modeBars: 'Bars', modeSquares: 'Squares',    monthsShort: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'],    daysMon: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'], noWork: 'no focus',    activeDays: n => `${n} active day${n === 1 ? '' : 's'}`, streak: n => `${n}-day streak`,    less: 'Less', more: 'More', byHour: 'By hour, last 7 days',
+    appsActiveL: 'Active time', singleDoneTitle: 'Session complete', singleDoneBody: m => `${m} min in the bank. Time to rest.`,
+    stop: 'Stop', stopQ: 'Finish early?', stopKeep: 'Keep going', stopAnyway: 'Stop',
+    stopText: (saved, left) => `${left} left in this session. Better to finish it. If you stop now, ${saved} goes into your history.`,
+    stopTextShort: 'Less than 10 minutes have passed — a session this short isn’t saved. Better to see it through.',
+    stopSeriesText2: (saved) => `Finished sessions stay in your history. ${saved ? `The current one is saved as ${saved}.` : 'The current one is under 10 minutes and won’t be saved.'}`,
+    archive: 'Archive', archiveN: n => `Archive · ${n}`, archived: 'Project done and archived', markDone: 'Done', restore: 'Restore',
+    archEmpty: 'Finished projects will show up here', doneOn: d => `done ${d}`, newProj: n => `New project “${n}”`, pickProj: 'Pick a project',
+    startAt: 'Start later', clearStart: 'Start now',
   },
 };
 
@@ -158,8 +174,9 @@ const ANDROID = !!api.android;
 const DEFAULTS = {
   work: 25, brk: 5, autoStart: false, sound: true, notify: true,
   lang: 'ru', theme: 'dark', goal: 4, alwaysOnTop: false, popup: true, closeToTray: true,
-  zoom: 1, chartMode: 'bars', heatRange: 13, seriesCount: 1,
+  zoom: 1, chartMode: 'bars', heatRange: 13, seriesCount: 1, appsRange: 1,
 };
+const MIN_SAVE_SEC = 10 * 60; // a session stopped by hand is kept only from 10 minutes on
 const ZOOM = { min: 0.7, max: 1.6, step: 0.1 };
 const LIMITS = {
   work: { min: 5, max: 180, step: 5 },
@@ -345,7 +362,9 @@ const toggle = () => {
   }
   if (series && series.pausedAt) { start(); return; } // a pause saved by 2.9 resumes
   if (series && !seriesPos.startsWith('wait')) {
-    confirmModal(t('stopSeriesQ'), t('stopSeriesText'), t('stopSeries')).then(ok => { if (ok) stopSeries(); });
+    const done = timer.phase === 'work' && timer.startedAt ? Math.floor((timer.total - currentRemaining()) / 1000) : 0;
+    confirmModal(t('stopSeriesQ'), t('stopSeriesText2')(done >= MIN_SAVE_SEC ? fmtDur(done) : ''), t('stopSeries'), { cancel: t('stopKeep'), keepFirst: true })
+      .then(ok => { if (ok) stopSeries(); });
     return;
   }
   if (timer.running) pause(); else start();
@@ -370,17 +389,44 @@ function logWork(full, sync) {
   renderLabelMeta();
 }
 
+// One session on its own ends with no break after it: it is logged and the timer
+// goes back to the start. Breaks exist only between the sessions of a series.
 function complete() {
   const finished = timer.phase;
-  if (finished === 'work') { logWork(true); celebrate(timer.total); }
-  setPhase(finished === 'work' ? 'break' : 'work');
-  if (settings.autoStart) start();
+  if (finished === 'work') {
+    logWork(true);
+    celebrate(timer.total);
+    alertPhaseEnd('work');
+    setPhase('work');
+    render();
+    return;
+  }
+  setPhase('work');
   alertPhaseEnd(finished);
+  render();
+}
+
+// Stop by hand, Forest style: it is allowed, but the dialog leans towards keeping on.
+// From 10 minutes on the work done is saved; a shorter one is dropped.
+async function stopEarly() {
+  if (!(timer.phase === 'work' && timer.startedAt)) { reset(); return; }
+  const done = Math.floor((timer.total - currentRemaining()) / 1000);
+  const keep = done >= MIN_SAVE_SEC;
+  const text = keep ? t('stopText')(fmtDur(done), fmtDur(Math.ceil(currentRemaining() / 1000))) : t('stopTextShort');
+  const ok = await confirmModal(t('stopQ'), text, t('stopAnyway'), { cancel: t('stopKeep'), keepFirst: true });
+  if (!ok) return;
+  api.closeAlert();
+  if (keep) logWork(false);
+  setPhase('work');
+  persist();
   render();
 }
 
 let alertIsTest = false;
 function alertTexts(finished, test, forceAuto) {
+  if (finished === 'work' && !test && !forceAuto && !series) {
+    return { next: 'break', auto: true, single: true, title: t('singleDoneTitle'), body: t('singleDoneBody')(settings.work), goLabel: '', okLabel: t('gotIt') };
+  }
   const next = finished === 'work' ? 'break' : 'work';
   const auto = test ? false : (forceAuto || settings.autoStart);
   return {
@@ -395,7 +441,7 @@ function alertTexts(finished, test, forceAuto) {
 }
 function alertPhaseEnd(finished, test, forceAuto) {
   alertIsTest = !!test;
-  const { next, auto, title, body, goLabel, okLabel } = alertTexts(finished, test, forceAuto);
+  const { next, auto, title, body, goLabel, okLabel, single } = alertTexts(finished, test, forceAuto);
   if (settings.popup || test) {
     api.showAlert({
       next, title, body, goLabel, okLabel,
@@ -409,7 +455,7 @@ function alertPhaseEnd(finished, test, forceAuto) {
   } else {
     chime(next);
     if (settings.notify) {
-      api.notify(title, next === 'break' ? t('nBreakBody')(settings.brk) : t('nWorkBody')(settings.work));
+      api.notify(title, single ? body : next === 'break' ? t('nBreakBody')(settings.brk) : t('nWorkBody')(settings.work));
     }
   }
 }
@@ -465,16 +511,15 @@ function skip() {
     render();
     return;
   }
-  if (timer.phase === 'work' && timer.startedAt) logWork(false);
-  setPhase(timer.phase === 'work' ? 'break' : 'work');
-  if (settings.autoStart) start();
+  if (timer.phase === 'work') { stopEarly(); return; } // a single session has nothing to skip to
+  setPhase('work');
   render();
 }
 
 function reset() {
   api.closeAlert();
   if (series) { stopSeries(); return; }
-  if (timer.phase === 'work' && timer.startedAt) logWork(false);
+  if (timer.phase === 'work' && timer.startedAt && (timer.total - currentRemaining()) / 1000 >= MIN_SAVE_SEC) logWork(false);
   setPhase(timer.phase);
   render();
 }
@@ -566,8 +611,8 @@ function startSeries(count, at) {
 function stopSeries() {
   if (!series) return;
   const s = series;
-  // log the work in progress (still part of the series), as reset does for a single session
-  if (timer.phase === 'work' && timer.startedAt) logWork(false);
+  // the work in progress is kept from 10 minutes on (still part of the series)
+  if (timer.phase === 'work' && timer.startedAt && (timer.total - currentRemaining()) / 1000 >= MIN_SAVE_SEC) logWork(false);
   series = null;
   seriesPos = '';
   setPhase('work');
@@ -699,15 +744,19 @@ function renderTimer() {
   const btn = $('#btnStart');
   const seriesOn = !!series && !seriesPos.startsWith('wait');
   const btnText = seriesOn ? t('stopSeries') : timer.running ? t('pause') : (touched ? t('resume') : t('start'));
-  // in a series: no skip, no reset; while it waits for its start time, reset cancels it
-  $('#btnSkip').hidden = !!series;
-  $('#btnReset').hidden = seriesOn;
+  // Single session: stop (left) only once it has started, skip only for a leftover break.
+  // In a series: no skip, no stop key; while it waits for its start time, the left key cancels it.
+  const idleNow = !series && isUntouched() && timer.phase === 'work';
+  $('#btnSkip').hidden = !!series || timer.phase !== 'break';
+  $('#btnReset').hidden = seriesOn || (!series && !(timer.phase === 'work' && touched));
+  $('#btnReset').title = series ? t('reset') : t('stop');
   if (ANDROID) {
+    // phone: a triangle that flows into two bars, or into a stop square
     if (!btn.dataset.ico) { btn.dataset.ico = '1'; btn.innerHTML = PLAY_PAUSE_SVG; }
-    btn.classList.toggle('is-running', timer.running && !seriesOn); // the triangle flows into two bars (CSS)
-    btn.classList.toggle('is-stop', seriesOn); // ...or into a stop square
+    btn.classList.toggle('is-running', timer.running && !seriesOn);
+    btn.classList.toggle('is-stop', seriesOn);
     btn.setAttribute('aria-label', btnText);
-  } else btn.textContent = btnText;
+  } else btn.textContent = btnText; // PC: the word, as before
   btn.classList.toggle('secondary', timer.running);
 
   const goalH = settings.goal;
@@ -735,6 +784,7 @@ function renderTimer() {
   }
   renderOuter();
 }
+
 
 function renderSteppers() {
   if (ANDROID) renderDials();
@@ -1080,15 +1130,8 @@ function meta(key, name) {
 function updateDatalist() {}
 
 function renderLabelMeta() {
-  const el = $('#labelMeta');
-  const key = projKey($('#label').value);
-  const p = key && projectList().find(x => x.key === key);
-  if (!p || (!p.total && !p.deadline)) { el.innerHTML = ''; fitTimer(); return; }
-  const parts = [];
-  if (p.total >= 60) parts.push(`${t('pTotal')}: ${fmtDur(p.total)}`);
-  const dl = deadlineInfo(p.deadline);
-  if (dl) parts.push(`<span class="dl-text ${dl.cls}">${t('deadline')}: ${esc(dl.text)}</span>`);
-  el.innerHTML = parts.join(' · ');
+  // nothing under the project name on the timer page: no total, no deadline
+  $('#labelMeta').innerHTML = '';
   fitTimer();
 }
 
@@ -1115,11 +1158,10 @@ function projRow(p) {
   const stat = (label, val) => `<span class="ps"><span class="ps-l">${esc(label)}</span> ${val}</span>`;
   const stats = [stat(t('pTodayL'), fmtDur(p.today)), `<span class="ps">${t('pSessions')(p.count)}</span>`].join('');
   const btn = (act, icon, title, cls = '') => `<button class="icon-btn sm${cls}" data-act="${act}" title="${esc(title)}">${icon}</button>`;
-  const acts = p.hidden
-    ? btn('unhide', ICONS.show, t('unhide')) + btn('delete', ICONS.trash, t('delete'), ' danger')
-    : btn('work', ICONS.play, t('workOn')) + btn('addtime', ICONS.clockPlus, t('atTitle')) + btn('rename', ICONS.edit, t('rename')) + btn('hide', ICONS.hide, t('hide')) + btn('delete', ICONS.trash, t('delete'), ' danger');
-  return `<div class="proj${p.hidden ? ' hidden' : ''}${p.current ? ' current' : ''}" data-key="${esc(p.key)}">
+  const acts = btn('work', ICONS.play, t('workOn')) + btn('addtime', ICONS.clockPlus, t('atTitle')) + btn('rename', ICONS.edit, t('rename'));
+  return `<div class="proj${p.current ? ' current' : ''}" data-key="${esc(p.key)}">
     <div class="proj-top">
+      <button class="pcheck" data-act="done" title="${esc(t('markDone'))}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path pathLength="1" d="M6.5 12.5l3.6 3.6 7.4-7.6"/></svg></button>
       <div class="proj-name"><span class="pn">${esc(p.name)}</span>${p.current ? `<span class="tag mini">${esc(t('current'))}</span>` : ''}</div>
       <div class="proj-acts">${acts}</div>
       <div class="proj-total" title="${esc(t('pTotal'))}">${fmtDur(p.total)}</div>
@@ -1128,16 +1170,50 @@ function projRow(p) {
   </div>`;
 }
 
+// Projects: active ones in the list; a ticked one goes to the archive (the old "hidden" flag).
 function renderProjects() {
+  if (document.querySelector('.proj .inline') || document.querySelector('.proj.checking')) return; // renaming or ticking
   const all = projectList();
   const vis = all.filter(p => !p.hidden);
-  const hid = all.filter(p => p.hidden);
-  $('#projList').innerHTML = vis.length ? vis.map(projRow).join('') : `<div class="empty-state">${t('projEmpty')}</div>`;
-  const btn = $('#btnHidden');
-  btn.style.display = hid.length ? '' : 'none';
-  btn.textContent = showHidden ? t('hideHidden') : t('hiddenN')(hid.length);
-  $('#projHidden').hidden = !showHidden || !hid.length;
-  $('#projHidden').innerHTML = hid.map(projRow).join('');
+  const arch = all.filter(p => p.hidden);
+  setHTML($('#projList'), vis.length ? vis.map(projRow).join('') : `<div class="empty-state">${t('projEmpty')}</div>`);
+  $('#btnArchive').parentElement.hidden = !arch.length;
+  $('#btnArchive span').textContent = t('archiveN')(arch.length);
+  if (!$('#archive').hidden) renderArchive();
+}
+
+/* ---------- Archive of finished projects ---------- */
+function renderArchive() {
+  const arch = projectList().filter(p => p.hidden).sort((a, b) => ((projects[b.key] || {}).doneAt || b.last) - ((projects[a.key] || {}).doneAt || a.last));
+  const btn = (act, icon, title, cls = '') => `<button class="icon-btn sm${cls}" data-act="${act}" title="${esc(title)}">${icon}</button>`;
+  setHTML($('#archList'), arch.length ? arch.map(p => {
+    const at = (projects[p.key] || {}).doneAt;
+    return `<div class="arch-item" data-key="${esc(p.key)}">
+      <span class="arch-check"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M6.5 12.5l3.6 3.6 7.4-7.6"/></svg></span>
+      <span class="hs-main"><span class="hs-title pn">${esc(p.name)}</span><span class="hs-sub">${fmtDur(p.total)}${at ? ` · ${t('doneOn')(fmtDate(dayKey(at)))}` : ''}</span></span>
+      <span class="arch-acts">${btn('unhide', ICONS.show, t('restore'))}${btn('delete', ICONS.trash, t('delete'), ' danger')}</span>
+    </div>`;
+  }).join('') : `<div class="empty-state">${t('archEmpty')}</div>`);
+}
+function bindArchive() {
+  $('#btnArchive').addEventListener('click', () => { renderArchive(); $('#archive').hidden = false; });
+  $('#archive').addEventListener('click', async e => {
+    if (e.target.id === 'archive' || e.target.closest('#archClose')) { $('#archive').hidden = true; return; }
+    const b = e.target.closest('[data-act]');
+    if (!b) return;
+    const row = b.closest('.arch-item');
+    const key = row.dataset.key, name = row.querySelector('.pn').textContent;
+    if (b.dataset.act === 'unhide') { const m = meta(key, name); m.hidden = false; delete m.doneAt; }
+    else if (b.dataset.act === 'delete') {
+      $('#archive').hidden = true;
+      if (!(await confirmModal(t('delProjTitle')(name), t('delProjText'), t('delete')))) { $('#archive').hidden = false; return; }
+      deleteProject(key);
+      $('#archive').hidden = false;
+    }
+    persist();
+    renderProjects();
+    renderArchive();
+  });
 }
 
 function renameProject(key, name) {
@@ -1180,7 +1256,9 @@ function startRename(row) {
   const finish = ok => {
     if (done) return;
     done = true;
-    if (ok && cleanName(input.value) && cleanName(input.value) !== span.textContent) renameProject(key, input.value);
+    const val = input.value;
+    input.replaceWith(span);
+    if (ok && cleanName(val) && cleanName(val) !== span.textContent) renameProject(key, val);
     renderProjects();
     renderLabelMeta();
   };
@@ -1198,6 +1276,24 @@ async function onProjectClick(e) {
   const key = row.dataset.key;
   const name = row.querySelector('.pn') ? row.querySelector('.pn').textContent : key;
   switch (btn.dataset.act) {
+    case 'done': {
+      // the tick draws itself, the card folds away, and the project lands in the archive
+      if (row.classList.contains('checking')) return;
+      row.style.height = `${row.offsetHeight}px`;
+      row.classList.add('checking');
+      setTimeout(() => {
+        const m = meta(key, name);
+        m.hidden = true;
+        m.doneAt = Date.now();
+        if (projKey($('#label').value) === key) $('#label').value = '';
+        persist();
+        row.classList.remove('checking');
+        renderProjects();
+        renderLabelMeta();
+        toast(t('archived'));
+      }, 720);
+      return;
+    }
     case 'work':
       $('#label').value = name;
       persist();
@@ -1328,15 +1424,25 @@ function bindCalendar() {
 let sugIndex = -1;
 let sugItems = [];
 
+// The task field is a project picker: click it for the list of active projects, or type a new
+// name — it becomes a new project.
 function renderSuggest() {
   const box = $('#labelSuggest');
-  const q = cleanName($('#label').value).toLowerCase();
-  sugItems = projectList().filter(p => !p.hidden && p.key !== q && (!q || p.name.toLowerCase().includes(q))).slice(0, 6);
+  const raw = cleanName($('#label').value), q = raw.toLowerCase(), key = projKey(raw);
+  const active = projectList().filter(p => !p.hidden);
+  const exact = active.find(p => p.key === key);
+  const list = !q || exact ? active : active.filter(p => p.name.toLowerCase().includes(q));
+  sugItems = list.slice(0, 8);
+  if (q && !exact) sugItems.unshift({ create: raw });
   if (!sugItems.length || document.activeElement !== $('#label')) { box.hidden = true; return; }
   if (sugIndex >= sugItems.length) sugIndex = sugItems.length - 1;
   box.innerHTML = sugItems.map((p, i) => {
+    if (p.create) {
+      return `<button class="sug sug-new${i === sugIndex ? ' on' : ''}" data-i="${i}" tabindex="-1">
+        <span class="sug-name"><span class="sug-plus">+</span>${esc(t('newProj')(p.create))}</span></button>`;
+    }
     const dl = deadlineInfo(p.deadline);
-    return `<button class="sug${i === sugIndex ? ' on' : ''}" data-i="${i}" tabindex="-1">
+    return `<button class="sug${i === sugIndex ? ' on' : ''}${p.key === key ? ' cur' : ''}" data-i="${i}" tabindex="-1">
       <span class="sug-name">${esc(p.name)}</span>
       <span class="sug-meta">${dl ? `<span class="dl-text ${dl.cls}">${esc(dl.when)}</span> · ` : ''}${fmtDur(p.total)}</span>
     </button>`;
@@ -1344,11 +1450,22 @@ function renderSuggest() {
   box.hidden = false;
 }
 
+// A name typed into the field is a project from now on (an archived one comes back)
+function commitLabel() {
+  const name = cleanName($('#label').value);
+  if (!name) return;
+  const key = projKey(name);
+  if (projects[key]) { if (projects[key].hidden) { projects[key].hidden = false; delete projects[key].doneAt; } }
+  else if (!projectList().some(p => p.key === key)) meta(key, name);
+  persist();
+}
+
 function pickSuggest(i) {
   const p = sugItems[i];
   if (!p) return;
-  $('#label').value = p.name;
+  $('#label').value = p.create || p.name;
   $('#labelSuggest').hidden = true;
+  commitLabel();
   persist();
   renderLabelMeta();
   $('#label').blur();
@@ -1358,7 +1475,8 @@ function bindLabelSuggest() {
   const input = $('#label');
   input.addEventListener('focus', () => { sugIndex = -1; renderSuggest(); });
   input.addEventListener('input', () => { sugIndex = -1; renderSuggest(); });
-  input.addEventListener('blur', () => setTimeout(() => { $('#labelSuggest').hidden = true; }, 120));
+  input.addEventListener('blur', () => { commitLabel(); setTimeout(() => { $('#labelSuggest').hidden = true; }, 120); });
+  input.addEventListener('mousedown', () => { if (document.activeElement === input && $('#labelSuggest').hidden) { sugIndex = -1; setTimeout(renderSuggest); } });
   input.addEventListener('keydown', e => {
     const box = $('#labelSuggest');
     if (box.hidden) return;
@@ -1380,6 +1498,9 @@ function confirmModal(title, text, okLabel, opts = {}) {
   $('#modalText').textContent = text;
   $('#modalOk').textContent = okLabel;
   $('#modalOk').classList.toggle('safe', !!opts.safe);
+  // "keep going" is the big, inviting button; giving up stays small and quiet
+  $('#modalOk').classList.toggle('quiet', !!opts.keepFirst);
+  $('#modalCancel').classList.toggle('keep', !!opts.keepFirst);
   $('#modalCancel').textContent = opts.cancel || t('cancel');
   $('#modal').hidden = false;
   setTimeout(() => $('#modalCancel').focus(), 30);
@@ -1734,7 +1855,7 @@ function bindTimePicker() {
     render();
   });
   document.addEventListener('mousedown', e => {
-    if (tpState && !e.target.closest('#tp') && !e.target.closest('#seriesWhen')) closeTimePicker();
+    if (tpState && !e.target.closest('#tp') && !e.target.closest('#seriesWhen') && !e.target.closest('#whenBtn')) closeTimePicker();
   });
   document.addEventListener('keydown', e => { if (e.key === 'Escape' && tpState) closeTimePicker(); });
 }
@@ -1806,6 +1927,7 @@ let adExe = null, adRange = 7;
 function openAppDetail(exe) {
   if (!appStats.some(a => a.exe === exe)) return;
   adExe = exe;
+  adRange = APP_RANGES.includes(settings.appsRange) ? settings.appsRange : 1; // opens on the period of the list
   renderAppDetail();
   $('#appDetail').hidden = false;
 }
@@ -1816,15 +1938,12 @@ function renderAppDetail() {
   $('#adIco').innerHTML = avatar(a.name, a.exe, a.icon);
   $('#adName').textContent = a.name;
   $$('#adRange button').forEach(b => b.classList.toggle('on', Number(b.dataset.r) === adRange));
-  const tt = { 1: a.today, 7: a.week, 30: a.month, 90: a.quarter || a.month, 0: a.total }[adRange] || a.week;
+  const tt = appTimes(a, adRange);
   swapText($('#adActive'), fmtLong(tt.active || 0));
   swapText($('#adOpen'), fmtLong(tt.run || 0));
-  const share = tt.run > 0 ? Math.round((tt.active / tt.run) * 100) : 0;
-  swapText($('#adShare'), `${share}%`);
-  $('#adBarFill').style.width = `${share}%`;
-  // all time has no bars: the chart folds away
-  $('#adChart').classList.toggle('folded', adRange === 0);
-  if (adRange === 0) return;
+  // today and all time have no bars: the chart folds away
+  $('#adChart').classList.toggle('folded', adRange === 0 || adRange === 1);
+  if (adRange === 0 || adRange === 1) return;
   // day by day for a week or a month; week by week for three months
   const recent = Array.isArray(a.recent) ? a.recent : [];
   let days = recent.slice(adRange === 7 ? -7 : -30);
@@ -1850,6 +1969,12 @@ function renderAppDetail() {
 function bindAppDetail() {
   $('#appDetail').addEventListener('click', e => {
     if (e.target.id === 'appDetail' || e.target.closest('#adClose')) { closeAppDetail(); return; }
+    if (e.target.closest('#adUntrack') && adExe) {
+      const exe = adExe;
+      closeAppDetail();
+      api.appsUntrack(exe).then(list => { appStats = list || appStats; renderApps(); });
+      return;
+    }
     const r = e.target.closest('#adRange button');
     if (r) { adRange = Number(r.dataset.r); renderAppDetail(); }
   });
@@ -1866,8 +1991,9 @@ function historyItems(list) {
       last.n++;
       last.start = Math.min(last.start, s.start);
       last.dur += s.dur;
+      last.ids.push(s.id);
       if (!last.label && s.label) last.label = s.label;
-    } else out.push({ series: s.series || '', n: 1, start: s.start, end: s.end, dur: s.dur, label: s.label || '', manual: !!s.manual });
+    } else out.push({ ids: [s.id], series: s.series || '', n: 1, start: s.start, end: s.end, dur: s.dur, label: s.label || '', manual: !!s.manual });
   }
   return out;
 }
@@ -1875,22 +2001,36 @@ function renderHistoryShort() {
   const box = $('#history');
   const items = historyItems([...sessions].sort((a, b) => b.start - a.start)).slice(0, 3);
   $('#btnHistAll').style.display = sessions.length ? '' : 'none';
-  if (!items.length) { box.dataset.html = ''; box.innerHTML = `<div class="empty-state">${t('noData')}</div>`; return; }
-  const html = items.map(g => {
+  if (!items.length) { setHTML(box, `<div class="empty-state">${t('noData')}</div>`); return; }
+  // rows keep their elements when the list refreshes (no replayed entrance), a quiet × at the side
+  setHTML(box, items.map(g => {
     const day = startOfDay(g.start) === startOfDay() ? '' : `${dayTitle(g.start)} · `;
     const title = g.n > 1
       ? `${t('seriesRow')(g.n)}${g.label ? ` · ${esc(g.label)}` : ''}`
       : (g.label ? esc(g.label) : `<span class="muted">${t('noLabel')}</span>`);
-    return `<div class="hs${g.n > 1 ? ' series' : ''}">
+    return `<div class="hs${g.n > 1 ? ' series' : ''}" data-id="${esc(g.ids.join(','))}">
       <span class="hs-ico">${g.n > 1 ? ICONS.repeat : ICONS.dot}</span>
       <span class="hs-main"><span class="hs-title">${title}</span><span class="hs-sub">${day}${hm(g.start)}–${hm(g.end)}${g.manual ? ` · ${t('atManual')}` : ''}</span></span>
       <span class="hs-dur">${fmtDur(g.dur)}</span>
+      <button class="hs-del" title="${esc(t('delete'))}">${ICONS.x}</button>
     </div>`;
-  }).join('');
-  // only when something changed: re-rendering the same list replayed its entrance animation
-  if (box.dataset.html === html) return;
-  box.dataset.html = html;
-  box.innerHTML = html;
+  }).join(''));
+}
+// Deleting from the short list: gone at once, with an Undo in the toast
+function deleteEntries(ids) {
+  const set = new Set(ids);
+  const removed = sessions.filter(s => set.has(s.id));
+  if (!removed.length) return;
+  sessions = sessions.filter(s => !set.has(s.id));
+  persistNow();
+  renderStats();
+  renderTimer();
+  toast(t('deleted'), t('undo'), () => {
+    sessions = [...sessions, ...removed].sort((a, b) => a.start - b.start);
+    persistNow();
+    renderStats();
+    renderTimer();
+  });
 }
 function openHistory() {
   historyLimit = 7;
@@ -1904,7 +2044,7 @@ function renderWhen() {
   const el = $('#seriesWhenText');
   if (!el) return;
   if (seriesStartAt && seriesStartAt <= Date.now()) seriesStartAt = 0;
-  const txt = seriesStartAt ? (ANDROID ? hm(seriesStartAt) : t('seriesAt')(hm(seriesStartAt))) : (ANDROID ? '' : t('seriesNow'));
+  const txt = seriesStartAt ? hm(seriesStartAt) : ''; // just the clock with a plus until a time is picked
   $('#seriesWhen').title = seriesStartAt ? t('seriesAt')(hm(seriesStartAt)) : t('seriesStart');
   if (el.textContent !== txt) el.textContent = txt;
   $('#seriesWhenX').hidden = !seriesStartAt;
@@ -1968,6 +2108,33 @@ function roll(el, up) {
   el.classList.remove('roll-up', 'roll-down');
   void el.offsetWidth;
   el.classList.add(up ? 'roll-up' : 'roll-down');
+}
+// Puts new markup into a list without rebuilding what did not change: same elements stay, only
+// changed text and attributes are touched. Rebuilding replayed hover fades and entrance animations
+// every time a list refreshed itself under the cursor.
+function setHTML(el, html) {
+  if (!el) return;
+  if (el._html === html) return;
+  el._html = html;
+  const tpl = document.createElement('template');
+  tpl.innerHTML = html;
+  morphChildren(el, tpl.content);
+}
+function morphChildren(to, from) {
+  const a = Array.from(to.childNodes), b = Array.from(from.childNodes);
+  for (let i = 0; i < b.length; i++) {
+    const nb = b[i], na = a[i];
+    if (!na) { to.appendChild(nb); continue; }
+    const key = n => (n.nodeType === 1 ? n.tagName + '|' + (n.dataset.key || n.dataset.exe || n.dataset.id || '') : '#' + n.nodeType);
+    if (key(na) !== key(nb)) { to.replaceChild(nb, na); continue; }
+    if (na.nodeType === 3 || na.nodeType === 8) { if (na.nodeValue !== nb.nodeValue) na.nodeValue = nb.nodeValue; continue; }
+    if (na.nodeType !== 1) continue;
+    for (const at of Array.from(na.attributes)) if (!nb.hasAttribute(at.name)) na.removeAttribute(at.name);
+    for (const at of Array.from(nb.attributes)) if (na.getAttribute(at.name) !== at.value) na.setAttribute(at.name, at.value);
+    if (na.tagName === 'INPUT' || na.tagName === 'svg' || na.tagName === 'SVG') { if (na.outerHTML !== nb.outerHTML) to.replaceChild(nb, na); continue; }
+    morphChildren(na, nb);
+  }
+  for (let i = a.length - 1; i >= b.length; i--) if (a[i].parentNode === to) to.removeChild(a[i]);
 }
 function kick(el, cls) {
   if (!el) return;
@@ -2181,17 +2348,70 @@ async function loadApps() {
   syncApps(appStats);
 }
 
+// Period shown in the programs list: 1 = today, 7, 30, 90 days, 0 = all time (same codes as the card)
+const APP_RANGES = [1, 7, 30, 90, 0];
+const rangeLabel = r => t({ 1: 'adToday', 7: 'ad7', 30: 'ad30', 90: 'ad90', 0: 'adAll' }[r]);
+const appTimes = (a, r) => ({ 1: a.today, 7: a.week, 30: a.month, 90: a.quarter || a.month, 0: a.total }[r] || a.today || {});
 function renderApps() {
-  const list = [...appStats].sort((a, b) => (b.today.active - a.today.active) || (b.total.active - a.total.active));
-  $('#appList').innerHTML = list.length ? list.map(a => `<div class="app" data-exe="${esc(a.exe)}">
+  const r = APP_RANGES.includes(settings.appsRange) ? settings.appsRange : 1;
+  const act = a => (appTimes(a, r).active || 0);
+  const list = [...appStats].sort((a, b) => (act(b) - act(a)) || (b.total.active - a.total.active));
+  const btn = $('#appsRange span');
+  if (btn) btn.textContent = rangeLabel(r);
+  $('.apps-cap').hidden = !list.length;
+  setHTML($('#appList'), list.length ? list.map(a => `<div class="app" data-exe="${esc(a.exe)}">
       ${avatar(a.name, a.exe, a.icon)}
       <div class="app-main">
         <div class="app-name"><span>${esc(a.name)}</span>${a.running ? `<span class="dot" title="${esc(t('running'))}"></span>` : ''}</div>
       </div>
-      <div class="app-total${a.today.active >= 60 ? '' : ' none'}" title="${esc(t('aActive'))}"><div>${a.today.active >= 60 ? fmtDur(a.today.active) : '—'}</div></div>
-      <button class="del" data-exe="${esc(a.exe)}" title="${esc(t('stopTrack'))}">${ICONS.x}</button>
-    </div>`).join('') : `<div class="empty-state">${t(ANDROID ? 'appsNoneA' : 'appsNone')}</div>`;
+      <div class="app-total${act(a) >= 60 ? '' : ' none'}">${act(a) >= 60 ? fmtLong(act(a)) : '—'}</div>
+    </div>`).join('') : `<div class="empty-state">${t(ANDROID ? 'appsNoneA' : 'appsNone')}</div>`);
   if (adExe) renderAppDetail();
+}
+
+/* ---------- Small quiet menu (period of the programs list) ---------- */
+let menuState = null;
+function openMenu(anchor, items, onPick) {
+  const m = $('#menu');
+  m.innerHTML = items.map(i => `<button class="menu-i${i.on ? ' on' : ''}" data-v="${esc(String(i.value))}">${esc(i.label)}${i.on ? '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>' : ''}</button>`).join('');
+  m.hidden = false;
+  menuState = { onPick, anchor };
+  anchor.classList.add('open');
+  const r = anchor.getBoundingClientRect();
+  const w = m.offsetWidth, h = m.offsetHeight;
+  const x = Math.min(Math.max(10, r.right - w), innerWidth - w - 10);
+  let y = r.bottom + 6;
+  if (y + h > innerHeight - 10) y = Math.max(10, r.top - h - 6);
+  m.style.left = `${x}px`;
+  m.style.top = `${y}px`;
+}
+function closeMenu() {
+  if (!menuState) return;
+  menuState.anchor.classList.remove('open');
+  $('#menu').hidden = true;
+  menuState = null;
+}
+function bindMenu() {
+  $('#menu').addEventListener('click', e => {
+    const b = e.target.closest('.menu-i');
+    if (!b || !menuState) return;
+    const pick = menuState.onPick;
+    closeMenu();
+    pick(b.dataset.v);
+  });
+  document.addEventListener('mousedown', e => { if (menuState && !e.target.closest('#menu') && !e.target.closest('.range-pick')) closeMenu(); });
+  document.addEventListener('keydown', e => { if (e.key === 'Escape') closeMenu(); });
+  addEventListener('resize', closeMenu);
+  $('main').addEventListener('scroll', closeMenu, { passive: true });
+  $('#appsRange').addEventListener('click', e => {
+    if (menuState) { closeMenu(); return; }
+    const cur = APP_RANGES.includes(settings.appsRange) ? settings.appsRange : 1;
+    openMenu(e.currentTarget, APP_RANGES.map(v => ({ value: v, label: rangeLabel(v), on: v === cur })), v => {
+      settings.appsRange = Number(v);
+      persist();
+      renderApps();
+    });
+  });
 }
 
 let appInstalled = [];
@@ -2292,12 +2512,17 @@ function setZoom(z) {
 
 /* ================= Toast ================= */
 let toastT = null;
-function toast(msg) {
+function toast(msg, action, onAction) {
   const el = $('#toast');
-  el.textContent = msg;
+  el.querySelector('span').textContent = msg;
+  const b = el.querySelector('button');
+  b.hidden = !action;
+  b.textContent = action || '';
+  b.onclick = action ? () => { el.classList.remove('show', 'act'); onAction(); } : null;
+  el.classList.toggle('act', !!action);
   el.classList.add('show');
   clearTimeout(toastT);
-  toastT = setTimeout(() => el.classList.remove('show'), 1800);
+  toastT = setTimeout(() => el.classList.remove('show', 'act'), action ? 4500 : 1800);
 }
 
 /* ================= CSV ================= */
@@ -2332,7 +2557,8 @@ function bind() {
   }));
 
   $('#btnStart').addEventListener('click', toggle);
-  $('#btnReset').addEventListener('click', reset);
+  if (ANDROID) $('#btnStart').addEventListener('click', () => kick($('#btnStart'), 'press'));
+  $('#btnReset').addEventListener('click', () => { if (series) reset(); else stopEarly(); });
   $('#btnSkip').addEventListener('click', skip);
   $('#label').addEventListener('input', () => { persist(); renderLabelMeta(); });
 
@@ -2347,10 +2573,6 @@ function bind() {
     renderProjects();
   });
   $('#projList').addEventListener('click', onProjectClick);
-  $('#projHidden').addEventListener('click', onProjectClick);
-  $('#projList').addEventListener('change', onDeadlineChange);
-  $('#projHidden').addEventListener('change', onDeadlineChange);
-  $('#btnHidden').addEventListener('click', () => { showHidden = !showHidden; renderProjects(); });
 
   // Apps
   $('#btnAddApp').addEventListener('click', openPicker);
@@ -2365,11 +2587,9 @@ function bind() {
     if (e.key === 'Escape') closePicker();
   });
   $('#btnBrowse').addEventListener('click', async () => addApp(await api.appsBrowse(t('appsBrowseTitle'))));
-  $('#appList').addEventListener('click', async e => {
-    const b = e.target.closest('.del');
-    if (!b) { const row = e.target.closest('.app'); if (row) openAppDetail(row.dataset.exe); return; }
-    appStats = (await api.appsUntrack(b.dataset.exe)) || appStats;
-    renderApps();
+  $('#appList').addEventListener('click', e => {
+    const row = e.target.closest('.app');
+    if (row) openAppDetail(row.dataset.exe);
   });
   setInterval(() => { if (view === 'apps') loadApps(); }, 10000);
 
@@ -2395,6 +2615,7 @@ function bind() {
   window.addEventListener('resize', () => { clearTimeout(resizeT); resizeT = setTimeout(() => { if (view === 'stats') renderStats(); }, 120); });
 
   $('#btnHistAll').addEventListener('click', openHistory);
+  $('#history').addEventListener('click', e => { const b = e.target.closest('.hs-del'); if (b) deleteEntries(b.closest('.hs').dataset.id.split(',')); });
   $('#histAll').addEventListener('click', e => { if (e.target.id === 'histAll' || e.target.closest('#histClose')) closeHistory(); });
   $('#historyFull').addEventListener('click', e => {
     const btn = e.target.closest('.del');
@@ -2513,7 +2734,6 @@ function bind() {
     bindDials();
     $('#btnReset').addEventListener('click', () => kick($('#btnReset'), 'spin'));
     $('#btnSkip').addEventListener('click', () => kick($('#btnSkip'), 'nudge'));
-    $('#btnStart').addEventListener('click', () => kick($('#btnStart'), 'press'));
     $$('.seg[data-key="theme"] button').forEach(b => b.addEventListener('click', () => kick(b, 'swing')));
     $$('.tab').forEach(b => b.addEventListener('click', () => kick(b, 'pop')));
     $$('.toggle').forEach(b => b.addEventListener('click', () => kick(b, 'press')));
@@ -2570,13 +2790,15 @@ function bind() {
       setPhase(timer.phase === 'work' ? 'break' : 'work');
     }
   }
-  if (ANDROID && settings.theme === 'system') settings.theme = systemDark ? 'dark' : 'light'; // the phone offers light and dark only
+  if (settings.theme !== 'light' && settings.theme !== 'dark') settings.theme = systemDark ? 'dark' : 'light'; // light and dark only now
   bind();
   bindWhen();
   bindAppDetail();
   bindTimeSheet();
   bindAddTime();
   bindTimePicker();
+  bindMenu();
+  bindArchive();
   syncInit(data);
   render();
   renderAutostart();
