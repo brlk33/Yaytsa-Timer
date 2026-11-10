@@ -83,7 +83,7 @@ scale: 'Масштаб', appsPickTitle: 'Добавить программу', a
   en: {
     appName: 'Яйцетаймер', updReady: v => `Version ${v} downloaded`, updNow: 'Restart',
     tabTimer: 'Timer', tabStats: 'Stats', tabSettings: 'Settings',
-    work: 'Focus', break: 'Break', today: 'Today',
+    work: 'Work', break: 'Break', today: 'Today',
     start: 'Start', pause: 'Pause', resume: 'Resume',
     reset: 'Reset', skip: 'Skip phase',
     labelPh: 'What are you working on?',
@@ -93,7 +93,7 @@ scale: 'Масштаб', appsPickTitle: 'Добавить программу', a
     noData: 'Your focus sessions will show up here',
     noLabel: 'Untitled', yesterday: 'Yesterday',
     gTimer: 'Timer', gNotify: 'Alerts', gLook: 'Appearance', gData: 'Data',
-    workLen: 'Focus length', breakLen: 'Break length', stepDesc: '5-minute steps',
+    workLen: 'Work length', breakLen: 'Break length', stepDesc: '5-minute steps',
     autoStart: 'Auto-start', autoStartDesc: 'Start the next phase automatically',
     goalSet: 'Daily goal', goalDesc: 'Hours of focus per day',
     sound: 'Sound', notifications: 'Notifications', notifDesc: 'System notification when a phase ends',
@@ -101,7 +101,7 @@ scale: 'Масштаб', appsPickTitle: 'Добавить программу', a
     onTop: 'Always on top',
     dataName: 'Time log', dataDesc: 'Export and import history as CSV, or open the data folder',
     openFolder: 'Open folder',
-    nBreakTitle: 'Break time', nBreakBody: m => `Focus session done. Rest for ${m} min.`,
+    nBreakTitle: 'Break time', nBreakBody: m => `Work session done. Rest for ${m} min.`,
     nWorkTitle: 'Back to work', nWorkBody: m => `Break is over. Next session — ${m} min.`,
     test: 'Test 5 sec', testIn: n => `Test… ${n}`, testToast: 'The reminder will pop up in 5 seconds',
     testTitle: 'Reminder test', closeToTray: 'Close to tray', closeToTrayDesc: 'The close button hides the window to the tray; the timer keeps running',
@@ -109,7 +109,7 @@ scale: 'Масштаб', appsPickTitle: 'Добавить программу', a
     popup: 'Pop-up over everything', popupDesc: 'Bottom-right, over games and videos. Stays until you click it',
     popupA: 'Notification with buttons', popupDescA: 'Pops up over the screen with a “Start break” button. Off: a plain notification',
     dataDescA: 'Export and import history as CSV',
-    goBreak: 'Start break', goWork: 'Start focus', later: 'Close', gotIt: 'Got it',
+    goBreak: 'Start break', goWork: 'Start work', later: 'Close', gotIt: 'Got it',
     aBreakBody: (w, b) => `${w}\u2011min focus session done. Break\u00a0—\u00a0${b} min.`,
     aWorkBody: w => `Break is over. Next session\u00a0—\u00a0${w} min.`,
     aBreakAuto: b => `Your ${b}\u2011min break has started.`,
@@ -1426,28 +1426,30 @@ let sugItems = [];
 
 // The task field is a project picker: click it for the list of active projects, or type a new
 // name — it becomes a new project.
+// Typing only edits the name; the list of projects opens from the chevron (or ↓) and nowhere else.
+let sugOpen = false;
 function renderSuggest() {
-  const box = $('#labelSuggest');
-  const raw = cleanName($('#label').value), q = raw.toLowerCase(), key = projKey(raw);
-  const active = projectList().filter(p => !p.hidden);
-  const exact = active.find(p => p.key === key);
-  const list = !q || exact ? active : active.filter(p => p.name.toLowerCase().includes(q));
-  sugItems = list.slice(0, 8);
-  if (q && !exact) sugItems.unshift({ create: raw });
-  if (!sugItems.length || document.activeElement !== $('#label')) { box.hidden = true; return; }
+  const box = $('#labelSuggest'), wrap = box.parentElement;
+  const key = projKey(cleanName($('#label').value));
+  sugItems = sugOpen ? projectList().filter(p => !p.hidden).slice(0, 12) : [];
+  wrap.classList.toggle('open', sugOpen);
+  if (!sugOpen) { box.hidden = true; return; }
   if (sugIndex >= sugItems.length) sugIndex = sugItems.length - 1;
-  box.innerHTML = sugItems.map((p, i) => {
-    if (p.create) {
-      return `<button class="sug sug-new${i === sugIndex ? ' on' : ''}" data-i="${i}" tabindex="-1">
-        <span class="sug-name"><span class="sug-plus">+</span>${esc(t('newProj')(p.create))}</span></button>`;
-    }
+  box.innerHTML = sugItems.length ? sugItems.map((p, i) => {
     const dl = deadlineInfo(p.deadline);
     return `<button class="sug${i === sugIndex ? ' on' : ''}${p.key === key ? ' cur' : ''}" data-i="${i}" tabindex="-1">
+      <span class="sug-dot"></span>
       <span class="sug-name">${esc(p.name)}</span>
       <span class="sug-meta">${dl ? `<span class="dl-text ${dl.cls}">${esc(dl.when)}</span> · ` : ''}${fmtDur(p.total)}</span>
+      <span class="sug-tick">${p.key === key ? '<svg viewBox="0 0 16 16"><path d="M3.5 8.5l3 3 6-7" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>' : ''}</span>
     </button>`;
-  }).join('');
+  }).join('') : `<div class="sug-empty">${esc(t('noData'))}</div>`;
   box.hidden = false;
+}
+function setSuggest(open) {
+  sugOpen = open;
+  sugIndex = -1;
+  renderSuggest();
 }
 
 // A name typed into the field is a project from now on (an archived one comes back)
@@ -1463,8 +1465,8 @@ function commitLabel() {
 function pickSuggest(i) {
   const p = sugItems[i];
   if (!p) return;
-  $('#label').value = p.create || p.name;
-  $('#labelSuggest').hidden = true;
+  $('#label').value = p.name;
+  setSuggest(false);
   commitLabel();
   persist();
   renderLabelMeta();
@@ -1473,18 +1475,28 @@ function pickSuggest(i) {
 
 function bindLabelSuggest() {
   const input = $('#label');
-  input.addEventListener('focus', () => { sugIndex = -1; renderSuggest(); });
-  input.addEventListener('input', () => { sugIndex = -1; renderSuggest(); });
-  input.addEventListener('blur', () => { commitLabel(); setTimeout(() => { $('#labelSuggest').hidden = true; }, 120); });
-  input.addEventListener('mousedown', () => { if (document.activeElement === input && $('#labelSuggest').hidden) { sugIndex = -1; setTimeout(renderSuggest); } });
+  input.addEventListener('input', () => { if (sugOpen) setSuggest(false); });
+  input.addEventListener('blur', () => { commitLabel(); setTimeout(() => { if (document.activeElement !== input) setSuggest(false); }, 120); });
   input.addEventListener('keydown', e => {
-    const box = $('#labelSuggest');
-    if (box.hidden) return;
-    if (e.key === 'ArrowDown') { e.preventDefault(); sugIndex = (sugIndex + 1) % sugItems.length; renderSuggest(); }
-    else if (e.key === 'ArrowUp') { e.preventDefault(); sugIndex = (sugIndex - 1 + sugItems.length) % sugItems.length; renderSuggest(); }
-    else if (e.key === 'Enter' && sugIndex >= 0) { e.preventDefault(); pickSuggest(sugIndex); }
-    else if (e.key === 'Escape') box.hidden = true;
+    if (!sugOpen) {
+      if (e.key === 'ArrowDown') { e.preventDefault(); setSuggest(true); }
+      else if (e.key === 'Enter') { e.preventDefault(); input.blur(); }
+      return;
+    }
+    const n = sugItems.length;
+    if (e.key === 'ArrowDown' && n) { e.preventDefault(); sugIndex = (sugIndex + 1) % n; renderSuggest(); }
+    else if (e.key === 'ArrowUp' && n) { e.preventDefault(); sugIndex = (sugIndex - 1 + n) % n; renderSuggest(); }
+    else if (e.key === 'Enter') { e.preventDefault(); if (sugIndex >= 0) pickSuggest(sugIndex); else { setSuggest(false); input.blur(); } }
+    else if (e.key === 'Escape') { e.preventDefault(); setSuggest(false); }
   });
+  // the chevron is the only way the list opens with the mouse
+  $('#labelChev').addEventListener('mousedown', e => {
+    e.preventDefault();
+    if (sugOpen) { setSuggest(false); return; }
+    if (document.activeElement !== input && !document.documentElement.classList.contains('android')) input.focus();
+    setSuggest(true);
+  });
+  document.addEventListener('mousedown', e => { if (sugOpen && !e.target.closest('.label-wrap')) setSuggest(false); });
   $('#labelSuggest').addEventListener('mousedown', e => {
     const b = e.target.closest('.sug');
     if (b) { e.preventDefault(); pickSuggest(Number(b.dataset.i)); }
@@ -1997,6 +2009,8 @@ function historyItems(list) {
   }
   return out;
 }
+// series rows the user has unfolded (kept across refreshes)
+const hsOpen = new Set();
 function renderHistoryShort() {
   const box = $('#history');
   const items = historyItems([...sessions].sort((a, b) => b.start - a.start)).slice(0, 3);
@@ -2008,12 +2022,23 @@ function renderHistoryShort() {
     const title = g.n > 1
       ? `${t('seriesRow')(g.n)}${g.label ? ` · ${esc(g.label)}` : ''}`
       : (g.label ? esc(g.label) : `<span class="muted">${t('noLabel')}</span>`);
-    return `<div class="hs${g.n > 1 ? ' series' : ''}" data-id="${esc(g.ids.join(','))}">
+    const open = g.n > 1 && hsOpen.has(g.series);
+    const row = `<div class="hs${g.n > 1 ? ' series' : ''}${open ? ' open' : ''}" data-id="${esc(g.ids.join(','))}"${g.n > 1 ? ` data-series="${esc(g.series)}"` : ''}>
       <span class="hs-ico">${g.n > 1 ? ICONS.repeat : ICONS.dot}</span>
       <span class="hs-main"><span class="hs-title">${title}</span><span class="hs-sub">${day}${hm(g.start)}–${hm(g.end)}${g.manual ? ` · ${t('atManual')}` : ''}</span></span>
       <span class="hs-dur">${fmtDur(g.dur)}</span>
+      ${g.n > 1 ? `<span class="hs-chev"><svg viewBox="0 0 16 16"><path d="M4 6l4 4 4-4" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></span>` : ''}
       <button class="hs-del" title="${esc(t('delete'))}">${ICONS.x}</button>
     </div>`;
+    if (!open) return row;
+    // each session of the series on its own line, oldest first, each with its own ×
+    const parts = g.ids.map(id => sessions.find(s => s.id === id)).filter(Boolean).sort((a, b) => a.start - b.start);
+    return row + `<div class="hs-kids">${parts.map((s, i) => `<div class="hs hs-kid" data-id="${esc(s.id)}">
+      <span class="hs-num">${i + 1}</span>
+      <span class="hs-main"><span class="hs-sub">${hm(s.start)}–${hm(s.end)}</span></span>
+      <span class="hs-dur">${fmtDur(s.dur)}</span>
+      <button class="hs-del" title="${esc(t('delete'))}">${ICONS.x}</button>
+    </div>`).join('')}</div>`;
   }).join(''));
 }
 // Deleting from the short list: gone at once, with an Undo in the toast
@@ -2615,7 +2640,15 @@ function bind() {
   window.addEventListener('resize', () => { clearTimeout(resizeT); resizeT = setTimeout(() => { if (view === 'stats') renderStats(); }, 120); });
 
   $('#btnHistAll').addEventListener('click', openHistory);
-  $('#history').addEventListener('click', e => { const b = e.target.closest('.hs-del'); if (b) deleteEntries(b.closest('.hs').dataset.id.split(',')); });
+  $('#history').addEventListener('click', e => {
+    const b = e.target.closest('.hs-del');
+    if (b) { deleteEntries(b.closest('.hs').dataset.id.split(',')); return; }
+    const row = e.target.closest('.hs.series');
+    if (!row) return;
+    const id = row.dataset.series;
+    if (hsOpen.has(id)) hsOpen.delete(id); else hsOpen.add(id);
+    renderHistoryShort();
+  });
   $('#histAll').addEventListener('click', e => { if (e.target.id === 'histAll' || e.target.closest('#histClose')) closeHistory(); });
   $('#historyFull').addEventListener('click', e => {
     const btn = e.target.closest('.del');

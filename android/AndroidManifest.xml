@@ -50,5 +50,7 @@
             </intent-filter>
         </receiver>
         <receiver android:name=".UpdateReceiver" android:exported="false" />
+        <!-- Looks at the cloud timer now and then while the app is closed (CloudJob.java) -->
+        <service android:name=".CloudJob" android:exported="false" android:permission="android.permission.BIND_JOB_SERVICE" />
     </application>
 </manifest>

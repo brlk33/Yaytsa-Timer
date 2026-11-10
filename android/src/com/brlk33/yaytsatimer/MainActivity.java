@@ -114,6 +114,7 @@ public class MainActivity extends Activity {
             getOnBackInvokedDispatcher().registerOnBackInvokedCallback(OnBackInvokedDispatcher.PRIORITY_DEFAULT, this::back);
         }
         Host.live = this;
+        CloudJob.schedule(this);
     }
 
     /** index.html with bridge.js loaded before app.js (and no CSP: the page is local). */
@@ -227,6 +228,7 @@ public class MainActivity extends Activity {
     }
     @Override protected void onPause() { started = false; super.onPause(); }
     private boolean isStartedNow() { return started; }
+    boolean isVisible() { return started; }
 
     @Override
     protected void onDestroy() {

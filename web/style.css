@@ -1774,15 +1774,6 @@ html.android .controls { display: flex; }
 #btnReset svg { width: 18px !important; height: 18px !important; }
 
 /* Task field = project picker: a chevron on hover says "there is a list here" */
-.label-wrap { position: relative; }
-.label-chev { position: absolute; right: 12px; top: 50%; width: 18px; height: 18px; margin-top: -9px; color: var(--text-3); opacity: 0; pointer-events: none; transition: opacity .15s var(--ease), transform .2s var(--ease); }
-.label-wrap:hover .label-chev { opacity: 1; }
-.label-input:focus ~ .label-chev { opacity: 1; transform: rotate(180deg); }
-.label-input { padding-left: 34px; padding-right: 34px; }
-html.android .label-chev { right: 18px; opacity: .6; }
-.sug.cur .sug-name { color: var(--accent); }
-.sug-new .sug-name { color: var(--text); font-weight: 500; }
-.sug-plus { display: inline-grid; place-items: center; width: 20px; height: 20px; margin-right: 8px; border-radius: 6px; background: var(--accent-soft); color: var(--accent); font-weight: 700; }
 
 /* ---------- Projects: a tick sends a project to the archive ---------- */
 .proj { overflow: hidden; }
@@ -1793,12 +1784,12 @@ html.android .label-chev { right: 18px; opacity: .6; }
   transition: border-color .15s var(--ease), background .2s var(--ease), color .2s var(--ease), transform .12s var(--ease);
 }
 .pcheck svg { width: 14px; height: 14px; }
-.pcheck path { stroke-dasharray: 1; stroke-dashoffset: 1; transition: stroke-dashoffset .3s .05s var(--ease); }
+.pcheck path { stroke-dasharray: 1 2; stroke-dashoffset: 1.01; opacity: 0; transition: stroke-dashoffset .35s var(--ease), opacity .2s var(--ease); }
 .pcheck:hover { border-color: #6f8cff; color: #6f8cff; }
-.pcheck:hover path { stroke-dashoffset: .55; }
+.pcheck:hover path { stroke-dashoffset: 0; opacity: .5; }
 .pcheck:active { transform: scale(.88); }
 .proj.checking .pcheck { background: linear-gradient(135deg, #4f8bff, #8a5cff); border-color: transparent; color: #fff; }
-.proj.checking .pcheck path { stroke-dashoffset: 0; }
+.proj.checking .pcheck path { stroke-dashoffset: 0; opacity: 1; }
 .proj.checking .pn { text-decoration: line-through; text-decoration-color: var(--text-3); color: var(--text-2); }
 .proj.checking { animation: projOut .38s .34s cubic-bezier(.4, 0, .2, 1) forwards; }
 @keyframes projOut { to { opacity: 0; height: 0; padding-top: 0; padding-bottom: 0; margin-bottom: 0; transform: translateX(14px); } }
@@ -1846,3 +1837,131 @@ html.android .hs .hs-del { opacity: .5; }
 /* the empty time label took a gap and pushed the clock off-centre */
 .when-chip #seriesWhenText:empty { display: none; }
 html:not(.android) .prop[data-p="when"] .when-chip:not(.set) { gap: 0; }
+
+/* history: a series unfolds into its sessions */
+.hs.series { cursor: pointer; }
+.hs-chev { width: 18px; height: 18px; flex: none; color: var(--text-3); display: grid; place-items: center; transition: transform .25s var(--ease); }
+.hs-chev svg { width: 14px; height: 14px; }
+.hs.series.open .hs-chev { transform: rotate(180deg); }
+.hs-kids { display: flex; flex-direction: column; gap: 2px; margin: -2px 0 4px 26px; padding-left: 12px; border-left: 2px solid var(--hover); animation: kidsIn .28s var(--ease) both; }
+@keyframes kidsIn { from { opacity: 0; transform: translateY(-4px); } }
+.hs.hs-kid { padding: 6px 10px; border-radius: 11px; gap: 10px; animation: none; background: transparent; }
+.hs.hs-kid:hover { background: var(--hover); }
+html.android .hs.hs-kid { background: transparent; }
+.hs-num { width: 20px; height: 20px; flex: none; display: grid; place-items: center; border-radius: 50%; font-size: 11px; font-weight: 700; color: var(--text-3); background: var(--hover); font-variant-numeric: tabular-nums; }
+.hs-kid .hs-sub { font-size: 13.5px; color: var(--text-2); font-variant-numeric: tabular-nums; }
+.hs-kid .hs-dur { font-weight: 600; font-size: 13.5px; }
+
+/* Task field: a quiet pill; typing just renames, the chevron opens the project list */
+.label-wrap { position: relative; }
+.label-input { padding-left: 44px; padding-right: 44px; border-radius: 999px; }
+.label-input:focus { background: var(--hover); box-shadow: 0 0 0 1px var(--border), 0 6px 22px -12px rgba(0,0,0,.35); }
+.label-chev {
+  position: absolute; right: 6px; top: 50%; width: 32px; height: 32px; margin-top: -16px; padding: 0;
+  border: 0; border-radius: 50%; background: transparent; color: var(--text-3);
+  display: grid; place-items: center; cursor: pointer; opacity: .55;
+  transition: opacity .15s var(--ease), background .15s var(--ease), color .15s var(--ease);
+}
+.label-chev svg { width: 18px; height: 18px; transition: transform .28s cubic-bezier(.3, 1.4, .5, 1); }
+.label-wrap:hover .label-chev, .label-input:focus ~ .label-chev { opacity: 1; }
+.label-chev:hover { background: var(--hover); color: var(--text); }
+.label-wrap.open .label-chev { opacity: 1; color: var(--text); background: var(--hover); }
+.label-wrap.open .label-chev svg { transform: rotate(180deg); }
+html.android .label-chev { right: 10px; opacity: .7; }
+.suggest { padding: 6px; border-radius: 18px; border: 1px solid var(--border); box-shadow: 0 18px 40px -18px rgba(0,0,0,.45); transform-origin: top center; animation: sugIn .22s cubic-bezier(.2, .9, .3, 1.1); }
+@keyframes sugIn { from { opacity: 0; transform: translateY(-6px) scale(.97); } }
+.sug { padding: 9px 10px; gap: 10px; border-radius: 12px; justify-content: flex-start; }
+.sug .sug-name { flex: 1; min-width: 0; }
+.sug:hover, .sug.on { background: var(--hover); }
+.sug-dot { width: 8px; height: 8px; flex: none; border-radius: 50%; background: var(--text-3); opacity: .45; }
+.sug.cur .sug-dot { background: linear-gradient(135deg, #ffb347, #ff6a4a); opacity: 1; }
+.sug.cur .sug-name { color: var(--text-strong); font-weight: 600; }
+.sug-tick { width: 16px; height: 16px; flex: none; color: var(--text-2); }
+.sug-tick svg { width: 16px; height: 16px; display: block; }
+.sug-empty { padding: 12px; text-align: center; color: var(--text-3); font-size: 13px; }
+
+/* ================= PC polish (2.16): a living face, a better start key ================= */
+html:not(.android) {
+  --pc-grad: linear-gradient(120deg, #3d8bff, #7a5cff 55%, #b05cff);
+  --pc-grad-break: linear-gradient(120deg, #22b38a, #2fb5c9 60%, #3d8bff);
+}
+/* the start key: a gradient pill with a soft glow */
+html:not(.android) #btnStart {
+  position: relative; overflow: hidden; isolation: isolate;
+  min-width: 168px; height: 48px; padding: 0 28px; border-radius: 999px;
+  background: var(--pc-grad); color: #fff; font-size: 16px; font-weight: 650; letter-spacing: .01em;
+  box-shadow: 0 10px 28px -10px rgba(98, 92, 255, .75), inset 0 1px 0 rgba(255,255,255,.25);
+  transition: transform .25s cubic-bezier(.3, 1.4, .5, 1), box-shadow .25s var(--ease), filter .2s var(--ease), background .3s var(--ease);
+}
+html:not(.android) #btnStart:hover { transform: translateY(-1px); box-shadow: 0 14px 34px -10px rgba(98, 92, 255, .9), inset 0 1px 0 rgba(255,255,255,.3); }
+html:not(.android) #btnStart:active { transform: scale(.96); transition-duration: .08s; }
+html:not(.android) .face.break ~ .controls #btnStart:not(.secondary) { background: var(--pc-grad-break); box-shadow: 0 10px 28px -10px rgba(34, 179, 138, .7), inset 0 1px 0 rgba(255,255,255,.25); }
+/* while it runs the key steps back: glass with a thin border */
+html:not(.android) #btnStart.secondary {
+  background: var(--hover); color: var(--text-strong);
+  box-shadow: inset 0 0 0 1px var(--border-strong);
+}
+html:not(.android) #btnStart.secondary:hover { background: var(--active); box-shadow: inset 0 0 0 1px var(--border-strong), 0 8px 22px -14px rgba(0,0,0,.5); }
+html:not(.android) .icon-btn { border-radius: 50%; transition: background .18s var(--ease), color .18s var(--ease), transform .25s cubic-bezier(.3, 1.4, .5, 1); }
+html:not(.android) .icon-btn:hover { transform: translateY(-1px); }
+
+/* the time: an aurora breathes behind the digits while the timer runs */
+html:not(.android) #view-timer .time { position: relative; isolation: isolate; transition: color .3s var(--ease), transform .5s cubic-bezier(.2, .9, .3, 1.2); }
+html:not(.android) #view-timer .time::before {
+  content: ""; position: absolute; left: 50%; top: 50%; width: 420px; height: 150px; margin: -75px 0 0 -210px; z-index: -1;
+  border-radius: 50%; pointer-events: none;
+  background:
+    radial-gradient(closest-side at 30% 50%, rgba(61, 139, 255, .55), transparent),
+    radial-gradient(closest-side at 70% 50%, rgba(160, 92, 255, .5), transparent);
+  filter: blur(34px); opacity: 0; transform: scale(.7);
+  transition: opacity .9s var(--ease), transform .9s var(--ease);
+}
+html:not(.android) #view-timer .face.running .time::before { opacity: .55; transform: scale(1); animation: aurora 9s ease-in-out infinite; }
+html:not(.android) #view-timer .face.running.break .time::before {
+  background:
+    radial-gradient(closest-side at 30% 50%, rgba(34, 179, 138, .55), transparent),
+    radial-gradient(closest-side at 70% 50%, rgba(61, 183, 214, .5), transparent);
+}
+html[data-theme="light"]:not(.android) #view-timer .face.running .time::before { opacity: .32; }
+@keyframes aurora {
+  0%, 100% { transform: scale(1) translateX(0) rotate(0deg); }
+  33% { transform: scale(1.12, .92) translateX(18px) rotate(4deg); }
+  66% { transform: scale(.94, 1.08) translateX(-16px) rotate(-3deg); }
+}
+/* the digits themselves catch a slow light while running */
+html:not(.android) .face.running .time {
+  background: linear-gradient(100deg, var(--text-strong) 0%, var(--text-strong) 40%, #b9c8ff 50%, var(--text-strong) 60%, var(--text-strong) 100%);
+  background-size: 300% 100%; -webkit-background-clip: text; background-clip: text; color: transparent;
+  animation: digitsLight 6s linear infinite;
+}
+html:not(.android) .face.running.break .time { background-image: linear-gradient(100deg, var(--text-strong) 0%, var(--text-strong) 40%, #b6f0dc 50%, var(--text-strong) 60%, var(--text-strong) 100%); }
+html[data-theme="light"]:not(.android) .face.running .time { background-image: linear-gradient(100deg, var(--text-strong) 0%, var(--text-strong) 40%, #6b7dff 50%, var(--text-strong) 60%, var(--text-strong) 100%); }
+@keyframes digitsLight { from { background-position: 150% 0; } to { background-position: -150% 0; } }
+
+/* the progress bar: a flowing gradient with a light running along it */
+html:not(.android) #view-timer .bar { height: 6px; border-radius: 6px; position: relative; }
+html:not(.android) #view-timer .bar-fill {
+  position: relative; border-radius: 6px; overflow: hidden;
+  background: linear-gradient(90deg, #3d8bff, #8a5cff, #3d8bff); background-size: 200% 100%;
+}
+html:not(.android) #view-timer .bar-fill.break { background: linear-gradient(90deg, #22b38a, #3db7d6, #22b38a); background-size: 200% 100%; }
+html:not(.android) .face.running .bar-fill { animation: barFlow 3s linear infinite; box-shadow: 0 0 14px rgba(110, 110, 255, .55); }
+html:not(.android) .face.running .bar-fill.break { box-shadow: 0 0 14px rgba(40, 190, 160, .5); }
+html:not(.android) .face.running .bar-fill::after {
+  content: ""; position: absolute; top: 0; bottom: 0; width: 60px; left: -60px;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,.7), transparent);
+  animation: barGlint 2.4s ease-in-out infinite;
+}
+@keyframes barFlow { from { background-position: 0 0; } to { background-position: -200% 0; } }
+@keyframes barGlint { from { left: -60px; } to { left: 100%; } }
+
+/* the phase tag: a pill, with a breathing dot while running */
+html:not(.android) .phase-row .tag { border-radius: 999px; padding: 0 12px; gap: 7px; }
+html:not(.android) .phase-row .tag::before { content: ""; width: 6px; height: 6px; border-radius: 50%; background: currentColor; opacity: .5; }
+html:not(.android) .face.running .phase-row .tag::before { opacity: 1; animation: tagDot 1.6s ease-in-out infinite; }
+@keyframes tagDot { 50% { transform: scale(.55); opacity: .45; } }
+
+@media (prefers-reduced-motion: reduce) {
+  html:not(.android) .face.running .time, html:not(.android) .face.running .time::before,
+  html:not(.android) .face.running .bar-fill, html:not(.android) .face.running .bar-fill::after { animation: none; }
+}

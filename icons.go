@@ -7,6 +7,7 @@ import (
 	"encoding/base64"
 	"image"
 	"image/png"
+	"strings"
 	"sync"
 	"unsafe"
 )
@@ -161,4 +162,21 @@ func withIcons(list []appInfo) []appInfo {
 		out[i] = a
 	}
 	return out
+}
+
+// appIconFor finds a tracked program's icon even when its saved path no longer has one
+// (e.g. an app that updates itself into a new versioned folder, like Claude): it falls back to
+// a Start-menu or desktop shortcut that starts the same exe.
+func appIconFor(a appInfo) string {
+	if v := appIcon(a.Path); v != "" {
+		return v
+	}
+	for _, p := range installedApps() {
+		if strings.EqualFold(p.Exe, a.Exe) && !strings.EqualFold(p.Path, a.Path) {
+			if v := appIcon(p.Path); v != "" {
+				return v
+			}
+		}
+	}
+	return ""
 }

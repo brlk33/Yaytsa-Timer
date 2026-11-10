@@ -10,6 +10,7 @@ public class BootReceiver extends TimerReceiver {
         String a = intent.getAction();
         if (Intent.ACTION_BOOT_COMPLETED.equals(a) || Intent.ACTION_MY_PACKAGE_REPLACED.equals(a)) {
             super.onReceive(c, intent);
+            CloudJob.schedule(c);
         }
     }
 }
