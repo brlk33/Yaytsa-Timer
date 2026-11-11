@@ -1991,6 +1991,7 @@ function bindAppDetail() {
     if (r) { adRange = Number(r.dataset.r); renderAppDetail(); }
   });
   document.addEventListener('keydown', e => { if (e.key === 'Escape' && adExe) closeAppDetail(); });
+  document.addEventListener('keydown', e => { if (e.key === 'Escape' && scId) closeSeriesCard(); });
 }
 
 /* ---------- History: the last few things done (a series counts as one), full list in a card ---------- */
@@ -2009,37 +2010,53 @@ function historyItems(list) {
   }
   return out;
 }
-// series rows the user has unfolded (kept across refreshes)
-const hsOpen = new Set();
 function renderHistoryShort() {
   const box = $('#history');
   const items = historyItems([...sessions].sort((a, b) => b.start - a.start)).slice(0, 3);
   $('#btnHistAll').style.display = sessions.length ? '' : 'none';
-  if (!items.length) { setHTML(box, `<div class="empty-state">${t('noData')}</div>`); return; }
-  // rows keep their elements when the list refreshes (no replayed entrance), a quiet × at the side
+  if (!items.length) { setHTML(box, `<div class="empty-state">${t('noData')}</div>`); renderSeriesCard(); return; }
+  // rows keep their elements when the list refreshes (no replayed entrance), a quiet × at the side.
+  // The task name gets the whole title line; a series says how many sessions in the line below
+  // and opens as a card.
   setHTML(box, items.map(g => {
     const day = startOfDay(g.start) === startOfDay() ? '' : `${dayTitle(g.start)} · `;
-    const title = g.n > 1
-      ? `${t('seriesRow')(g.n)}${g.label ? ` · ${esc(g.label)}` : ''}`
-      : (g.label ? esc(g.label) : `<span class="muted">${t('noLabel')}</span>`);
-    const open = g.n > 1 && hsOpen.has(g.series);
-    const row = `<div class="hs${g.n > 1 ? ' series' : ''}${open ? ' open' : ''}" data-id="${esc(g.ids.join(','))}"${g.n > 1 ? ` data-series="${esc(g.series)}"` : ''}>
+    const title = g.label ? esc(g.label) : `<span class="muted">${t('noLabel')}</span>`;
+    const n = g.n > 1 ? `<span class="hs-n">${esc(t('seriesN')(g.n))}</span>` : '';
+    return `<div class="hs${g.n > 1 ? ' series' : ''}" data-id="${esc(g.ids.join(','))}"${g.n > 1 ? ` data-series="${esc(g.series)}"` : ''}>
       <span class="hs-ico">${g.n > 1 ? ICONS.repeat : ICONS.dot}</span>
-      <span class="hs-main"><span class="hs-title">${title}</span><span class="hs-sub">${day}${hm(g.start)}–${hm(g.end)}${g.manual ? ` · ${t('atManual')}` : ''}</span></span>
+      <span class="hs-main"><span class="hs-title">${title}</span><span class="hs-sub">${n}${day}${hm(g.start)}–${hm(g.end)}${g.manual ? ` · ${t('atManual')}` : ''}</span></span>
       <span class="hs-dur">${fmtDur(g.dur)}</span>
-      ${g.n > 1 ? `<span class="hs-chev"><svg viewBox="0 0 16 16"><path d="M4 6l4 4 4-4" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></span>` : ''}
       <button class="hs-del" title="${esc(t('delete'))}">${ICONS.x}</button>
     </div>`;
-    if (!open) return row;
-    // each session of the series on its own line, oldest first, each with its own ×
-    const parts = g.ids.map(id => sessions.find(s => s.id === id)).filter(Boolean).sort((a, b) => a.start - b.start);
-    return row + `<div class="hs-kids">${parts.map((s, i) => `<div class="hs hs-kid" data-id="${esc(s.id)}">
-      <span class="hs-num">${i + 1}</span>
-      <span class="hs-main"><span class="hs-sub">${hm(s.start)}–${hm(s.end)}</span></span>
-      <span class="hs-dur">${fmtDur(s.dur)}</span>
-      <button class="hs-del" title="${esc(t('delete'))}">${ICONS.x}</button>
-    </div>`).join('')}</div>`;
   }).join(''));
+  renderSeriesCard();
+}
+
+/* A series opens as a card: every session on its own line, each with its own × */
+let scId = null;
+function openSeriesCard(id) {
+  scId = id;
+  $('#seriesCard').hidden = false;
+  renderSeriesCard();
+}
+function closeSeriesCard() { $('#seriesCard').hidden = true; scId = null; }
+function renderSeriesCard() {
+  if (!scId || $('#seriesCard').hidden) return;
+  const parts = sessions.filter(s => s.series === scId).sort((a, b) => a.start - b.start);
+  if (!parts.length) { closeSeriesCard(); return; }
+  const first = parts[0], last = parts[parts.length - 1];
+  const label = (parts.find(s => s.label) || {}).label || '';
+  const total = parts.reduce((a, s) => a + s.dur, 0);
+  $('#scName').innerHTML = label ? esc(label) : `<span class="muted">${esc(t('noLabel'))}</span>`;
+  $('#scSub').textContent = `${dayTitle(first.start)} · ${hm(first.start)}–${hm(last.end)}`;
+  $('#scTotal').textContent = fmtDur(total);
+  $('#scCount').textContent = t('seriesN')(parts.length);
+  setHTML($('#scList'), parts.map((s, i) => `<div class="sc-row" data-id="${esc(s.id)}">
+      <span class="hs-num">${i + 1}</span>
+      <span class="sc-time">${hm(s.start)}–${hm(s.end)}</span>
+      <span class="sc-dur">${fmtDur(s.dur)}</span>
+      <button class="hs-del" title="${esc(t('delete'))}">${ICONS.x}</button>
+    </div>`).join(''));
 }
 // Deleting from the short list: gone at once, with an Undo in the toast
 function deleteEntries(ids) {
@@ -2644,10 +2661,12 @@ function bind() {
     const b = e.target.closest('.hs-del');
     if (b) { deleteEntries(b.closest('.hs').dataset.id.split(',')); return; }
     const row = e.target.closest('.hs.series');
-    if (!row) return;
-    const id = row.dataset.series;
-    if (hsOpen.has(id)) hsOpen.delete(id); else hsOpen.add(id);
-    renderHistoryShort();
+    if (row) openSeriesCard(row.dataset.series);
+  });
+  $('#seriesCard').addEventListener('click', e => {
+    if (e.target.id === 'seriesCard' || e.target.closest('#scClose')) { closeSeriesCard(); return; }
+    const b = e.target.closest('.hs-del');
+    if (b) deleteEntries([b.closest('.sc-row').dataset.id]);
   });
   $('#histAll').addEventListener('click', e => { if (e.target.id === 'histAll' || e.target.closest('#histClose')) closeHistory(); });
   $('#historyFull').addEventListener('click', e => {
@@ -2747,6 +2766,7 @@ function bind() {
     window.__back = () => {
       if (!$('#sheet').hidden) { closeSheet(null); return true; }
       if (tsOpen) { closeTimeSheet(); return true; }
+      if (scId) { closeSeriesCard(); return true; }
       if (adExe) { closeAppDetail(); return true; }
       if (!$('#histAll').hidden) { closeHistory(); return true; }
       if (!$('#cal').hidden) { closeCalendar(); return true; }

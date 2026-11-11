@@ -1838,19 +1838,9 @@ html.android .hs .hs-del { opacity: .5; }
 .when-chip #seriesWhenText:empty { display: none; }
 html:not(.android) .prop[data-p="when"] .when-chip:not(.set) { gap: 0; }
 
-/* history: a series unfolds into its sessions */
+/* history: series rows open a card */
 .hs.series { cursor: pointer; }
-.hs-chev { width: 18px; height: 18px; flex: none; color: var(--text-3); display: grid; place-items: center; transition: transform .25s var(--ease); }
-.hs-chev svg { width: 14px; height: 14px; }
-.hs.series.open .hs-chev { transform: rotate(180deg); }
-.hs-kids { display: flex; flex-direction: column; gap: 2px; margin: -2px 0 4px 26px; padding-left: 12px; border-left: 2px solid var(--hover); animation: kidsIn .28s var(--ease) both; }
-@keyframes kidsIn { from { opacity: 0; transform: translateY(-4px); } }
-.hs.hs-kid { padding: 6px 10px; border-radius: 11px; gap: 10px; animation: none; background: transparent; }
-.hs.hs-kid:hover { background: var(--hover); }
-html.android .hs.hs-kid { background: transparent; }
 .hs-num { width: 20px; height: 20px; flex: none; display: grid; place-items: center; border-radius: 50%; font-size: 11px; font-weight: 700; color: var(--text-3); background: var(--hover); font-variant-numeric: tabular-nums; }
-.hs-kid .hs-sub { font-size: 13.5px; color: var(--text-2); font-variant-numeric: tabular-nums; }
-.hs-kid .hs-dur { font-weight: 600; font-size: 13.5px; }
 
 /* Task field: a quiet pill; typing just renames, the chevron opens the project list */
 .label-wrap { position: relative; }
@@ -1966,3 +1956,31 @@ html:not(.android) .face.running .phase-row .tag::before { opacity: 1; animation
   html:not(.android) .face.running .time, html:not(.android) .face.running .time::before,
   html:not(.android) .face.running .bar-fill, html:not(.android) .face.running .bar-fill::after { animation: none; }
 }
+
+/* the start-time key: no circle until the pointer is on it */
+html:not(.android) .prop[data-p="when"] .when-chip:not(.set) { background: transparent; color: var(--text-2); transition: background .15s var(--ease), color .15s var(--ease); }
+html:not(.android) .prop[data-p="when"] .when-chip:not(.set):hover { background: var(--hover); color: var(--text); }
+
+/* History: a series row shows the full task name; the session count sits in the line below */
+.hs-n { display: inline-flex; align-items: center; height: 18px; padding: 0 7px; margin-right: 6px; border-radius: 999px; font-size: 11.5px; font-weight: 600; color: var(--text-2); background: var(--hover); vertical-align: 1px; }
+.hs.series .hs-title { white-space: normal; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
+.hs.series:hover { background: var(--active); }
+html.android .hs.series:active { transform: scale(.985); }
+.hs { transition: background .15s var(--ease), transform .15s var(--ease); }
+
+/* the series card */
+.sc-card { width: min(440px, 100%); display: flex; flex-direction: column; gap: 14px; }
+.sc-ico { width: 36px; height: 36px; flex: none; display: grid; place-items: center; border-radius: 50%; color: #fff; background: linear-gradient(135deg, #4f8bff, #8a5cff); }
+.sc-ico svg { width: 18px; height: 18px; }
+.sc-titles { flex: 1; min-width: 0; }
+.sc-titles h3 { margin: 0; overflow-wrap: anywhere; white-space: normal; }
+.sc-sub { font-size: 13px; color: var(--text-3); margin-top: 2px; }
+.sc-list { display: flex; flex-direction: column; gap: 4px; max-height: 60vh; overflow-y: auto; scrollbar-width: thin; }
+.sc-row { display: flex; align-items: center; gap: 12px; padding: 9px 10px; border-radius: 12px; background: var(--hover); }
+.sc-time { flex: 1; color: var(--text-strong); font-variant-numeric: tabular-nums; }
+.sc-dur { font-weight: 650; color: var(--text-strong); font-variant-numeric: tabular-nums; }
+.sc-row .hs-del { width: 26px; height: 26px; flex: none; border: 0; border-radius: 8px; background: transparent; color: var(--text-3); display: grid; place-items: center; opacity: .6; transition: opacity .15s var(--ease), color .15s var(--ease), background .15s var(--ease); margin-right: -4px; }
+.sc-row .hs-del:hover { opacity: 1; color: var(--danger); background: var(--active); }
+html.android .sc-card { border-radius: 24px; }
+html.android .sc-row { background: var(--block); padding: 12px 12px; }
+html.android .sc-row .hs-del { width: 34px; height: 34px; }
