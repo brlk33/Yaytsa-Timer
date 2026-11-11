@@ -73,6 +73,8 @@ const (
 	wmSize            = 0x0005
 	wmActivate        = 0x0006
 	wmClose           = 0x0010
+	wmQueryEndSession = 0x0011
+	wmEndSession      = 0x0016
 	wmQuit            = 0x0012
 	wmGetMinMaxInfo   = 0x0024
 	wmSettingChange   = 0x001A

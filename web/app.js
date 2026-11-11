@@ -72,6 +72,10 @@ winMin: 'Свернуть', winMax: 'Развернуть', winClose: 'Закр�
     monthsNom: ['Январь', 'Февраль', 'Март', 'Апрель', 'Май', 'Июнь', 'Июль', 'Август', 'Сентябрь', 'Октябрь', 'Ноябрь', 'Декабрь'],
 scale: 'Масштаб', appsPickTitle: 'Добавить программу', appsSearchPh: 'Поиск по программам на компьютере', appsBrowse: 'Выбрать .exe вручную…', appsBrowseTitle: 'Выберите программу',    appsFound: 'Найдено', appsAll: 'Все программы', appsNothing: 'Ничего не нашлось. Попробуйте выбрать .exe вручную', appsAdded: n => `«${n}» отслеживается`,    r3m: '3 мес', r6m: '6 мес', r1y: 'Год', modeBars: 'Столбики', modeSquares: 'Квадратики',    monthsShort: ['янв', 'фев', 'мар', 'апр', 'май', 'июн', 'июл', 'авг', 'сен', 'окт', 'ноя', 'дек'],    daysMon: ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс'], noWork: 'без работы',    activeDays: n => `${n} ${plural(n, 'рабочий день', 'рабочих дня', 'рабочих дней')}`, streak: n => `серия ${n} ${plural(n, 'день', 'дня', 'дней')} подряд`,    less: 'Меньше', more: 'Больше', byHour: 'По часам за неделю',
     appsActiveL: 'Активное время', adSpan: (a, b) => `Работа в программе с ${a} до ${b}`, singleDoneTitle: 'Заход завершён', singleDoneBody: m => `${m} мин в копилке. Можно отдохнуть.`,
+    crashTitle: 'В прошлый раз Яйцетаймер закрылся неожиданно', crashAt: at => `Это случилось около ${at}. Всё сохраняется по ходу работы, так что прогресс на месте.`,
+    crashRun: (d, all) => `Заход продолжается: прошло ${d} из ${all}.`, crashPaused: (d, all) => `Заход на паузе: сохранено ${d} из ${all}.`,
+    crashGoes: s => `Таймер продолжает идти: ${s}.`, crashLogged: d => `Заход закончился, пока программа была закрыта, — ${d} записано в историю.`,
+    crashToday: d => `Сегодня в истории: ${d}.`, crashSaved: at => `Последнее сохранение — ${at}.`,
     stop: 'Стоп', stopQ: 'Закончить раньше?', stopKeep: 'Продолжить', stopAnyway: 'Остановить',
     stopText: (saved, left) => `До конца захода осталось ${left}. Лучше доделать до конца. Если остановиться сейчас, в историю запишется ${saved}.`,
     stopTextShort: 'Прошло меньше 10 минут — такой заход не сохранится. Лучше доделать до конца.',
@@ -150,6 +154,10 @@ winMin: 'Minimize', winMax: 'Maximize', winClose: 'Close', importCsv: 'Import CS
     monthsNom: ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'],
 scale: 'Zoom', appsPickTitle: 'Add a program', appsSearchPh: 'Search programs on this PC', appsBrowse: 'Pick an .exe manually…', appsBrowseTitle: 'Choose a program',    appsFound: 'Found', appsAll: 'All programs', appsNothing: 'Nothing found. Try picking the .exe manually', appsAdded: n => `Tracking “${n}”`,    r3m: '3 mo', r6m: '6 mo', r1y: 'Year', modeBars: 'Bars', modeSquares: 'Squares',    monthsShort: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'],    daysMon: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'], noWork: 'no focus',    activeDays: n => `${n} active day${n === 1 ? '' : 's'}`, streak: n => `${n}-day streak`,    less: 'Less', more: 'More', byHour: 'By hour, last 7 days',
     appsActiveL: 'Active time', adSpan: (a, b) => `Worked in it from ${a} to ${b}`, singleDoneTitle: 'Session complete', singleDoneBody: m => `${m} min in the bank. Time to rest.`,
+    crashTitle: 'Яйцетаймер closed unexpectedly last time', crashAt: at => `It happened around ${at}. Everything is saved as you go, so your progress is still here.`,
+    crashRun: (d, all) => `The session goes on: ${d} of ${all} done.`, crashPaused: (d, all) => `The session is paused: ${d} of ${all} saved.`,
+    crashGoes: s => `The timer keeps going: ${s}.`, crashLogged: d => `The session ended while the app was closed — ${d} went into your history.`,
+    crashToday: d => `In today’s history: ${d}.`, crashSaved: at => `Last saved: ${at}.`,
     stop: 'Stop', stopQ: 'Finish early?', stopKeep: 'Keep going', stopAnyway: 'Stop',
     stopText: (saved, left) => `${left} left in this session. Better to finish it. If you stop now, ${saved} goes into your history.`,
     stopTextShort: 'Less than 10 minutes have passed — a session this short isn’t saved. Better to see it through.',
@@ -1053,8 +1061,8 @@ function renderHistory() {
     const total = list.reduce((a, s) => a + s.dur, 0);
     return `<div class="day-head"><span>${esc(dayTitle(list[0].start))}</span><span>${fmtDur(total)}</span></div>` +
       list.map(s => `<div class="row">
-        <span class="r-time">${hm(s.start)}–${hm(s.end)}</span>
-        <span class="r-label${s.label ? '' : ' empty'}">${esc(s.label || t('noLabel'))}${s.manual ? ` <span class="r-man">${t('atManual')}</span>` : ''}</span>
+        <span class="r-time">${s.manual ? t('atManual') : `${hm(s.start)}–${hm(s.end)}`}</span>
+        <span class="r-label${s.label ? '' : ' empty'}">${esc(s.label || t('noLabel'))}</span>
         <span class="r-dur">${fmtDur(s.dur)}</span>
         <button class="del" data-id="${s.id}" title="×"><svg width="12" height="12" viewBox="0 0 12 12"><path d="M3 3l6 6M9 3l-6 6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg></button>
       </div>`).join('');
@@ -1527,8 +1535,9 @@ function confirmModal(title, text, okLabel, opts = {}) {
   $('#modalOk').classList.toggle('quiet', !!opts.keepFirst);
   $('#modalCancel').classList.toggle('keep', !!opts.keepFirst);
   $('#modalCancel').textContent = opts.cancel || t('cancel');
+  $('#modalCancel').hidden = !!opts.noCancel;
   $('#modal').hidden = false;
-  setTimeout(() => $('#modalCancel').focus(), 30);
+  setTimeout(() => (opts.noCancel ? $('#modalOk') : $('#modalCancel')).focus(), 30);
   return new Promise(res => { modalResolve = res; });
 }
 function closeModal(ok) {
@@ -2110,7 +2119,7 @@ function renderHistoryShort() {
     const n = g.n > 1 ? `<span class="hs-n">${esc(t('seriesN')(g.n))}</span>` : '';
     return `<div class="hs${g.n > 1 ? ' series' : ''}" data-id="${esc(g.ids.join(','))}"${g.n > 1 ? ` data-series="${esc(g.series)}"` : ''}>
       <span class="hs-ico">${g.n > 1 ? ICONS.repeat : ICONS.dot}</span>
-      <span class="hs-main"><span class="hs-title">${title}</span><span class="hs-sub">${n}${day}${hm(g.start)}–${hm(g.end)}${g.manual ? ` · ${t('atManual')}` : ''}</span></span>
+      <span class="hs-main"><span class="hs-title">${title}</span><span class="hs-sub">${n}${g.manual ? `${day}${t('atManual')}` : `${day}${hm(g.start)}–${hm(g.end)}`}</span></span>
       <span class="hs-dur">${fmtDur(g.dur)}</span>
       <button class="hs-del" title="${esc(t('delete'))}">${ICONS.x}</button>
     </div>`;
@@ -2920,6 +2929,19 @@ function bind() {
 }
 
 /* ================= Boot ================= */
+// The last run ended unexpectedly (the host saw its "running" mark still there): say so, and what was kept
+function showCrashNote(c, bootLogged) {
+  if (!c || !c.alive) return;
+  const lines = [t('crashAt')(hm(c.alive))];
+  const touched = !isUntouched();
+  const done = Math.max(0, Math.floor((timer.total - currentRemaining()) / 1000));
+  if (bootLogged) lines.push(t('crashLogged')(fmtDur(bootLogged)));
+  else if (series && !seriesPos.startsWith('wait')) lines.push(t('crashGoes')($('#cycleInfo').textContent));
+  else if (timer.phase === 'work' && touched) lines.push((timer.running ? t('crashRun') : t('crashPaused'))(fmtDur(done), fmtDur(Math.round(timer.total / 1000))));
+  lines.push(t('crashToday')(fmtDur(todaySec())));
+  if (c.saved) lines.push(t('crashSaved')(startOfDay(c.saved) === startOfDay() ? hm(c.saved) : `${dayTitle(c.saved)}, ${hm(c.saved)}`));
+  confirmModal(t('crashTitle'), lines.join('\n'), t('gotIt'), { safe: true, noCancel: true });
+}
 (async function boot() {
   if (ANDROID) {
     Object.values(I18N).forEach(l => { l.popup = l.popupA; l.popupDesc = l.popupDescA; l.dataDesc = l.dataDescA; l.workLen = l.work; l.breakLen = l.break; });
@@ -2941,13 +2963,14 @@ function bind() {
   applyI18n();
   setPhase('work');
   if (ANDROID) applyHostTimer(data.timer);
+  let bootLogged = 0; // a session that ran out while the app was closed, logged just now
   const savedSeries = ANDROID && data.timer && data.timer.series ? data.timer.series : (data.current && data.current.series);
   if (validSeries(savedSeries)) { series = { logged: 0, pausedAt: 0, ...savedSeries }; applySeries(true); }
   else if (!ANDROID && data.current && data.current.timer) {
     applyHostTimer(data.current.timer); // the timer kept going while the app was closed
     if (timer.running && Date.now() > timer.endAt + 120000) {
       // it ran out long ago: log it with its real end, quietly, and move to the next phase
-      if (timer.phase === 'work') logWork(true);
+      if (timer.phase === 'work') { logWork(true); bootLogged = Math.round(timer.total / 1000); }
       setPhase(timer.phase === 'work' ? 'break' : 'work');
     }
   }
@@ -2968,5 +2991,6 @@ function bind() {
   setInterval(tick, 250);
   if (ANDROID) { renderProjects(); renderStats(); setPager(false); } // neighbour pages are visible while swiping
   setTimeout(() => { const sp = $('#splash'); if (sp) sp.remove(); }, 1600); // the launch animation is pure CSS
+  if (data.crash) setTimeout(() => showCrashNote(data.crash, bootLogged), 400);
   if (api.ready) { tick(); api.ready(); }
 })();

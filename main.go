@@ -20,7 +20,7 @@ import (
 )
 
 const (
-	Version     = "2.18.0"
+	Version     = "2.18.1"
 	AppName     = "Яйцетаймер"
 	mainClass   = "YaytsaTimerMain"
 	alertClass  = "YaytsaTimerAlert"
@@ -98,14 +98,13 @@ func writeData(m map[string]json.RawMessage) {
 	if err != nil {
 		return
 	}
-	tmp := dataFile() + ".tmp"
-	if os.WriteFile(tmp, b, 0o644) != nil {
-		return
+	// the copy kept as .bak is the last file that was whole (never a broken one)
+	if old, err := os.ReadFile(dataFile()); err == nil && json.Valid(old) {
+		_ = writeFileSync(dataFile()+".bak", old)
 	}
-	if old, err := os.ReadFile(dataFile()); err == nil {
-		_ = os.WriteFile(dataFile()+".bak", old, 0o644)
+	if err := writeFileSync(dataFile(), b); err != nil {
+		logf("save failed: %v", err)
 	}
-	_ = os.Rename(tmp, dataFile())
 }
 
 func mergeData(partial map[string]json.RawMessage) {
@@ -315,7 +314,12 @@ func onMainMessage(s string) {
 	var result any = true
 	switch r.Cmd {
 	case "load":
-		result = readData()
+		m := readData()
+		if lastCrash != nil {
+			m["crash"] = lastCrash // shown once by the page
+			lastCrash = nil
+		}
+		result = m
 	case "save":
 		var partial map[string]json.RawMessage
 		if len(r.Args) > 0 {
@@ -513,6 +517,7 @@ func finalQuit() {
 	finalized = true
 	saveBounds()
 	saveApps()
+	clearMarker() // a clean exit: no "it crashed" note next time
 	removeTray()
 	if alertHwnd != 0 {
 		pDestroyWindow.Call(alertHwnd)
@@ -551,6 +556,16 @@ func mainProc(hwnd, msg, wp, lp uintptr) uintptr {
 	case wmDpiChanged:
 		r := (*rect)(unsafe.Pointer(lp))
 		setWindowPos(hwnd, 0, r.Left, r.Top, r.Right-r.Left, r.Bottom-r.Top, swpNoZOrder|swpNoActivate)
+		return 0
+	case wmQueryEndSession:
+		return 1
+	case wmEndSession:
+		// Windows is shutting down: save what is in memory now, it is not a crash
+		if wp != 0 {
+			saveBounds()
+			saveApps()
+			clearMarker()
+		}
 		return 0
 	case wmClose:
 		if !quitting && closeToTray {
@@ -810,9 +825,11 @@ func main() {
 	// Lighter on RAM/CPU: one renderer for both windows, no background browser services.
 	os.Setenv("WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS", "--autoplay-policy=no-user-gesture-required --disable-features=msEdgeTranslate,msWebOOUI,msPdfOOUI,AutofillServerCommunication --renderer-process-limit=1 --disable-background-networking --disable-component-update --disable-sync --disable-domain-reliability --no-first-run")
 
+	defer guard("main")
 	migrate()
 	loadSettings()
 	logf("start %s", Version)
+	checkCrash()
 
 	p := pal()
 	bgBrush, _, _ = pCreateSolidBrush.Call(uintptr(colorref(p.bg)))
@@ -844,6 +861,7 @@ func main() {
 	mainWeb, ok = newWeb(mainHwnd, p.bg, onMainMessage)
 	if !ok {
 		logf("WebView2 runtime not available")
+		clearMarker()
 		if messageBox("Для работы нужен компонент Microsoft Edge WebView2 Runtime. Открыть страницу загрузки?\n\nMicrosoft Edge WebView2 Runtime is required. Open the download page?", AppName, 0x4|0x30) == 6 {
 			shellOpen("https://go.microsoft.com/fwlink/p/?LinkId=2124703", "")
 		}

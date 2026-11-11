@@ -107,10 +107,7 @@ func saveApps() {
 	if err != nil {
 		return
 	}
-	tmp := appsFile() + ".tmp"
-	if os.WriteFile(tmp, b, 0o644) == nil {
-		_ = os.Rename(tmp, appsFile())
-	}
+	_ = writeFileSync(appsFile(), b)
 }
 
 func dayKeyOf(t time.Time) string { return t.Format("2006-01-02") }
@@ -214,6 +211,7 @@ func sampleApps(dt float64) {
 }
 
 func appTrackLoop() {
+	defer guard("apps")
 	last := time.Now()
 	lastSave := last
 	for {
@@ -225,8 +223,10 @@ func appTrackLoop() {
 			dt = appTick
 		}
 		sampleApps(dt.Seconds())
-		if now.Sub(lastSave) >= time.Minute {
+		// every 30 s: program time to disk and a sign of life (see crash.go)
+		if now.Sub(lastSave) >= 30*time.Second {
 			saveApps()
+			heartbeat()
 			lastSave = now
 		}
 	}

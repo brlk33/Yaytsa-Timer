@@ -2001,3 +2001,6 @@ html.android .sc-row .hs-del { width: 34px; height: 34px; }
 .lc-tip { position: absolute; bottom: calc(100% + 6px); padding: 5px 9px; border-radius: 8px; background: var(--bg); color: var(--text-strong); font-size: 12px; white-space: nowrap; box-shadow: var(--shadow); pointer-events: none; }
 .ad-span { font-size: 12.5px; color: var(--text-2); margin-top: -4px; }
 .ad-span:empty { display: none; }
+
+/* crash note: one fact per line */
+#modalText { white-space: pre-line; }
