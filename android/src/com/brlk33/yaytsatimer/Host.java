@@ -227,13 +227,13 @@ final class Host {
         int count = sr.optInt("count");
         long pausedAt = sr.optLong("pausedAt");
         long at = pausedAt > 0 ? pausedAt : now;
-        if (c <= 0 || count <= 0) return "done";
+        if (c <= 0 || count < 0) return "done"; // count 0 = endless: work and break until stopped
         if (at < start) {
             s.put("phase", "work").put("total", work).put("running", false).put("endAt", 0).put("remaining", work).put("startedAt", 0);
             return "wait";
         }
         long k = (at - start) / c, within = at - start - k * c;
-        if (k >= count || (k == count - 1 && within >= work)) return "done";
+        if (count > 0 && (k >= count || (k == count - 1 && within >= work))) return "done";
         long base = start + k * c;
         boolean isWork = within < work;
         long pStart = isWork ? base : base + work, pEnd = isWork ? base + work : base + c;
@@ -396,7 +396,8 @@ final class Host {
                     .setUsesChronometer(true)
                     .setChronometerCountDown(true);
             // a series has no pause
-            if (s.optJSONObject("series") == null) b.addAction(new Notification.Action.Builder(null, t.optString("pause", "Пауза"), broadcast(c, ACTION_TOGGLE, 11)).build());
+            JSONObject pl = s.optJSONObject("series"); // a series has no pause, an endless run does
+            if (pl == null || pl.optInt("count") == 0) b.addAction(new Notification.Action.Builder(null, t.optString("pause", "Пауза"), broadcast(c, ACTION_TOGGLE, 11)).build());
         } else {
             b.setContentTitle(phase + " — " + t.optString("paused", "пауза") + " · " + clock(remaining))
                     .setUsesChronometer(false)

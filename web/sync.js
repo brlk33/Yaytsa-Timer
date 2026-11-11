@@ -483,7 +483,7 @@ function applyRemoteTimer(v) {
   if (timer.running && now >= timer.endAt - 1500 && v.phase !== timer.phase) return;
   tU = Number(v.u);
   const wasRunning = timer.running;
-  if (v.series && v.series.count > 0) {
+  if (validSeries(v.series)) {
     const same = series && series.start === v.series.start && series.count === v.series.count;
     series = { ...v.series, logged: same ? series.logged : 0 };
     seriesPos = '';

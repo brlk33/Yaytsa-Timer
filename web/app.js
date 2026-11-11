@@ -46,7 +46,7 @@ const I18N = {
     projNewPh: 'Новый проект', add: 'Добавить', done: 'Готово',
     seriesN: n => `${n} ${plural(n, 'заход', 'захода', 'заходов')}`, seriesOf: (i, n) => `Заход ${i} из ${n}`,
     seriesStartsIn: (left, at) => `Старт в ${at} · через ${left}`, seriesDoneTitle: 'Серия завершена', seriesDoneBody: 'Все заходы сделаны. Отличная работа!',
-    seriesCountL: 'Заходы', seriesNow: 'Сейчас', seriesAt: at => `В ${at}`, seriesStart: 'Начало', seriesWaitTitle: 'Серия начнётся через',
+    seriesCountL: 'Заходы', endless: 'Без конца', endStopQ: 'Закончить работу?', endStop: 'Закончить', seriesNow: 'Сейчас', seriesAt: at => `В ${at}`, seriesStart: 'Начало', seriesWaitTitle: 'Серия начнётся через',
     bgTitle: 'Разрешите работу в фоне', bgText: 'Иначе телефон может приглушить сигнал конца захода или серию, пока приложение закрыто.', bgGo: 'Открыть настройки', bgLater: 'Позже',
     atTitle: 'Добавить время вручную', atProjectPh: 'Проект или задача', atHow: 'Сколько', atWhen: 'Когда', atSave: 'Добавить',
     atAdded: d => `Добавлено: ${d}`, atManual: 'вручную',
@@ -124,7 +124,7 @@ scale: 'Масштаб', appsPickTitle: 'Добавить программу', a
     projNewPh: 'New project', add: 'Add', done: 'Done',
     seriesN: n => `${n} session${n === 1 ? '' : 's'}`, seriesOf: (i, n) => `Session ${i} of ${n}`,
     seriesStartsIn: (left, at) => `Starts at ${at} · in ${left}`, seriesDoneTitle: 'Series complete', seriesDoneBody: 'All sessions done. Great work!',
-    seriesCountL: 'Sessions', seriesNow: 'Now', seriesAt: at => `At ${at}`, seriesStart: 'Start', seriesWaitTitle: 'Series starts in',
+    seriesCountL: 'Sessions', endless: 'Endless', endStopQ: 'Done working?', endStop: 'Finish', seriesNow: 'Now', seriesAt: at => `At ${at}`, seriesStart: 'Start', seriesWaitTitle: 'Series starts in',
     bgTitle: 'Allow running in the background', bgText: 'Otherwise the phone may silence the end-of-session alert or a series while the app is closed.', bgGo: 'Open settings', bgLater: 'Later',
     atTitle: 'Add time by hand', atProjectPh: 'Project or task', atHow: 'How long', atWhen: 'When', atSave: 'Add',
     atAdded: d => `Added: ${d}`, atManual: 'by hand',
@@ -174,7 +174,7 @@ const ANDROID = !!api.android;
 const DEFAULTS = {
   work: 25, brk: 5, autoStart: false, sound: true, notify: true,
   lang: 'ru', theme: 'dark', goal: 4, alwaysOnTop: false, popup: true, closeToTray: true,
-  zoom: 1, chartMode: 'bars', heatRange: 13, seriesCount: 1, appsRange: 1,
+  zoom: 1, chartMode: 'bars', heatRange: 13, seriesCount: 0, appsRange: 1,
 };
 const MIN_SAVE_SEC = 10 * 60; // a session stopped by hand is kept only from 10 minutes on
 const ZOOM = { min: 0.7, max: 1.6, step: 0.1 };
@@ -182,7 +182,7 @@ const LIMITS = {
   work: { min: 5, max: 180, step: 5 },
   brk: { min: 5, max: 60, step: 5 },
   goal: { min: 0, max: 12, step: 0.5 },
-  seriesCount: { min: 1, max: 12, step: 1 },
+  seriesCount: { min: 0, max: 12, step: 1 }, // 0 = endless
 };
 
 let settings = { ...DEFAULTS };
@@ -341,7 +341,9 @@ function start() {
 function pause() {
   if (!timer.running) return;
   if (series) {
-    if (!series.pausedAt) return; // series do not pause; only a pause already saved (older version) is kept
+    // a counted series does not pause (only a pause saved by an older version is kept);
+    // an endless run pauses any time: the whole schedule waits
+    if (!isEndless() && !series.pausedAt) return;
     series.pausedAt = Date.now();
     seriesPos = '';
     applySeries(true);
@@ -355,12 +357,13 @@ function pause() {
   render();
 }
 const toggle = () => {
-  // From an untouched timer, more than one session or a start time means a series
-  if (!series && !timer.running && isUntouched() && timer.phase === 'work' && (settings.seriesCount > 1 || seriesStartAt)) {
-    startSeries(settings.seriesCount, seriesStartAt);
+  // From an untouched timer: endless (0), more than one session or a start time means a series
+  if (!series && !timer.running && isUntouched() && timer.phase === 'work' && (!(settings.seriesCount > 0) || settings.seriesCount > 1 || seriesStartAt)) {
+    startSeries(settings.seriesCount > 0 ? settings.seriesCount : 0, seriesStartAt);
     return;
   }
   if (series && series.pausedAt) { start(); return; } // a pause saved by 2.9 resumes
+  if (isEndless() && !seriesPos.startsWith('wait')) { pause(); return; } // endless: the big key pauses, ■ stops
   if (series && !seriesPos.startsWith('wait')) {
     const done = timer.phase === 'work' && timer.startedAt ? Math.floor((timer.total - currentRemaining()) / 1000) : 0;
     confirmModal(t('stopSeriesQ'), t('stopSeriesText2')(done >= MIN_SAVE_SEC ? fmtDur(done) : ''), t('stopSeries'), { cancel: t('stopKeep'), keepFirst: true })
@@ -534,11 +537,14 @@ let series = null; // {start, count, work, brk, logged, pausedAt}
 let seriesPos = '';
 let seriesStartAt = 0; // start time picked in the setup (0 = now)
 
+// a series of N sessions, or (count 0) an endless run: work and break by turns until stopped
+const validSeries = s => !!s && typeof s === 'object' && s.work > 0 && Number(s.count) >= 0;
+const isEndless = () => !!series && !(series.count > 0);
 function seriesAt(s, at) {
   const c = s.work + s.brk;
   if (at < s.start) return { waiting: true, idx: 0, phase: 'work', start: s.start, end: s.start + s.work };
   const k = Math.floor((at - s.start) / c), within = at - s.start - k * c;
-  if (k >= s.count || (k === s.count - 1 && within >= s.work)) return { done: true, idx: s.count };
+  if (s.count > 0 && (k >= s.count || (k === s.count - 1 && within >= s.work))) return { done: true, idx: s.count }; // count 0: endless
   const base = s.start + k * c;
   return within < s.work
     ? { idx: k, phase: 'work', start: base, end: base + s.work }
@@ -685,7 +691,7 @@ function syncHost() {
 }
 function applyHostTimer(s) {
   if (!s || (s.phase !== 'work' && s.phase !== 'break') || !(s.total > 0)) return false;
-  if (s.series && s.series.count > 0) { series = { logged: 0, pausedAt: 0, ...(series || {}), ...s.series }; seriesPos = ''; applySeries(true); return true; }
+  if (validSeries(s.series)) { series = { logged: 0, pausedAt: 0, ...(series || {}), ...s.series }; seriesPos = ''; applySeries(true); return true; }
   if (series && !s.series) { series = null; seriesPos = ''; }
   TIMER_KEYS.forEach(k => { if (k in s) timer[k] = s[k]; });
   timer.running = !!timer.running;
@@ -724,8 +730,11 @@ function renderTimer() {
   tag.textContent = isWork ? t('work') : t('break');
   tag.classList.toggle('break', !isWork);
 
+  const endless = isEndless();
   let info = series
-    ? (seriesPos.startsWith('wait') ? seriesWaitText() : t('seriesOf')(Math.min(series.count, seriesAt(series, series.pausedAt || Date.now()).idx + 1), series.count))
+    ? (seriesPos.startsWith('wait') ? seriesWaitText()
+      : endless ? t('session')(seriesAt(series, series.pausedAt || Date.now()).idx + 1)
+      : t('seriesOf')(Math.min(series.count, seriesAt(series, series.pausedAt || Date.now()).idx + 1), series.count))
     : t('session')(completedToday() + (isWork ? 1 : 0));
   if (touched && !timer.running) info += ` · ${t('paused')}`;
   $('#cycleInfo').textContent = info;
@@ -742,14 +751,16 @@ function renderTimer() {
   $('#face').classList.toggle('running', timer.running);
 
   const btn = $('#btnStart');
-  const seriesOn = !!series && !seriesPos.startsWith('wait');
-  const btnText = seriesOn ? t('stopSeries') : timer.running ? t('pause') : (touched ? t('resume') : t('start'));
+  // an endless run behaves like a plain timer on the keys: pause / resume, ■ to finish
+  const seriesOn = !!series && !seriesPos.startsWith('wait') && !endless;
+  const btnText = seriesOn ? t('stopSeries') : timer.running ? t('pause') : (touched || (endless && !seriesPos.startsWith('wait')) ? t('resume') : t('start'));
   // Single session: stop (left) only once it has started, skip only for a leftover break.
   // In a series: no skip, no stop key; while it waits for its start time, the left key cancels it.
+  // Endless: ■ always, skip during a break.
   const idleNow = !series && isUntouched() && timer.phase === 'work';
-  $('#btnSkip').hidden = !!series || timer.phase !== 'break';
-  $('#btnReset').hidden = seriesOn || (!series && !(timer.phase === 'work' && touched));
-  $('#btnReset').title = series ? t('reset') : t('stop');
+  $('#btnSkip').hidden = endless ? timer.phase !== 'break' : (!!series || timer.phase !== 'break');
+  $('#btnReset').hidden = endless ? false : (seriesOn || (!series && !(timer.phase === 'work' && touched)));
+  $('#btnReset').title = endless ? t('endStop') : series ? t('reset') : t('stop');
   if (ANDROID) {
     // phone: a triangle that flows into two bars, or into a stop square
     if (!btn.dataset.ico) { btn.dataset.ico = '1'; btn.innerHTML = PLAY_PAUSE_SVG; }
@@ -792,7 +803,7 @@ function renderSteppers() {
     const key = el.dataset.key;
     const lim = LIMITS[key];
     const v = settings[key];
-    const label = key === 'goal' ? fmtHours(v) : key === 'seriesCount' ? t('seriesN')(v) : fmtMinutes(v);
+    const label = key === 'goal' ? fmtHours(v) : key === 'seriesCount' ? (v > 0 ? t('seriesN')(v) : '∞') : fmtMinutes(v);
     if (!el.firstChild) {
       el.innerHTML = '<button class="dec" aria-label="−">−</button><span class="val"></span><button class="inc" aria-label="+">+</button>';
       el.querySelector('.dec').addEventListener('click', () => changeSetting(key, -1));
@@ -1807,7 +1818,7 @@ function renderDials() {
       col.dataset.v = v;
       col.innerHTML = [2, 1, 0, -1, -2].map(k => {
         const x = v + k * lim.step;
-        return `<span class="wr">${x >= lim.min && x <= lim.max ? x : ''}</span>`;
+        return `<span class="wr">${x >= lim.min && x <= lim.max ? (key === 'seriesCount' && x === 0 ? '∞' : x) : ''}</span>`;
       }).join('');
       wheelPlace(d, d._dy || 0);
     }
@@ -2600,7 +2611,15 @@ function bind() {
 
   $('#btnStart').addEventListener('click', toggle);
   if (ANDROID) $('#btnStart').addEventListener('click', () => kick($('#btnStart'), 'press'));
-  $('#btnReset').addEventListener('click', () => { if (series) reset(); else stopEarly(); });
+  $('#btnReset').addEventListener('click', () => {
+    if (isEndless() && !seriesPos.startsWith('wait')) {
+      const done = timer.phase === 'work' && timer.startedAt ? Math.floor((timer.total - currentRemaining()) / 1000) : 0;
+      confirmModal(t('endStopQ'), t('stopSeriesText2')(done >= MIN_SAVE_SEC ? fmtDur(done) : ''), t('endStop'), { cancel: t('stopKeep'), keepFirst: true })
+        .then(ok => { if (ok) stopSeries(); });
+      return;
+    }
+    if (series) reset(); else stopEarly();
+  });
   $('#btnSkip').addEventListener('click', skip);
   $('#label').addEventListener('input', () => { persist(); renderLabelMeta(); });
 
@@ -2822,6 +2841,8 @@ function bind() {
   }
   const data = (await api.load()) || {};
   settings = { ...DEFAULTS, ...(data.settings || {}) };
+  // 2.17: the endless timer is the new default — once, for everyone
+  if (!settings.endlessDefault) { settings.seriesCount = 0; settings.endlessDefault = 1; }
   sessions = Array.isArray(data.sessions) ? data.sessions : [];
   projects = data.projects && typeof data.projects === 'object' ? data.projects : {};
   systemDark = await api.systemDark();
@@ -2834,7 +2855,7 @@ function bind() {
   setPhase('work');
   if (ANDROID) applyHostTimer(data.timer);
   const savedSeries = ANDROID && data.timer && data.timer.series ? data.timer.series : (data.current && data.current.series);
-  if (savedSeries && savedSeries.count > 0 && savedSeries.work > 0) { series = { logged: 0, pausedAt: 0, ...savedSeries }; applySeries(true); }
+  if (validSeries(savedSeries)) { series = { logged: 0, pausedAt: 0, ...savedSeries }; applySeries(true); }
   else if (!ANDROID && data.current && data.current.timer) {
     applyHostTimer(data.current.timer); // the timer kept going while the app was closed
     if (timer.running && Date.now() > timer.endAt + 120000) {

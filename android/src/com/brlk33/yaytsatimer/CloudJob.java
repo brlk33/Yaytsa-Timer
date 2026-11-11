@@ -86,7 +86,7 @@ public class CloudJob extends JobService {
         s.put("remaining", running ? 0 : v.optLong("remaining", total));
         s.put("startedAt", v.optLong("startedAt"));
         if (v.has("label")) s.put("label", v.optString("label"));
-        if (plan != null && plan.optInt("count") > 0) s.put("series", plan); else s.remove("series");
+        if (plan != null && plan.optLong("work") > 0 && plan.optInt("count") >= 0) s.put("series", plan); else s.remove("series");
         JSONObject tx = s.optJSONObject("text");
         if (tx == null) { tx = new JSONObject(); s.put("text", tx); }
         boolean ru = !"en".equals(data.optJSONObject("settings") != null ? data.optJSONObject("settings").optString("lang") : "");
