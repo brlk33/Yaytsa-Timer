@@ -353,6 +353,7 @@ function applySettings(v) {
 }
 
 function afterRemote() {
+  if (dedupeSessions()) remoteChanged++;
   sessions.sort((a, b) => a.start - b.start);
   if (isUntouched()) setPhase(timer.phase); // new phase lengths apply to an untouched timer
   persist();
@@ -451,7 +452,7 @@ const timerCore = () => ({
   startedAt: timer.startedAt || 0,
   label: $('#label').value.trim(),
   // the schedule, without this device's own bookkeeping
-  series: series ? { id: series.id || '', start: series.start, count: series.count, work: series.work, brk: series.brk, pausedAt: series.pausedAt || 0 } : null,
+  series: series ? { id: series.id || '', start: series.start, count: series.count, work: series.work, brk: series.brk, pausedAt: series.pausedAt || 0, label: series.label || $('#label').value.trim() } : null,
 });
 
 // Called from renderOuter (about once a second): sends the state when it changed here.
@@ -483,11 +484,16 @@ function applyRemoteTimer(v) {
   if (timer.running && now >= timer.endAt - 1500 && v.phase !== timer.phase) return;
   tU = Number(v.u);
   const wasRunning = timer.running;
+  // the task name first: sessions the series logs below must carry the other device's name, not ours
+  if (typeof v.label === 'string' && document.activeElement !== $('#label') && $('#label').value.trim() !== v.label) {
+    $('#label').value = v.label;
+    renderLabelMeta();
+  }
   if (validSeries(v.series)) {
-    const same = series && series.start === v.series.start && series.count === v.series.count;
-    series = { ...v.series, logged: same ? series.logged : 0 };
+    const same = series && ((series.id && series.id === v.series.id) || (series.start === v.series.start && series.count === v.series.count));
+    series = { ...v.series, label: v.series.label || (typeof v.label === 'string' ? v.label : ''), logged: same ? series.logged : 0 };
     seriesPos = '';
-    applySeries(true);
+    applySeries(true); // a session the other device already logged is the same entry (series + start), never a second one
   } else if (series) { series = null; seriesPos = ''; }
   if (!series) {
     timer.phase = v.phase;
@@ -496,10 +502,6 @@ function applyRemoteTimer(v) {
     timer.endAt = timer.running ? Number(v.endAt) : 0;
     timer.remaining = timer.running ? Math.max(0, timer.endAt - now) : Number(v.remaining) || timer.total;
     timer.startedAt = Number(v.startedAt) || 0;
-  }
-  if (typeof v.label === 'string' && document.activeElement !== $('#label') && $('#label').value.trim() !== v.label) {
-    $('#label').value = v.label;
-    renderLabelMeta();
   }
   tSent = sig(timerCore());
   api.schedule(timer.running ? Math.max(0, timer.endAt - now) : 0);

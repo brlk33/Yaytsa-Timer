@@ -20,7 +20,7 @@ import (
 )
 
 const (
-	Version     = "2.17.0"
+	Version     = "2.17.1"
 	AppName     = "Яйцетаймер"
 	mainClass   = "YaytsaTimerMain"
 	alertClass  = "YaytsaTimerAlert"

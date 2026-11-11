@@ -562,7 +562,7 @@ function applySeries(quiet) {
   if (!s) return false;
   const now = Date.now(), at = s.pausedAt || now;
   const finished = seriesWorksDone(s, at);
-  const label = $('#label').value.trim();
+  const label = s.label || $('#label').value.trim(); // the series' own task name, the same on every device
   let logged = false;
   for (let w = s.logged; w < finished; w++) {
     const start = s.start + w * (s.work + s.brk);
@@ -606,6 +606,7 @@ function startSeries(count, at) {
   series = {
     id: newId(), start: at && at > now ? at : now, count,
     work: settings.work * 60000, brk: settings.brk * 60000, logged: 0, pausedAt: 0,
+    label: $('#label').value.trim(),
   };
   seriesPos = '';
   seriesStartAt = 0;
@@ -1466,6 +1467,7 @@ function setSuggest(open) {
 // A name typed into the field is a project from now on (an archived one comes back)
 function commitLabel() {
   const name = cleanName($('#label').value);
+  if (series) series.label = name;
   if (!name) return;
   const key = projKey(name);
   if (projects[key]) { if (projects[key].hidden) { projects[key].hidden = false; delete projects[key].doneAt; } }
@@ -2295,7 +2297,18 @@ function parseCsvLine(line, sep) {
 
 const newId = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
 // Same start minute and same task = the same session (lengths may differ by CSV rounding).
-const sessionKey = s => `${Math.round(s.start / 60000)}|${projKey(s.label)}`;
+// The same work = the same key. A series session is identified by its series and start alone:
+// two devices running one series may have different task names typed in (that logged it twice).
+const sessionKey = s => (s.series ? `${s.series}|${Math.round(s.start / 60000)}` : `${Math.round(s.start / 60000)}|${projKey(s.label)}`);
+// Drops twins already in the history; the earliest logged (smaller id) stays, as in sync.
+function dedupeSessions() {
+  const best = new Map();
+  for (const s of sessions) { const k = sessionKey(s), b = best.get(k); if (!b || String(s.id) < String(b.id)) best.set(k, s); }
+  if (best.size === sessions.length) return false;
+  const keep = new Set(best.values());
+  sessions = sessions.filter(s => keep.has(s));
+  return true;
+}
 
 // Our own CSV export (RU ";" or EN ","): Date, Start, End, Minutes, Task.
 function sessionsFromCsv(text) {
@@ -2621,7 +2634,7 @@ function bind() {
     if (series) reset(); else stopEarly();
   });
   $('#btnSkip').addEventListener('click', skip);
-  $('#label').addEventListener('input', () => { persist(); renderLabelMeta(); });
+  $('#label').addEventListener('input', () => { if (series) series.label = $('#label').value.trim(); persist(); renderLabelMeta(); });
 
   // Projects
   $('#projAdd').addEventListener('submit', e => {
@@ -2844,6 +2857,7 @@ function bind() {
   // 2.17: the endless timer is the new default — once, for everyone
   if (!settings.endlessDefault) { settings.seriesCount = 0; settings.endlessDefault = 1; }
   sessions = Array.isArray(data.sessions) ? data.sessions : [];
+  dedupeSessions(); // twins logged by two devices before 2.17.1
   projects = data.projects && typeof data.projects === 'object' ? data.projects : {};
   systemDark = await api.systemDark();
   autostartOn = !!(await api.autostart());
