@@ -71,7 +71,7 @@ const I18N = {
 winMin: 'Свернуть', winMax: 'Развернуть', winClose: 'Закрыть', importCsv: 'Импорт CSV', imported: n => `Добавлено ${n} ${plural(n, 'заход', 'захода', 'заходов')}`, importNone: 'В файле нет новых заходов',    importBad: 'Не удалось прочитать файл', delete: 'Удалить', cancel: 'Отмена', delProjTitle: n => `Удалить проект «${n}»?`,    delProjText: 'Время заходов останется в статистике, но без названия проекта. Это нельзя отменить.', projDeleted: 'Проект удалён',    pTodayL: 'Сегодня', pWeekL: 'За 7 дней', calClear: 'Убрать', calToday: 'Сегодня', noProjects: 'Проектов пока нет',
     monthsNom: ['Январь', 'Февраль', 'Март', 'Апрель', 'Май', 'Июнь', 'Июль', 'Август', 'Сентябрь', 'Октябрь', 'Ноябрь', 'Декабрь'],
 scale: 'Масштаб', appsPickTitle: 'Добавить программу', appsSearchPh: 'Поиск по программам на компьютере', appsBrowse: 'Выбрать .exe вручную…', appsBrowseTitle: 'Выберите программу',    appsFound: 'Найдено', appsAll: 'Все программы', appsNothing: 'Ничего не нашлось. Попробуйте выбрать .exe вручную', appsAdded: n => `«${n}» отслеживается`,    r3m: '3 мес', r6m: '6 мес', r1y: 'Год', modeBars: 'Столбики', modeSquares: 'Квадратики',    monthsShort: ['янв', 'фев', 'мар', 'апр', 'май', 'июн', 'июл', 'авг', 'сен', 'окт', 'ноя', 'дек'],    daysMon: ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс'], noWork: 'без работы',    activeDays: n => `${n} ${plural(n, 'рабочий день', 'рабочих дня', 'рабочих дней')}`, streak: n => `серия ${n} ${plural(n, 'день', 'дня', 'дней')} подряд`,    less: 'Меньше', more: 'Больше', byHour: 'По часам за неделю',
-    appsActiveL: 'Активное время', singleDoneTitle: 'Заход завершён', singleDoneBody: m => `${m} мин в копилке. Можно отдохнуть.`,
+    appsActiveL: 'Активное время', adSpan: (a, b) => `Работа в программе с ${a} до ${b}`, singleDoneTitle: 'Заход завершён', singleDoneBody: m => `${m} мин в копилке. Можно отдохнуть.`,
     stop: 'Стоп', stopQ: 'Закончить раньше?', stopKeep: 'Продолжить', stopAnyway: 'Остановить',
     stopText: (saved, left) => `До конца захода осталось ${left}. Лучше доделать до конца. Если остановиться сейчас, в историю запишется ${saved}.`,
     stopTextShort: 'Прошло меньше 10 минут — такой заход не сохранится. Лучше доделать до конца.',
@@ -149,7 +149,7 @@ scale: 'Масштаб', appsPickTitle: 'Добавить программу', a
 winMin: 'Minimize', winMax: 'Maximize', winClose: 'Close', importCsv: 'Import CSV', imported: n => `Added ${n} session${n === 1 ? '' : 's'}`, importNone: 'No new sessions in the file',    importBad: 'Could not read the file', delete: 'Delete', cancel: 'Cancel', delProjTitle: n => `Delete project “${n}”?`,    delProjText: 'Session time stays in your stats, just without the project name. This can’t be undone.', projDeleted: 'Project deleted',    pTodayL: 'Today', pWeekL: 'Last 7 days', calClear: 'Clear', calToday: 'Today', noProjects: 'No projects yet',
     monthsNom: ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'],
 scale: 'Zoom', appsPickTitle: 'Add a program', appsSearchPh: 'Search programs on this PC', appsBrowse: 'Pick an .exe manually…', appsBrowseTitle: 'Choose a program',    appsFound: 'Found', appsAll: 'All programs', appsNothing: 'Nothing found. Try picking the .exe manually', appsAdded: n => `Tracking “${n}”`,    r3m: '3 mo', r6m: '6 mo', r1y: 'Year', modeBars: 'Bars', modeSquares: 'Squares',    monthsShort: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'],    daysMon: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'], noWork: 'no focus',    activeDays: n => `${n} active day${n === 1 ? '' : 's'}`, streak: n => `${n}-day streak`,    less: 'Less', more: 'More', byHour: 'By hour, last 7 days',
-    appsActiveL: 'Active time', singleDoneTitle: 'Session complete', singleDoneBody: m => `${m} min in the bank. Time to rest.`,
+    appsActiveL: 'Active time', adSpan: (a, b) => `Worked in it from ${a} to ${b}`, singleDoneTitle: 'Session complete', singleDoneBody: m => `${m} min in the bank. Time to rest.`,
     stop: 'Stop', stopQ: 'Finish early?', stopKeep: 'Keep going', stopAnyway: 'Stop',
     stopText: (saved, left) => `${left} left in this session. Better to finish it. If you stop now, ${saved} goes into your history.`,
     stopTextShort: 'Less than 10 minutes have passed — a session this short isn’t saved. Better to see it through.',
@@ -1966,30 +1966,103 @@ function renderAppDetail() {
   const tt = appTimes(a, adRange);
   swapText($('#adActive'), fmtLong(tt.active || 0));
   swapText($('#adOpen'), fmtLong(tt.run || 0));
-  // today and all time have no bars: the chart folds away
-  $('#adChart').classList.toggle('folded', adRange === 0 || adRange === 1);
-  if (adRange === 0 || adRange === 1) return;
-  // day by day for a week or a month; week by week for three months
-  const recent = Array.isArray(a.recent) ? a.recent : [];
-  let days = recent.slice(adRange === 7 ? -7 : -30);
-  if (adRange === 90 || adRange === 0) {
-    days = [];
-    for (let i = recent.length; i > 0; i -= 7) {
-      const wk = recent.slice(Math.max(0, i - 7), i);
-      days.unshift({ day: wk[0].day, run: wk.reduce((x, d) => x + (d.run || 0), 0), active: wk.reduce((x, d) => x + (d.active || 0), 0), week: true });
-    }
+  let pts, span = '';
+  if (adRange === 1) {
+    // today, hour by hour: when you worked in it and how much of each hour
+    const ha = Array.isArray(a.hoursActive) ? a.hoursActive : [], hr = Array.isArray(a.hoursRun) ? a.hoursRun : [];
+    const nowH = new Date().getHours();
+    pts = Array.from({ length: nowH + 1 }, (_, h) => ({
+      v: ha[h] || 0, w: hr[h] || 0,
+      tip: `${pad(h)}:00–${pad((h + 1) % 24)}:00 · ${fmtDur(ha[h] || 0)}${(hr[h] || 0) >= 60 ? ` · ${t('adOpenL')} ${fmtDur(hr[h])}` : ''}`,
+    }));
+    const on = pts.map((p, h) => (p.v >= 60 ? h : -1)).filter(h => h >= 0);
+    if (on.length) span = t('adSpan')(`${pad(on[0])}:00`, `${pad(on[on.length - 1] + 1)}:00`);
+    lineChart($('#adChart'), pts, { slots: 24, labels: [0, 6, 12, 18, 24].map(h => [h / 24, `${pad(h % 24)}:00`]) });
+  } else {
+    // day by day for the period (the last 90 days for "all time")
+    const recent = Array.isArray(a.recent) ? a.recent : [];
+    const days = recent.slice(adRange === 7 ? -7 : adRange === 30 ? -30 : -90);
+    pts = days.map(d => ({ v: d.active || 0, w: d.run || 0, tip: `${dayTitle(parseDay(d.day))} · ${fmtDur(d.active || 0)}${(d.run || 0) >= 60 ? ` · ${t('adOpenL')} ${fmtDur(d.run)}` : ''}` }));
+    const n = days.length, labels = [];
+    days.forEach((d, i) => {
+      const dt = new Date(parseDay(d.day));
+      if (n <= 7) labels.push([(i + 0.5) / n, t('daysMon')[(dt.getDay() + 6) % 7].slice(0, 2)]);
+      else if (n <= 31 ? (n - 1 - i) % 7 === 0 : dt.getDate() === 1) labels.push([(i + 0.5) / n, n <= 31 ? String(dt.getDate()) : t('monthsShort')[dt.getMonth()]]);
+    });
+    lineChart($('#adChart'), pts, { slots: n, labels });
   }
-  const max = Math.max(60, ...days.map(d => d.active || 0));
-  const short = days.length <= 7;
-  $('#adChart').innerHTML = days.map((d, i) => {
-    const ts = parseDay(d.day);
-    const lab = d.week ? (i === 0 || new Date(ts).getMonth() !== new Date(parseDay(days[i - 1].day)).getMonth() ? t('monthsShort')[new Date(ts).getMonth()] : '')
-      : short ? t('daysMon')[(new Date(ts).getDay() + 6) % 7].slice(0, 2) : (i % 5 === 4 || i === days.length - 1 ? new Date(ts).getDate() : '');
-    const tip = `${dayTitle(ts)} · ${fmtDur(d.active || 0)}`;
-    return `<div class="adc${d.day === dayKey(Date.now()) ? ' today' : ''}" title="${esc(tip)}">
-      <div class="adc-bar"><i class="a" style="height:${((d.active || 0) / max * 100).toFixed(1)}%"></i></div>
-      <span>${lab}</span></div>`;
-  }).join('');
+  $('#adSpan').textContent = span;
+}
+
+// A smooth line chart: active time as a line with a soft fill, open time as a faint area behind it.
+// Hover (or touch) shows the slot under the pointer.
+function niceMax(sec) {
+  const m = sec / 60;
+  const steps = [15, 30, 60, 120, 180, 240, 360, 480, 600, 720, 960, 1200, 1440, 2400, 3600, 6000];
+  return (steps.find(s => s >= m) || Math.ceil(m / 600) * 600) * 60;
+}
+function smoothPath(xy) {
+  // monotone cubic: smooth, but never dips below zero or overshoots a peak
+  const n = xy.length;
+  if (n === 1) return `M${xy[0][0]} ${xy[0][1]}`;
+  const d = [], m = [];
+  for (let i = 0; i < n - 1; i++) d.push((xy[i + 1][1] - xy[i][1]) / (xy[i + 1][0] - xy[i][0]));
+  m.push(d[0]);
+  for (let i = 1; i < n - 1; i++) m.push(d[i - 1] * d[i] <= 0 ? 0 : (d[i - 1] + d[i]) / 2);
+  m.push(d[n - 2]);
+  for (let i = 0; i < n - 1; i++) {
+    if (d[i] === 0) { m[i] = 0; m[i + 1] = 0; continue; }
+    const a = m[i] / d[i], b = m[i + 1] / d[i], s = a * a + b * b;
+    if (s > 9) { const k = 3 / Math.sqrt(s); m[i] = k * a * d[i]; m[i + 1] = k * b * d[i]; }
+  }
+  let p = `M${xy[0][0].toFixed(2)} ${xy[0][1].toFixed(2)}`;
+  for (let i = 0; i < n - 1; i++) {
+    const h = (xy[i + 1][0] - xy[i][0]) / 3;
+    p += `C${(xy[i][0] + h).toFixed(2)} ${(xy[i][1] + m[i] * h).toFixed(2)} ${(xy[i + 1][0] - h).toFixed(2)} ${(xy[i + 1][1] - m[i + 1] * h).toFixed(2)} ${xy[i + 1][0].toFixed(2)} ${xy[i + 1][1].toFixed(2)}`;
+  }
+  return p;
+}
+function lineChart(el, pts, { slots, labels }) {
+  const W = 300, H = 120;
+  const max = niceMax(Math.max(60, ...pts.map(p => Math.max(p.v, p.w))));
+  const X = i => ((i + 0.5) / slots) * W, Y = v => H - (v / max) * H;
+  const act = pts.map((p, i) => [X(i), Y(p.v)]), run = pts.map((p, i) => [X(i), Y(p.w)]);
+  const area = (xy, line) => `${line}L${xy[xy.length - 1][0].toFixed(2)} ${H}L${xy[0][0].toFixed(2)} ${H}Z`;
+  const lAct = pts.length ? smoothPath(act) : '', lRun = pts.length ? smoothPath(run) : '';
+  el.innerHTML = `
+    <div class="lc-plot">
+      <span class="lc-y" style="top:0">${fmtMinutes(max / 60)}</span><span class="lc-y" style="top:50%">${fmtMinutes(max / 120)}</span>
+      <svg viewBox="0 0 ${W} ${H}" preserveAspectRatio="none">
+        <defs>
+          <linearGradient id="lcFill" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#6f6bff" stop-opacity=".38"/><stop offset="1" stop-color="#6f6bff" stop-opacity="0"/></linearGradient>
+          <linearGradient id="lcLine" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#4f8bff"/><stop offset="1" stop-color="#8a5cff"/></linearGradient>
+        </defs>
+        <path class="lc-grid" d="M0 0H${W}M0 ${H / 2}H${W}M0 ${H}H${W}"/>
+        ${pts.length ? `<path class="lc-run" d="${area(run, lRun)}"/>
+        <path class="lc-area" d="${area(act, lAct)}"/>
+        <path class="lc-line" d="${lAct}"/>` : ''}
+      </svg>
+      <i class="lc-guide" hidden></i><i class="lc-dot" hidden></i><div class="lc-tip" hidden></div>
+    </div>
+    <div class="lc-x">${labels.map(([f, s]) => `<span style="left:${(f * 100).toFixed(2)}%">${esc(s)}</span>`).join('')}</div>`;
+  const plot = el.querySelector('.lc-plot');
+  const guide = el.querySelector('.lc-guide'), dot = el.querySelector('.lc-dot'), tip = el.querySelector('.lc-tip');
+  const show = e => {
+    if (!pts.length) return;
+    const r = plot.getBoundingClientRect();
+    const i = Math.max(0, Math.min(pts.length - 1, Math.floor(((e.clientX - r.left) / r.width) * slots)));
+    const x = (X(i) / W) * 100, y = (Y(pts[i].v) / H) * 100;
+    guide.hidden = dot.hidden = tip.hidden = false;
+    guide.style.left = dot.style.left = `${x}%`;
+    dot.style.top = `${y}%`;
+    tip.textContent = pts[i].tip;
+    const tw = tip.offsetWidth, px = (x / 100) * r.width;
+    tip.style.left = `${Math.min(Math.max(0, px - tw / 2), r.width - tw)}px`;
+  };
+  const hide = () => { guide.hidden = dot.hidden = tip.hidden = true; };
+  plot.addEventListener('pointermove', show);
+  plot.addEventListener('pointerdown', show);
+  plot.addEventListener('pointerleave', hide);
 }
 function bindAppDetail() {
   $('#appDetail').addEventListener('click', e => {

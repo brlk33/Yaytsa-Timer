@@ -1984,3 +1984,20 @@ html.android .hs.series:active { transform: scale(.985); }
 html.android .sc-card { border-radius: 24px; }
 html.android .sc-row { background: var(--block); padding: 12px 12px; }
 html.android .sc-row .hs-del { width: 34px; height: 34px; }
+
+/* Program card: line charts (today hour by hour, periods day by day) instead of bars */
+.ad-chart.lc { display: block; height: auto; overflow: visible; }
+.lc-plot { position: relative; height: 130px; margin-left: 46px; touch-action: pan-y; cursor: crosshair; }
+.lc-plot svg { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; }
+.lc-grid { fill: none; stroke: var(--border); stroke-width: 1; vector-effect: non-scaling-stroke; stroke-dasharray: 3 4; }
+.lc-run { fill: var(--hover); }
+.lc-area { fill: url(#lcFill); }
+.lc-line { fill: none; stroke: url(#lcLine); stroke-width: 2.4; stroke-linejoin: round; stroke-linecap: round; vector-effect: non-scaling-stroke; }
+.lc-y { position: absolute; left: -46px; width: 40px; text-align: right; transform: translateY(-50%); font-size: 10.5px; color: var(--text-3); white-space: nowrap; }
+.lc-x { position: relative; height: 16px; margin: 6px 0 0 46px; }
+.lc-x span { position: absolute; transform: translateX(-50%); font-size: 10.5px; color: var(--text-3); white-space: nowrap; }
+.lc-guide { position: absolute; top: 0; bottom: 0; width: 1px; background: var(--border-strong); pointer-events: none; }
+.lc-dot { position: absolute; width: 10px; height: 10px; margin: -5px 0 0 -5px; border-radius: 50%; background: #8a5cff; box-shadow: 0 0 0 3px var(--bg-3); pointer-events: none; }
+.lc-tip { position: absolute; bottom: calc(100% + 6px); padding: 5px 9px; border-radius: 8px; background: var(--bg); color: var(--text-strong); font-size: 12px; white-space: nowrap; box-shadow: var(--shadow); pointer-events: none; }
+.ad-span { font-size: 12.5px; color: var(--text-2); margin-top: -4px; }
+.ad-span:empty { display: none; }

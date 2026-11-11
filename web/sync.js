@@ -513,11 +513,11 @@ function applyRemoteTimer(v) {
 let appsRemote = null, appsSent = '', appsSentAt = 0;
 function syncApps(list) {
   if (ANDROID || !account || !syncLoaded || !Array.isArray(list)) return;
-  const g = sig(list.map(a => [a.exe, a.name, Math.round(a.total.run / 60), Math.round(a.total.active / 60), (a.icon || '').length]));
+  const g = sig(list.map(a => [a.exe, a.name, Math.round(a.total.run / 60), Math.round(a.total.active / 60), (a.icon || '').length, dayKey(Date.now())]));
   if (g === appsSent || Date.now() - appsSentAt < 60000) return; // at most once a minute, only when it changed
   appsSent = g;
   appsSentAt = Date.now();
-  const body = { u: Date.now(), list: list.map(a => ({ exe: a.exe, name: a.name, icon: a.icon || '', today: a.today, week: a.week, month: a.month, quarter: a.quarter, total: a.total, recent: a.recent || [] })) };
+  const body = { u: Date.now(), list: list.map(a => ({ exe: a.exe, name: a.name, icon: a.icon || '', today: a.today, week: a.week, month: a.month, quarter: a.quarter, total: a.total, recent: a.recent || [], hoursRun: a.hoursRun || [], hoursActive: a.hoursActive || [], hoursDay: dayKey(Date.now()) })) };
   idToken().then(tok => fetch(`${SYNC.db}/timer/${account.uid}/apps.json?auth=${encodeURIComponent(tok)}`, {
     method: 'PUT', headers: { 'content-type': 'application/json' }, body: JSON.stringify(body),
   })).catch(() => { appsSent = ''; });
@@ -534,6 +534,7 @@ function applyRemoteApps(v) {
       const idx = rec.findIndex(d => d.day === today);
       a.today = idx >= 0 ? rec[idx] : { run: 0, active: 0 };
     }
+    if (a.hoursDay !== today) { a.hoursRun = []; a.hoursActive = []; } // the hours are of another day
     a.week = a.week || sum(7);
     a.month = a.month || sum(30);
   });

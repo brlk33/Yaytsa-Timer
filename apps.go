@@ -35,6 +35,21 @@ type appInfo struct {
 type appTimes struct {
 	Run    float64 `json:"run"`
 	Active float64 `json:"active"`
+	// the same split by hour of the day (24 slots), for the hour-by-hour chart; empty in older days
+	HRun []float64 `json:"hr,omitempty"`
+	HAct []float64 `json:"ha,omitempty"`
+}
+
+// addHour puts dt seconds into slot h, growing the slices on first use.
+func (t *appTimes) addHour(h int, run, act float64) {
+	if len(t.HRun) != 24 {
+		t.HRun = make([]float64, 24)
+	}
+	if len(t.HAct) != 24 {
+		t.HAct = make([]float64, 24)
+	}
+	t.HRun[h] += run
+	t.HAct[h] += act
 }
 
 type appsStore struct {
@@ -155,7 +170,9 @@ func sampleApps(dt float64) {
 
 	appsMu.Lock()
 	defer appsMu.Unlock()
-	day := dayKeyOf(time.Now())
+	nowT := time.Now()
+	hour := nowT.Hour()
+	day := dayKeyOf(nowT)
 	d := apps.Days[day]
 	if d == nil {
 		d = map[string]*appTimes{}
@@ -185,9 +202,12 @@ func sampleApps(dt float64) {
 			d[a.Exe] = t
 		}
 		t.Run += dt
+		act := 0.0
 		if fg == a.Exe && !away {
 			t.Active += dt
+			act = dt
 		}
+		t.addHour(hour, dt, act)
 		appsDirty = true
 	}
 	appsLast = strings.Join(names, "|")
@@ -216,14 +236,17 @@ func appTrackLoop() {
 
 type appStat struct {
 	appInfo
-	Running bool     `json:"running"`
-	Today   appTimes `json:"today"`
-	Week    appTimes `json:"week"`
-	Month   appTimes `json:"month"`
-	Quarter appTimes `json:"quarter"` // last 90 days
-	Total   appTimes `json:"total"`
-	Days    int      `json:"days"` // days with any use
+	Running bool       `json:"running"`
+	Today   appTimes   `json:"today"`
+	Week    appTimes   `json:"week"`
+	Month   appTimes   `json:"month"`
+	Quarter appTimes   `json:"quarter"` // last 90 days
+	Total   appTimes   `json:"total"`
+	Days    int        `json:"days"`   // days with any use
 	Recent  []dayTimes `json:"recent"` // the last 90 days, oldest first (for the detail card)
+	// today hour by hour, seconds: open and active (24 slots each)
+	HoursRun    []int `json:"hoursRun"`
+	HoursActive []int `json:"hoursActive"`
 }
 
 type dayTimes struct {
@@ -247,6 +270,17 @@ func appsStats() []appStat {
 	out := make([]appStat, 0, len(apps.Tracked))
 	for _, a := range apps.Tracked {
 		s := appStat{appInfo: a, Running: running[a.Exe]}
+		s.HoursRun, s.HoursActive = make([]int, 24), make([]int, 24)
+		if t := apps.Days[today][a.Exe]; t != nil {
+			for h := 0; h < 24; h++ {
+				if h < len(t.HRun) {
+					s.HoursRun[h] = int(t.HRun[h] + 0.5)
+				}
+				if h < len(t.HAct) {
+					s.HoursActive[h] = int(t.HAct[h] + 0.5)
+				}
+			}
+		}
 		s.Icon = appIconFor(a)
 		for day, m := range apps.Days {
 			t := m[a.Exe]
