@@ -1855,7 +1855,8 @@ html.android .hs.hs-kid { background: transparent; }
 /* Task field: a quiet pill; typing just renames, the chevron opens the project list */
 .label-wrap { position: relative; }
 .label-input { padding-left: 44px; padding-right: 44px; border-radius: 999px; }
-.label-input:focus { background: var(--hover); box-shadow: 0 0 0 1px var(--border), 0 6px 22px -12px rgba(0,0,0,.35); }
+.label-input:focus, .label-input:focus-visible { outline: none; background: var(--hover); box-shadow: 0 0 0 1px var(--border), 0 6px 22px -12px rgba(0,0,0,.35); }
+.label-chev:focus-visible { outline: none; }
 .label-chev {
   position: absolute; right: 6px; top: 50%; width: 32px; height: 32px; margin-top: -16px; padding: 0;
   border: 0; border-radius: 50%; background: transparent; color: var(--text-3);
