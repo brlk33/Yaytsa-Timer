@@ -78,7 +78,11 @@ func checkUpdate() {
 	if !newer(remote, Version) || downloadedSetup != "" {
 		return
 	}
-	p := filepath.Join(os.TempDir(), "YaytsaTimer-Setup-"+remote+".exe")
+	// kept in our own data folder, not in %TEMP% (an exe dropped into TEMP and run silently looks like malware to antiviruses)
+	dir := filepath.Join(dataDir(), "update")
+	os.RemoveAll(dir)
+	os.MkdirAll(dir, 0o755)
+	p := filepath.Join(dir, "YaytsaTimer-Setup-"+remote+".exe")
 	if err := download(repoRaw+setupName+"?v="+remote, p); err != nil {
 		logf("update download failed: %v", err)
 		return

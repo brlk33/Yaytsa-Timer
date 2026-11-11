@@ -86,6 +86,7 @@ const (
 	wmAppTray         = wmApp + 1
 	wmAppShow         = wmApp + 2
 	wmAppDispatch     = wmApp + 3
+	wmAppQuit         = wmApp + 9 // the installer asks a running copy to save and exit (0x8009)
 	wsOverlappedWin   = 0x00CF0000
 	wsPopup           = 0x80000000
 	wsExTopmost       = 0x00000008

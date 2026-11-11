@@ -39,9 +39,20 @@ VIAddVersionKey /LANG=1049 "LegalCopyright" "Яйца Cloud"
 !insertmacro MUI_UNPAGE_INSTFILES
 !insertmacro MUI_LANGUAGE "Russian"
 
+; Asks a running copy to save and exit (wmAppQuit), waits up to ~6 s for its window to go.
 !macro CloseApp
-  nsExec::Exec 'taskkill /F /IM ${EXE}'
-  Sleep 600
+  StrCpy $2 0
+  close_loop:
+    FindWindow $1 "YaytsaTimerMain"
+    IntCmp $1 0 close_done
+    IntCmp $2 0 0 +2 +2
+      SendMessage $1 0x8009 0 0 /TIMEOUT=3000
+    IntOp $2 $2 + 1
+    IntCmp $2 30 close_done
+    Sleep 200
+    Goto close_loop
+  close_done:
+  Sleep 400
 !macroend
 
 Section "Install"

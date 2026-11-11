@@ -20,7 +20,7 @@ import (
 )
 
 const (
-	Version     = "2.16.0"
+	Version     = "2.16.1"
 	AppName     = "Яйцетаймер"
 	mainClass   = "YaytsaTimerMain"
 	alertClass  = "YaytsaTimerAlert"
@@ -585,6 +585,9 @@ func mainProc(hwnd, msg, wp, lp uintptr) uintptr {
 	case wmAppTray:
 		onTrayEvent(uint32(lp & 0xFFFF))
 		return 0
+	case wmAppQuit:
+		quitApp()
+		return 0
 	case wmAppShow:
 		showMain()
 		return 0
@@ -805,7 +808,7 @@ func main() {
 	}
 	// Sounds must play without a click first (the reminder rings by itself).
 	// Lighter on RAM/CPU: one renderer for both windows, no background browser services.
-	os.Setenv("WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS", "--autoplay-policy=no-user-gesture-required --disable-features=msSmartScreenProtection,msEdgeTranslate,msWebOOUI,msPdfOOUI,AutofillServerCommunication --renderer-process-limit=1 --disable-background-networking --disable-component-update --disable-sync --disable-domain-reliability --no-first-run")
+	os.Setenv("WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS", "--autoplay-policy=no-user-gesture-required --disable-features=msEdgeTranslate,msWebOOUI,msPdfOOUI,AutofillServerCommunication --renderer-process-limit=1 --disable-background-networking --disable-component-update --disable-sync --disable-domain-reliability --no-first-run")
 
 	migrate()
 	loadSettings()
