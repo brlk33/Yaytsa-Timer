@@ -226,7 +226,7 @@ final class Host {
         JSONObject ps = plan.optJSONObject("series");
         if (ps == null) return false;
         int count = ps.optInt("count");
-        long block = count > 0 ? count * ps.optLong("work") + (count - 1) * ps.optLong("brk") : 3 * 3600000L;
+        long block = count > 0 ? workStart(ps, count - 1) - ps.optLong("start") + ps.optLong("work") : 3 * 3600000L;
         if (now >= plan.optLong("at") + block) {
             // the whole block went by while the phone was off: the page asks whether to count it
             s.remove("plan");
@@ -258,6 +258,22 @@ final class Host {
     /* ---------------- series (same schedule maths as app.js) ---------------- */
 
     /** Puts the phase the schedule says into s. Returns "wait", "work", "break" or "done". */
+    /** Start of work k: with a long break every n-th time (sr.every, sr.lbrk), as in app.js. */
+    static long workStart(JSONObject sr, long k) {
+        long work = sr.optLong("work"), brk = sr.optLong("brk"), start = sr.optLong("start"), c = work + brk;
+        int n = sr.optInt("every");
+        long L = sr.optLong("lbrk");
+        if (n < 2 || L <= 0) return start + k * c;
+        long block = n * work + (n - 1) * brk + L;
+        return start + (k / n) * block + (k % n) * c;
+    }
+
+    static long breakLen(JSONObject sr, long k) {
+        int n = sr.optInt("every");
+        long L = sr.optLong("lbrk");
+        return n >= 2 && L > 0 && k % n == n - 1 ? L : sr.optLong("brk");
+    }
+
     static String applySeries(JSONObject s, JSONObject sr, long now) throws Exception {
         long work = sr.optLong("work"), brk = sr.optLong("brk"), start = sr.optLong("start"), c = work + brk;
         int count = sr.optInt("count");
@@ -268,12 +284,19 @@ final class Host {
             s.put("phase", "work").put("total", work).put("running", false).put("endAt", 0).put("remaining", work).put("startedAt", 0);
             return "wait";
         }
-        long k = (at - start) / c, within = at - start - k * c;
+        int n = sr.optInt("every");
+        long L = sr.optLong("lbrk");
+        long k;
+        if (n < 2 || L <= 0) k = (at - start) / c;
+        else {
+            long block = n * work + (n - 1) * brk + L, b = (at - start) / block, rem = at - start - b * block;
+            k = b * n + Math.min(n - 1, rem / c);
+        }
+        long base = workStart(sr, k), within = at - base;
         if (count > 0 && (k >= count || (k == count - 1 && within >= work))) return "done";
-        long base = start + k * c;
         boolean isWork = within < work;
-        long pStart = isWork ? base : base + work, pEnd = isWork ? base + work : base + c;
-        s.put("phase", isWork ? "work" : "break").put("total", isWork ? work : brk);
+        long pStart = isWork ? base : base + work, pEnd = isWork ? base + work : base + work + breakLen(sr, k);
+        s.put("phase", isWork ? "work" : "break").put("total", pEnd - pStart);
         s.put("startedAt", isWork ? pStart : 0);
         if (pausedAt > 0) s.put("running", false).put("endAt", 0).put("remaining", Math.max(0, pEnd - at));
         else s.put("running", true).put("endAt", pEnd).put("remaining", 0);
