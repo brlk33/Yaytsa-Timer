@@ -14,6 +14,11 @@ public class TimerReceiver extends BroadcastReceiver {
         if (a == null) return;
         Host.createChannels(c);
         switch (a) {
+            case CloudJob.ACTION_CLOUD: {
+                PendingResult r = goAsync();
+                CloudJob.lookNow(c, r::finish);
+                break;
+            }
             case Host.ACTION_ALARM:
                 Host.phaseDue(c);
                 break;

@@ -11,6 +11,9 @@ public class BootReceiver extends TimerReceiver {
         if (Intent.ACTION_BOOT_COMPLETED.equals(a) || Intent.ACTION_MY_PACKAGE_REPLACED.equals(a)) {
             super.onReceive(c, intent);
             CloudJob.schedule(c);
+            // and a look right away: a timer started on the PC while the phone was off shows up now
+            PendingResult r = goAsync();
+            CloudJob.lookNow(c, r::finish);
         }
     }
 }

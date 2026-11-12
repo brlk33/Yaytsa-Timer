@@ -1,11 +1,16 @@
 package com.brlk33.yaytsatimer;
 
+import android.app.AlarmManager;
+import android.app.PendingIntent;
 import android.app.job.JobInfo;
 import android.app.job.JobParameters;
 import android.app.job.JobScheduler;
 import android.app.job.JobService;
 import android.content.ComponentName;
 import android.content.Context;
+import android.content.Intent;
+import android.os.Build;
+import android.os.PowerManager;
 
 import org.json.JSONObject;
 
@@ -40,11 +45,45 @@ public class CloudJob extends JobService {
         try { js.schedule(info); } catch (Exception ignored) {}
     }
 
+
+    static final String ACTION_CLOUD = "com.brlk33.yaytsatimer.CLOUD";
+
+    /**
+     * A quicker look than the 15-minute job: an alarm that re-arms itself — every 2 minutes while
+     * the screen is on (the phone is in the hand), every 10 while it is off (Doze lets an app wake
+     * about that often anyway). The job stays as the fallback; both survive a reboot via BootReceiver.
+     */
+    static void arm(Context c) {
+        try {
+            AlarmManager am = (AlarmManager) c.getSystemService(Context.ALARM_SERVICE);
+            PowerManager pm = (PowerManager) c.getSystemService(Context.POWER_SERVICE);
+            if (am == null) return;
+            boolean on = pm == null || pm.isInteractive();
+            long at = System.currentTimeMillis() + (on ? 2 : 10) * 60 * 1000L;
+            PendingIntent pi = PendingIntent.getBroadcast(c, 7302, new Intent(c, TimerReceiver.class).setAction(ACTION_CLOUD),
+                    PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE);
+            if (Build.VERSION.SDK_INT >= 31 && !am.canScheduleExactAlarms()) am.setAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, at, pi);
+            else am.setExactAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, at, pi);
+        } catch (Exception ignored) {}
+    }
+
+    /** Runs a look off the main thread, then arms the next one (from a receiver: goAsync). */
+    static void lookNow(Context c, Runnable done) {
+        Context app = c.getApplicationContext();
+        new Thread(() -> {
+            boolean again = true;
+            try { again = check(app); } catch (Exception ignored) {}
+            if (again) arm(app);
+            if (done != null) done.run();
+        }).start();
+    }
     @Override
     public boolean onStartJob(JobParameters p) {
         Context app = getApplicationContext();
         new Thread(() -> {
-            try { check(app); } catch (Exception ignored) {}
+            boolean again = true;
+            try { again = check(app); } catch (Exception ignored) {}
+            if (again) arm(app); // mends the quick chain if it ever broke
             jobFinished(p, false);
         }).start();
         return true;
@@ -53,29 +92,36 @@ public class CloudJob extends JobService {
     @Override
     public boolean onStopJob(JobParameters p) { return true; }
 
-    static void check(Context c) throws Exception {
+    static boolean check(Context c) throws Exception {
         MainActivity live = Host.live;
-        if (live != null && live.isVisible()) return; // the open page keeps in sync by itself
+        if (live != null && live.isVisible()) return true; // the open page keeps in sync by itself
         JSONObject data = new JSONObject(Host.readData(c));
         JSONObject sync = data.optJSONObject("sync");
         JSONObject acc = sync != null ? sync.optJSONObject("account") : null;
-        if (acc == null || acc.optString("uid").isEmpty() || acc.optString("rt").isEmpty()) return;
+        if (acc == null || acc.optString("uid").isEmpty() || acc.optString("rt").isEmpty()) return false;
 
-        String body = "grant_type=refresh_token&refresh_token=" + URLEncoder.encode(acc.optString("rt"), "UTF-8");
-        JSONObject tok = new JSONObject(http("https://securetoken.googleapis.com/v1/token?key=" + KEY, body));
-        String id = tok.optString("id_token");
-        if (id.isEmpty()) return;
+        // the id token lives an hour: keep it, so a look every few minutes is one small GET
+        android.content.SharedPreferences pr = Host.prefs(c);
+        String id = pr.getLong("idExp", 0) > System.currentTimeMillis() && pr.getString("idRt", "").equals(acc.optString("rt")) ? pr.getString("idTok", "") : "";
+        if (id.isEmpty()) {
+            String body = "grant_type=refresh_token&refresh_token=" + URLEncoder.encode(acc.optString("rt"), "UTF-8");
+            JSONObject tok = new JSONObject(http("https://securetoken.googleapis.com/v1/token?key=" + KEY, body));
+            id = tok.optString("id_token");
+            if (id.isEmpty()) return true;
+            pr.edit().putString("idTok", id).putString("idRt", acc.optString("rt")).putLong("idExp", System.currentTimeMillis() + 50 * 60 * 1000L).apply();
+        }
         String raw = http(DB + "/timer/" + acc.optString("uid") + "/t.json?auth=" + URLEncoder.encode(id, "UTF-8"), null);
-        if (raw == null || raw.trim().equals("null")) return;
+        if (raw == null) { pr.edit().remove("idExp").apply(); return true; } // a stale token: a fresh one next time
+        if (raw.trim().equals("null")) return true;
         JSONObject v = new JSONObject(raw);
         long u = v.optLong("u");
-        if (u <= Host.prefs(c).getLong("cloudU", 0)) return; // nothing new since the last look
+        if (u <= Host.prefs(c).getLong("cloudU", 0)) return true; // nothing new since the last look
         String phase = v.optString("phase");
-        if (!phase.equals("work") && !phase.equals("break")) return;
+        if (!phase.equals("work") && !phase.equals("break")) return true;
         long now = System.currentTimeMillis();
         JSONObject plan = v.optJSONObject("series");
         boolean running = v.optBoolean("running");
-        if (running && v.optLong("endAt") < now - 60000 && plan == null) return; // long over, not news
+        if (running && v.optLong("endAt") < now - 60000 && plan == null) return true; // long over, not news
 
         JSONObject s = Host.timer(c); // keeps the texts and settings the page left there
         long total = v.optLong("total");
@@ -100,6 +146,7 @@ public class CloudJob extends JobService {
         Host.setTimer(c, s);
         MainActivity l = Host.live;
         if (l != null) l.emit("timer-state", s);
+        return true;
     }
 
     private static String http(String url, String form) throws Exception {

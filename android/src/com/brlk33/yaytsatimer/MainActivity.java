@@ -115,6 +115,7 @@ public class MainActivity extends Activity {
         }
         Host.live = this;
         CloudJob.schedule(this);
+        CloudJob.arm(this);
     }
 
     /** index.html with bridge.js loaded before app.js (and no CSP: the page is local). */
