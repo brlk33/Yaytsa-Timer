@@ -20,7 +20,7 @@ import (
 )
 
 const (
-	Version     = "2.19.0"
+	Version     = "2.19.1"
 	AppName     = "Яйцетаймер"
 	mainClass   = "YaytsaTimerMain"
 	alertClass  = "YaytsaTimerAlert"
@@ -805,6 +805,11 @@ func main() {
 
 	if len(os.Args) > 1 && os.Args[1] == "--version" {
 		fmt.Println(Version)
+		return
+	}
+
+	// started inside a launcher's job that would close us with it: go on as a free process
+	if escapeJob() {
 		return
 	}
 
