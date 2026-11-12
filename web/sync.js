@@ -578,7 +578,7 @@ function applyRemoteTimer(v) {
 /* ---------- program stats: tracked on the PC, shown on the phone too ---------- */
 let appsRemote = null, appsSent = '', appsSentAt = 0;
 function syncApps(list) {
-  if (ANDROID || !account || !syncLoaded || !Array.isArray(list)) return;
+  if (ANDROID || api.web || !account || !syncLoaded || !Array.isArray(list)) return;
   const g = sig(list.map(a => [a.exe, a.name, Math.round(a.total.run / 60), Math.round(a.total.active / 60), (a.icon || '').length, dayKey(Date.now())]));
   if (g === appsSent || Date.now() - appsSentAt < 60000) return; // at most once a minute, only when it changed
   appsSent = g;
@@ -589,7 +589,7 @@ function syncApps(list) {
   })).catch(() => { appsSent = ''; });
 }
 function applyRemoteApps(v) {
-  if (!ANDROID) return;
+  if (!ANDROID && !api.web) return; // the phone and the web app show what the PC tracks
   appsRemote = v && Array.isArray(v.list) ? v.list : [];
   // "today" and "7 days" were counted on the PC when it sent them; recount from the days if that was another day
   const today = dayKey(Date.now());
@@ -732,7 +732,7 @@ function syncInit(data) {
   if (api.onWindowVisible) api.onWindowVisible(v => { if (v) watch(); });
   else setTimeout(maybeNag, ANDROID ? 2600 : 1500); // after the launch animation
   // the PC sends its program stats every few minutes, so the phone sees them without opening Apps here
-  if (!ANDROID && api.appsStats) {
+  if (!ANDROID && !api.web && api.appsStats) {
     const push = async () => { if (account && syncLoaded) syncApps((await api.appsStats()) || []); };
     setTimeout(push, 20000);
     setInterval(push, 5 * 60000);

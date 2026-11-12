@@ -2239,3 +2239,10 @@ html.simple.android .simple-day { max-width: 320px; margin: 18px auto 0; order: 
 .sug-create.typed { color: var(--text); }
 .sug-create span:last-child { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .sug-foot.alone { margin-top: -6px; border-top: 0; }
+
+/* ======================= Web app (browser, Mac) ======================= */
+/* the browser draws its own window: no title bar; nothing that needs the Windows host */
+html.web .titlebar, html.web #btnAddApp, html.web #appPicker, html.web .app .del, html.web #adUntrack,
+html.web .group-title[data-i18n="gSystem"], html.web .set:has(#autostartToggle), html.web .set:has([data-key="closeToTray"]),
+html.web .set:has([data-key="alwaysOnTop"]), html.web .set:has([data-key="popup"]), html.web #btnFolder { display: none !important; }
+html.web .tabs { padding-top: 6px; }

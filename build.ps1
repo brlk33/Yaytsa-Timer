@@ -37,3 +37,6 @@ Get-Item dist/YaytsaTimer.exe, YaytsaTimer-Setup.exe | Select-Object Name, Lengt
 
 # Android APK with the same version (self-updating phones read the same version.txt)
 if ((Test-Path 'D:\Program Files\Android\sdk') -or $env:ANDROID_HOME) { & "$PSScriptRoot\build-android.ps1" } else { Write-Warning 'Android SDK not found: YaytsaTimer.apk not rebuilt' }
+
+# Web app (Mac, any browser) into the yaytsa-cloud site next to this repo, if it is there
+if (Test-Path (Join-Path $PSScriptRoot '..\yaytsa-cloud')) { & "$PSScriptRoot\build-web.ps1" } else { Write-Warning 'yaytsa-cloud not found next to this repo: web app not rebuilt' }

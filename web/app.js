@@ -3264,7 +3264,7 @@ function avatar(name, exe, icon) {
 
 async function loadApps() {
   // the phone does not track programs: it shows what the PC sent through sync
-  if (ANDROID) { appStats = appsRemote || []; renderApps(); return; }
+  if (ANDROID || api.web) { appStats = appsRemote || []; renderApps(); return; }
   appStats = (await api.appsStats()) || [];
   renderApps();
   syncApps(appStats);
@@ -3287,7 +3287,7 @@ function renderApps() {
         <div class="app-name"><span>${esc(a.name)}</span>${a.running ? `<span class="dot" title="${esc(t('running'))}"></span>` : ''}</div>
       </div>
       <div class="app-total${act(a) >= 60 ? '' : ' none'}">${act(a) >= 60 ? fmtLong(act(a)) : '—'}</div>
-    </div>`).join('') : `<div class="empty-state">${t(ANDROID ? 'appsNoneA' : 'appsNone')}</div>`);
+    </div>`).join('') : `<div class="empty-state">${t(ANDROID || api.web ? 'appsNoneA' : 'appsNone')}</div>`);
   if (adExe) renderAppDetail();
 }
 
