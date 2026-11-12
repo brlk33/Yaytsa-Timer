@@ -13,7 +13,7 @@ const SYNC = {
   site: 'https://fggtf24-cyber.github.io/yaytsa-cloud/',
 };
 // Settings that follow the account; the rest (theme, zoom, window options) stay per device.
-const SYNC_SETTINGS = ['work', 'brk', 'autoStart', 'goal', 'sound', 'popup', 'lang'];
+const SYNC_SETTINGS = ['work', 'brk', 'autoStart', 'goal', 'goalWeek', 'sound', 'popup', 'lang', 'plans'];
 // A deleted item is remembered as '-<time of deletion>'; older copies of it are not brought back.
 const isDel = g => typeof g === 'string' && g[0] === '-';
 const delAt = g => Number(g.slice(1)) || 0;
@@ -64,7 +64,7 @@ let syncErr = '';
 let syncLoaded = false;                   // first full snapshot from the server merged
 let googleState = '';
 let idTok = '', idExp = 0;
-let es = null, esTimer = null, retryT = null, retryMs = 2000;
+let es = null, esTimer = null, retryT = null, retryMs = 2000, esAlive = 0;
 let pushT = null, pushing = false, pushAgain = false;
 
 /* ---------- helpers ---------- */
@@ -223,6 +223,7 @@ async function syncConnect() {
   es = src;
   const handle = kind => e => {
     if (es !== src) return;
+    esAlive = Date.now();
     let m;
     try { m = JSON.parse(e.data); } catch { return; }
     if (m) onRemote(kind, m.path, m.data);
@@ -231,7 +232,9 @@ async function syncConnect() {
   src.addEventListener('patch', handle('patch'));
   src.addEventListener('auth_revoked', () => { idTok = ''; syncConnect(); });
   src.addEventListener('cancel', () => { syncStatus = 'denied'; renderSync(); disconnect(); });
-  src.onopen = () => { retryMs = 2000; };
+  src.onopen = () => { retryMs = 2000; esAlive = Date.now(); };
+  // the database sends a keep-alive now and then: silence means the line is dead (a phone asleep, a network switch)
+  src.addEventListener('keep-alive', () => { esAlive = Date.now(); });
   src.onerror = () => {
     if (es !== src) return;
     // A missing database answers 404, which EventSource reports the same way as no network.
@@ -283,6 +286,9 @@ function mergeAll(d) {
   for (const k of Object.keys(projects)) if (!p[dbKey(k)]) delete syncSent.p[k];
   if (!d.set) syncSent.set = '';
   syncLoaded = true;
+  // one line in the log per start: what the cloud holds for the timer (helps when devices disagree)
+  const ct = d.t;
+  syncLog('load', `cloud timer: ${!ct ? 'none' : ct.series ? `series ${ct.series.id} ${ct.series.pausedAt ? 'paused' : 'running'}` : ct.running ? 'running' : 'idle'}, saved ${ct && ct.u ? new Date(ct.u).toISOString() : '-'}`);
 }
 
 function applyItem(kind, rawKey, v) {
@@ -337,22 +343,35 @@ function applyItem(kind, rawKey, v) {
   }
 }
 
+// Settings merge setting by setting (2.19): each one carries the time it was last changed (uk),
+// so a change on the phone and another one on the PC both survive. A copy from an older version
+// without uk counts as changed at its u, as before.
 function applySettings(v) {
   if (!v || typeof v !== 'object') return;
   const ru = Number(v.u) || 0;
-  const core = Object.fromEntries(SYNC_SETTINGS.filter(k => k in v).map(k => [k, v[k]]));
-  if ((settings.u || 0) < ru) {
-    const langChanged = core.lang && core.lang !== settings.lang;
-    Object.assign(settings, core, { u: ru });
-    if (langChanged) applyI18n();
-    syncSent.set = sig(setCore());
-    remoteChanged++;
-  } else if (sig(setCore()) === sig(Object.fromEntries(SYNC_SETTINGS.map(k => [k, k in v ? v[k] : settings[k]])))) {
-    syncSent.set = sig(setCore());
+  const ruk = v.uk && typeof v.uk === 'object' ? v.uk : {};
+  settings.uk = settings.uk || {};
+  syncSent.sv = syncSent.sv || {};
+  let changed = false, langChanged = false, behind = false;
+  for (const k of SYNC_SETTINGS) {
+    if (!(k in v)) continue;
+    const rT = Number(ruk[k]) || ru, lT = Number(settings.uk[k]) || settings.u || 0;
+    if (rT > lT) {
+      if (sig(settings[k]) !== sig(v[k])) { if (k === 'lang') langChanged = true; changed = true; }
+      settings[k] = v[k];
+      settings.uk[k] = rT;
+      syncSent.sv[k] = sig(v[k]);
+    } else if (sig(settings[k]) === sig(v[k])) syncSent.sv[k] = sig(v[k]);
+    else behind = true; // ours is newer: it goes up with the next push
   }
+  settings.u = Math.max(settings.u || 0, ru);
+  if (langChanged) applyI18n();
+  if (!behind) syncSent.set = sig(setCore());
+  if (changed) remoteChanged++;
 }
 
 function afterRemote() {
+  if (typeof planTick === 'function') { planTick(true); renderPlans(); }
   if (dedupeSessions()) remoteChanged++;
   sessions.sort((a, b) => a.start - b.start);
   if (isUntouched()) setPhase(timer.phase); // new phase lengths apply to an untouched timer
@@ -374,6 +393,9 @@ function syncSchedule() {
   pushT = setTimeout(syncPush, 600);
 }
 
+// settings as versions before 2.19 wrote them (no plans, no per-setting times)
+let setLegacy = false;
+const legacySet = s => { const o = { ...s }; delete o.uk; delete o.plans; delete o.goalWeek; return o; };
 async function syncPush() {
   if (!account || !syncLoaded) return;
   if (pushing) { pushAgain = true; return; }
@@ -408,7 +430,14 @@ async function syncPush() {
   const sg = sig(setCore());
   if (syncSent.set !== sg) {
     if (!settings.u || syncSent.set) settings.u = now;
-    up.set = { ...setCore(), u: settings.u };
+    // stamp only the settings that changed here since they were last in the cloud
+    settings.uk = settings.uk || {};
+    syncSent.sv = syncSent.sv || {};
+    for (const k of SYNC_SETTINGS) {
+      const g = sig(settings[k]);
+      if (syncSent.sv[k] !== g) { settings.uk[k] = now; syncSent.sv[k] = g; }
+    }
+    up.set = { ...setCore(), u: settings.u, uk: settings.uk };
     marks.push(['set', '', sg]);
   }
   if (!marks.length) return;
@@ -416,9 +445,17 @@ async function syncPush() {
   pushing = true;
   try {
     const tok = await idToken();
-    const r = await fetch(`${SYNC.db}/timer/${account.uid}.json?auth=${encodeURIComponent(tok)}`, {
-      method: 'PATCH', headers: { 'content-type': 'application/json' }, body: JSON.stringify(up),
+    const patch = body => fetch(`${SYNC.db}/timer/${account.uid}.json?auth=${encodeURIComponent(tok)}`, {
+      method: 'PATCH', headers: { 'content-type': 'application/json' }, body: JSON.stringify(body),
     });
+    let r = await patch(setLegacy && up.set ? { ...up, set: legacySet(up.set) } : up);
+    // new settings fields turned down by the cloud must never hold back the history: the plain form goes
+    if (!r.ok && up.set && !setLegacy && r.status >= 400 && r.status < 500) {
+      syncLog('push', `HTTP ${r.status}, sending settings in the plain form`);
+      r = await patch({ ...up, set: legacySet(up.set) });
+      if (r.ok) setLegacy = true;
+    }
+    if (r.ok) syncLog('push', 'ok'); else syncLog('push', `HTTP ${r.status}`);
     if (r.status === 401 || r.status === 403) { syncStatus = 'denied'; throw new Error('denied'); }
     if (r.status === 404) { syncStatus = 'nodb'; throw new Error('nodb'); }
     if (!r.ok) throw new Error(`HTTP ${r.status}`);
@@ -456,6 +493,17 @@ const timerCore = () => ({
 });
 
 // Called from renderOuter (about once a second): sends the state when it changed here.
+// The timer must reach the other devices whatever version they run: if the cloud turns the full
+// state down, the same state goes again in the shape every version knows (no new fields).
+let timerLegacy = false, syncLogged = {};
+const syncLog = (k, m) => { if (syncLogged[k] !== m) { syncLogged[k] = m; try { api.log(`sync ${k}: ${m}`); } catch {} } };
+const legacyTimer = c => ({ ...c, series: c.series ? { id: c.series.id, start: c.series.start, count: c.series.count, work: c.series.work, brk: c.series.brk, pausedAt: c.series.pausedAt } : null });
+async function putTimer(body) {
+  const tok = await idToken();
+  return fetch(`${SYNC.db}/timer/${account.uid}/t.json?auth=${encodeURIComponent(tok)}`, {
+    method: 'PUT', headers: { 'content-type': 'application/json' }, body: JSON.stringify(body),
+  });
+}
 async function syncTimer() {
   if (!account || !syncLoaded) return;
   const core = timerCore(), g = sig(core);
@@ -463,17 +511,35 @@ async function syncTimer() {
   tSent = g;
   tU = Date.now();
   try {
-    const tok = await idToken();
-    const r = await fetch(`${SYNC.db}/timer/${account.uid}/t.json?auth=${encodeURIComponent(tok)}`, {
-      method: 'PUT', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ ...core, u: tU }),
-    });
+    let r = await putTimer({ ...(timerLegacy ? legacyTimer(core) : core), u: tU });
+    if (!r.ok && !timerLegacy && r.status >= 400 && r.status < 500) {
+      syncLog('timer', `HTTP ${r.status}, sending the plain form`);
+      r = await putTimer({ ...legacyTimer(core), u: tU });
+      if (r.ok) timerLegacy = true;
+    }
     if (!r.ok) throw new Error(`HTTP ${r.status}`);
-  } catch {
+    syncLog('timer', 'ok');
+  } catch (e) {
+    syncLog('timer', String(e && e.message || e));
     clearTimeout(tRetry);
     tRetry = setTimeout(() => { if (tSent === g) tSent = ''; }, 10000); // offline: try again later
   }
 }
 
+// The timer alone, straight from the database (used to double-check the stream)
+async function pollTimer() {
+  try {
+    const tok = await idToken();
+    const r = await fetch(`${SYNC.db}/timer/${account.uid}/t.json?auth=${encodeURIComponent(tok)}`);
+    if (!r.ok) return;
+    const v = await r.json();
+    if (!v || (Number(v.u) || 0) <= tU) return;
+    applyRemoteTimer(v);
+    // the stream missed it, so it is not to be trusted: open it again (it reloads the rest too)
+    syncLog('stream', `missed a timer change, reconnecting`);
+    syncConnect();
+  } catch {}
+}
 function applyRemoteTimer(v) {
   if (!v || typeof v !== 'object' || (Number(v.u) || 0) <= tU) return;
   if (v.phase !== 'work' && v.phase !== 'break') return;
@@ -517,7 +583,7 @@ function syncApps(list) {
   if (g === appsSent || Date.now() - appsSentAt < 60000) return; // at most once a minute, only when it changed
   appsSent = g;
   appsSentAt = Date.now();
-  const body = { u: Date.now(), list: list.map(a => ({ exe: a.exe, name: a.name, icon: a.icon || '', today: a.today, week: a.week, month: a.month, quarter: a.quarter, total: a.total, recent: a.recent || [], hoursRun: a.hoursRun || [], hoursActive: a.hoursActive || [], hoursDay: dayKey(Date.now()) })) };
+  const body = { u: Date.now(), list: list.map(a => ({ exe: a.exe, name: a.name, icon: a.icon || '', today: a.today, week: a.week, month: a.month, quarter: a.quarter, total: a.total, recent: a.recent || [], hoursRun: a.hoursRun || [], hoursActive: a.hoursActive || [], slotsRun: a.slotsRun || [], slotsActive: a.slotsActive || [], hoursDay: dayKey(Date.now()) })) };
   idToken().then(tok => fetch(`${SYNC.db}/timer/${account.uid}/apps.json?auth=${encodeURIComponent(tok)}`, {
     method: 'PUT', headers: { 'content-type': 'application/json' }, body: JSON.stringify(body),
   })).catch(() => { appsSent = ''; });
@@ -534,7 +600,7 @@ function applyRemoteApps(v) {
       const idx = rec.findIndex(d => d.day === today);
       a.today = idx >= 0 ? rec[idx] : { run: 0, active: 0 };
     }
-    if (a.hoursDay !== today) { a.hoursRun = []; a.hoursActive = []; } // the hours are of another day
+    if (a.hoursDay !== today) { a.hoursRun = []; a.hoursActive = []; a.slotsRun = []; a.slotsActive = []; } // the hours are of another day
     a.week = a.week || sum(7);
     a.month = a.month || sum(30);
   });
@@ -649,11 +715,21 @@ const syncSnapshot = () => ({ account, sent: syncSent });
 function syncInit(data) {
   const d = data.sync || {};
   if (d.account && d.account.uid && d.account.rt) account = d.account;
-  if (d.sent && typeof d.sent === 'object') syncSent = { s: d.sent.s || {}, p: d.sent.p || {}, set: d.sent.set || '' };
+  if (d.sent && typeof d.sent === 'object') syncSent = { s: d.sent.s || {}, p: d.sent.p || {}, set: d.sent.set || '', sv: d.sent.sv || {} };
   bindSync();
   bindBanner();
   renderSync();
   if (account) syncConnect();
+  // The timer must agree everywhere, whatever happened to the live stream: a dead stream is
+  // reopened, and the timer (a few hundred bytes) is checked every 30 s and whenever the window
+  // comes back. Old and new versions all read and write the same timer state.
+  const watch = () => {
+    if (!account || !syncLoaded || document.hidden) return;
+    pollTimer();
+  };
+  setInterval(watch, 30000);
+  document.addEventListener('visibilitychange', () => { if (!document.hidden) watch(); });
+  if (api.onWindowVisible) api.onWindowVisible(v => { if (v) watch(); });
   else setTimeout(maybeNag, ANDROID ? 2600 : 1500); // after the launch animation
   // the PC sends its program stats every few minutes, so the phone sees them without opening Apps here
   if (!ANDROID && api.appsStats) {

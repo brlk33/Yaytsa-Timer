@@ -38,6 +38,9 @@ type appTimes struct {
 	// the same split by hour of the day (24 slots), for the hour-by-hour chart; empty in older days
 	HRun []float64 `json:"hr,omitempty"`
 	HAct []float64 `json:"ha,omitempty"`
+	// and by 10 minutes (144 slots), for a closer look at today
+	MRun []float64 `json:"mr,omitempty"`
+	MAct []float64 `json:"ma,omitempty"`
 }
 
 // addHour puts dt seconds into slot h, growing the slices on first use.
@@ -50,6 +53,18 @@ func (t *appTimes) addHour(h int, run, act float64) {
 	}
 	t.HRun[h] += run
 	t.HAct[h] += act
+}
+
+// addSlot puts dt seconds into the 10-minute slot s (0..143).
+func (t *appTimes) addSlot(s int, run, act float64) {
+	if len(t.MRun) != 144 {
+		t.MRun = make([]float64, 144)
+	}
+	if len(t.MAct) != 144 {
+		t.MAct = make([]float64, 144)
+	}
+	t.MRun[s] += run
+	t.MAct[s] += act
 }
 
 type appsStore struct {
@@ -169,6 +184,7 @@ func sampleApps(dt float64) {
 	defer appsMu.Unlock()
 	nowT := time.Now()
 	hour := nowT.Hour()
+	slot := hour*6 + nowT.Minute()/10
 	day := dayKeyOf(nowT)
 	d := apps.Days[day]
 	if d == nil {
@@ -205,6 +221,7 @@ func sampleApps(dt float64) {
 			act = dt
 		}
 		t.addHour(hour, dt, act)
+		t.addSlot(slot, dt, act)
 		appsDirty = true
 	}
 	appsLast = strings.Join(names, "|")
@@ -247,6 +264,9 @@ type appStat struct {
 	// today hour by hour, seconds: open and active (24 slots each)
 	HoursRun    []int `json:"hoursRun"`
 	HoursActive []int `json:"hoursActive"`
+	// today by 10 minutes, seconds (144 slots each)
+	SlotsRun    []int `json:"slotsRun"`
+	SlotsActive []int `json:"slotsActive"`
 }
 
 type dayTimes struct {
@@ -278,6 +298,13 @@ func appsStats() []appStat {
 				}
 				if h < len(t.HAct) {
 					s.HoursActive[h] = int(t.HAct[h] + 0.5)
+				}
+			}
+			if len(t.MAct) == 144 {
+				s.SlotsRun, s.SlotsActive = make([]int, 144), make([]int, 144)
+				for i := 0; i < 144; i++ {
+					s.SlotsRun[i] = int(t.MRun[i] + 0.5)
+					s.SlotsActive[i] = int(t.MAct[i] + 0.5)
 				}
 			}
 		}

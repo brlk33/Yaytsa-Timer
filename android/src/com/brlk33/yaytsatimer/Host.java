@@ -168,6 +168,7 @@ final class Host {
         JSONObject sr = s.optJSONObject("series");
         if (s.optBoolean("running")) at = s.optLong("endAt");
         else if (sr != null && sr.optLong("pausedAt") == 0 && sr.optLong("start") > 0) at = sr.optLong("start");
+        else if (sr == null && s.optJSONObject("plan") != null && s.optJSONObject("plan").optLong("at") > 0) at = s.optJSONObject("plan").optLong("at"); // the next planned start
         else {
             am.cancel(pi);
             return;
@@ -193,6 +194,7 @@ final class Host {
             if (a != null) a.emit("phase-due", null);
             return;
         }
+        if (!s.optBoolean("running") && planDue(c, s)) return;
         if (!s.optBoolean("running")) return;
         long endAt = s.optLong("endAt");
         if (endAt > System.currentTimeMillis() + 2000) {
@@ -210,6 +212,40 @@ final class Host {
         }
         MainActivity a = live;
         if (a != null) a.emit("phase-due", null);
+    }
+
+    /** A planned start came while the page may be closed: the series begins now, from its planned time. */
+    static boolean planDue(Context c, JSONObject s) {
+        JSONObject plan = s.optJSONObject("plan");
+        if (plan == null) return false;
+        long now = System.currentTimeMillis();
+        if (plan.optLong("at") > now + 2000) {
+            schedule(c, s); // fired early (inexact alarm): wait for the real time
+            return true;
+        }
+        JSONObject ps = plan.optJSONObject("series");
+        if (ps == null) return false;
+        int count = ps.optInt("count");
+        long block = count > 0 ? count * ps.optLong("work") + (count - 1) * ps.optLong("brk") : 3 * 3600000L;
+        if (now >= plan.optLong("at") + block) {
+            // the whole block went by while the phone was off: the page asks whether to count it
+            s.remove("plan");
+            setTimer(c, s);
+            return true;
+        }
+        try {
+            s.remove("plan");
+            s.put("series", ps);
+            applySeries(s, ps, now);
+        } catch (Exception e) {
+            return false;
+        }
+        JSONObject t = s.optJSONObject("text");
+        postAlert(c, plan.optString("title", "Яйцетаймер"), plan.optString("body", ""), "", t != null ? t.optString("gotIt") : "OK", s.optBoolean("sound", true));
+        setTimer(c, s);
+        MainActivity a = live;
+        if (a != null) a.emit("phase-due", null);
+        return true;
     }
 
     /** True when the alarm already announced the end of the phase the page is completing now. */
@@ -395,9 +431,8 @@ final class Host {
                     .setWhen(s.optLong("endAt"))
                     .setUsesChronometer(true)
                     .setChronometerCountDown(true);
-            // a series has no pause
-            JSONObject pl = s.optJSONObject("series"); // a series has no pause, an endless run does
-            if (pl == null || pl.optInt("count") == 0) b.addAction(new Notification.Action.Builder(null, t.optString("pause", "Пауза"), broadcast(c, ACTION_TOGGLE, 11)).build());
+            // every timer pauses from the notification, a series too (2.19)
+            b.addAction(new Notification.Action.Builder(null, t.optString("pause", "Пауза"), broadcast(c, ACTION_TOGGLE, 11)).build());
         } else {
             b.setContentTitle(phase + " — " + t.optString("paused", "пауза") + " · " + clock(remaining))
                     .setUsesChronometer(false)

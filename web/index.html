@@ -41,6 +41,7 @@
     <button class="tab" data-view="projects" data-i18n-title="pickProj"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3.5 7.5a2 2 0 0 1 2-2h3.8l2 2.2h7.2a2 2 0 0 1 2 2v7.8a2 2 0 0 1-2 2h-13a2 2 0 0 1-2-2z"/></svg><span data-i18n="tabProjects"></span></button>
     <button class="tab" data-view="apps" data-i18n-title="tabApps"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="4" width="6.5" height="6.5" rx="1.8"/><rect x="13.5" y="4" width="6.5" height="6.5" rx="1.8"/><rect x="4" y="13.5" width="6.5" height="6.5" rx="1.8"/><rect x="13.5" y="13.5" width="6.5" height="6.5" rx="1.8"/></svg><span data-i18n="tabApps"></span></button>
     <button class="tab" data-view="stats" data-i18n-title="tabStats"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5.5 19.5v-7M12 19.5V5M18.5 19.5v-10"/></svg><span data-i18n="tabStats"></span></button>
+    <button class="tab" data-view="plan" data-desktop data-i18n-title="tabPlan"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3.5" y="5" width="17" height="15.5" rx="3"/><path d="M3.5 10h17M8 3v4M16 3v4M9 14.5l2 2 4-4"/></svg><span data-i18n="tabPlan"></span></button>
     <button class="tab" data-view="settings" data-i18n-title="tabSettings"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></svg><span data-i18n="tabSettings"></span></button>
   </nav>
 
@@ -78,6 +79,12 @@
             <svg viewBox="0 0 24 24"><path d="M6 5.2v13.6a.8.8 0 0 0 1.25.66l9.9-6.8a.8.8 0 0 0 0-1.32l-9.9-6.8A.8.8 0 0 0 6 5.2z" fill="currentColor"/><path d="M19 5v14" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/></svg>
           </button>
         </div>
+      </div>
+
+      <!-- simple mode: the day at a glance — today's time towards the goal, and the streak -->
+      <div class="simple-day" id="simpleDay">
+        <div class="sd-top"><span class="sd-done" id="sdDone"></span><span class="sd-streak" id="sdStreak"></span></div>
+        <div class="sd-bar"><i id="sdFill"></i></div>
       </div>
 
       <div class="label-wrap" data-c="label">
@@ -150,8 +157,7 @@
 
     <!-- PROJECTS -->
     <section class="view" id="view-projects">
-      <h1 data-i18n="tabProjects"></h1>
-      <p class="lead" data-i18n="projLead"></p>
+      <h1 data-i18n="tabProjects" data-info="projLead"></h1>
       <form class="add-row" id="projAdd">
         <input class="text-input" id="projName" maxlength="120" data-i18n-ph="projNewPh" autocomplete="off">
         <button class="ghost add-btn" type="submit" data-i18n-title="add"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5.5v13M5.5 12h13"/></svg></button>
@@ -162,8 +168,7 @@
 
     <!-- APPS -->
     <section class="view" id="view-apps">
-      <h1 data-i18n="tabApps"></h1>
-      <p class="lead" data-i18n="appsLead"></p>
+      <h1 data-i18n="tabApps" data-info="appsLead"></h1>
       <div class="apps-cap"><span class="apps-cap-l" data-i18n="appsActiveL"></span><button class="range-pick" id="appsRange"><span></span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 10l5 5 5-5"/></svg></button></div>
       <div id="appList"></div>
       <button class="ghost wide add-app" id="btnAddApp" data-i18n="appsAdd"></button>
@@ -184,6 +189,10 @@
       <div class="goal" id="goalBlock">
         <div class="goal-head"><span data-i18n="goal"></span><span class="muted" id="goalText"></span></div>
         <div class="bar"><div class="bar-fill" id="goalFill"></div></div>
+      </div>
+      <div class="goal" id="goalWeekBlock">
+        <div class="goal-head"><span data-i18n="goalWeekL"></span><span class="muted" id="goalWeekText"></span></div>
+        <div class="bar"><div class="bar-fill" id="goalWeekFill"></div></div>
       </div>
       <div class="cards">
         <div class="card"><div class="card-label" data-i18n="today"></div><div class="card-val" id="stToday"></div></div>
@@ -222,6 +231,11 @@
 
     </section>
 
+    <!-- PLAN (PC; the phone opens the same box as a panel from the timer page) -->
+    <section class="view" id="view-plan" data-desktop>
+      <h1 data-i18n="tabPlan" data-info="planLead"></h1>
+    </section>
+
     <!-- SETTINGS -->
     <section class="view" id="view-settings">
       <h1 data-i18n="tabSettings"></h1>
@@ -238,6 +252,10 @@
       <div class="set">
         <span class="set-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="4"/><circle cx="12" cy="12" r=".9" fill="currentColor"/></svg></span><div class="set-text"><div class="set-name" data-i18n="goalSet"></div><div class="set-desc" data-i18n="goalDesc"></div></div>
         <div class="stepper" data-key="goal"></div>
+      </div>
+      <div class="set">
+        <span class="set-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3.5" y="5" width="17" height="15.5" rx="3"/><path d="M3.5 10h17M8 3v4M16 3v4"/></svg></span><div class="set-text"><div class="set-name" data-i18n="goalWeek"></div><div class="set-desc" data-i18n="goalWeekDesc"></div></div>
+        <div class="stepper" data-key="goalWeek"></div>
       </div>
 
       <div class="group-title" data-i18n="gNotify"></div>
@@ -259,6 +277,10 @@
       </div>
 
       <div class="group-title" data-i18n="gLook"></div>
+      <div class="set">
+        <span class="set-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="13" r="7.5"/><path d="M12 9.5V13l2.4 1.5M9.5 3h5"/></svg></span><div class="set-text"><div class="set-name" data-i18n="simpleL"></div><div class="set-desc" data-i18n="simpleDesc"></div></div>
+        <button class="toggle" data-key="simple"></button>
+      </div>
       <div class="set">
         <span class="set-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="8.5"/><path d="M3.5 12h17M12 3.5c2.5 2.6 3.5 5.4 3.5 8.5s-1 5.9-3.5 8.5c-2.5-2.6-3.5-5.4-3.5-8.5s1-5.9 3.5-8.5z"/></svg></span><div class="set-text"><div class="set-name" data-i18n="language"></div></div>
         <div class="seg" data-key="lang">
@@ -343,12 +365,49 @@
       <div class="hist-scroll" id="archList"></div>
     </div>
   </div>
+  <div class="modal" id="taskAsk" hidden>
+    <form class="modal-card at-card ta-card" id="taForm" autocomplete="off">
+      <h3 id="taTitle"></h3>
+      <p class="ta-sub" id="taSub"></p>
+      <div class="ta-chips" id="taChips"></div>
+      <input class="text-input" id="taInput" maxlength="120" data-i18n-ph="taNewPh">
+      <div class="modal-btns"><button type="button" class="ghost" id="taLater"></button><button type="submit" class="danger-btn safe" id="taOk" data-i18n="done"></button></div>
+    </form>
+  </div>
   <div class="modal" id="seriesCard" hidden>
     <div class="modal-card sc-card">
       <div class="ad-head"><span class="sc-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 11a7 7 0 0 1 12-4.9L19 8M19 4v4h-4M19 13a7 7 0 0 1-12 4.9L5 16M5 20v-4h4"/></svg></span><div class="sc-titles"><h3 id="scName"></h3><div class="sc-sub" id="scSub"></div></div><button class="when-x" id="scClose" aria-label="×"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M7 7l10 10M17 7 7 17"/></svg></button></div>
       <div class="ad-main"><b id="scTotal"></b><span id="scCount"></span></div>
+      <button class="sc-task" id="scTask"></button>
       <div class="sc-list" id="scList"></div>
     </div>
+  </div>
+  <div class="modal" id="planPanel" hidden>
+    <div class="modal-card plan-card">
+      <div class="ad-head"><h3 data-i18n="tabPlan" data-info="planLead"></h3><button class="when-x" id="planClose" aria-label="×"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M7 7l10 10M17 7 7 17"/></svg></button></div>
+      <div class="plan-box" id="planBox">
+        <div class="plan-next" id="planNext"></div>
+        <div class="plan-scroll"><div id="planList"></div></div>
+        <button class="danger-btn safe plan-add" id="btnPlanAdd" data-i18n="planAdd"></button>
+      </div>
+    </div>
+  </div>
+  <div class="modal" id="planEdit" hidden>
+    <form class="modal-card at-card pe-card" id="peForm" autocomplete="off">
+      <h3 id="peTitle"></h3>
+      <div class="at-row"><span class="at-l" data-i18n="peTimeL"></span><button type="button" class="pe-time" id="peTime"></button></div>
+      <div class="pe-span" id="peSpan"></div>
+      <div class="at-row"><span class="at-l" data-i18n="peRepeatL"></span>
+        <div class="seg small" id="peRepeat"><button type="button" data-v="once" data-i18n="peOnce"></button><button type="button" data-v="daily" data-i18n="everyDay"></button><button type="button" data-v="days" data-i18n="peWeekly"></button></div></div>
+      <div class="pe-days" id="peDaysRow"><div id="peDays"></div></div>
+      <div class="at-row" id="peDateRow"><span class="at-l" data-i18n="atWhen"></span><button type="button" class="when-chip" id="peDate"><svg class="when-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="4" y="5" width="16" height="15" rx="3"/><path d="M4 10h16M8.5 3v4M15.5 3v4"/></svg><span></span></button></div>
+      <div class="at-row"><span class="at-l" data-i18n="seriesCountL"></span><div class="stepper at-step"><button type="button" data-step="count" data-d="-1">−</button><span class="val" id="peCount"></span><button type="button" data-step="count" data-d="1">+</button></div></div>
+      <div class="at-row"><span class="at-l" data-i18n="work"></span><div class="stepper at-step"><button type="button" data-step="work" data-d="-1">−</button><span class="val" id="peWork"></span><button type="button" data-step="work" data-d="1">+</button></div></div>
+      <div class="at-row" id="peBrkRow"><span class="at-l" data-i18n="break"></span><div class="stepper at-step"><button type="button" data-step="brk" data-d="-1">−</button><span class="val" id="peBrk"></span><button type="button" data-step="brk" data-d="1">+</button></div></div>
+      <input class="text-input" id="peProject" maxlength="120" data-i18n-ph="atProjectPh">
+      <div class="at-chips" id="peChips"></div>
+      <div class="modal-btns"><button type="button" class="pe-del" id="peDelete" data-i18n="delete"></button><button type="button" class="ghost" id="peCancel" data-i18n="cancel"></button><button type="submit" class="danger-btn safe" id="peSave" data-i18n="planSave"></button></div>
+    </form>
   </div>
   <div class="modal" id="appDetail" hidden>
     <div class="modal-card ad-card">
@@ -372,6 +431,7 @@
         <span class="ts-sep">:</span>
         <div class="ts-col" id="tsM"></div>
       </div>
+      <button class="ts-extra" id="tsExtra" hidden></button>
       <div class="ts-btns"><button class="ghost" id="tsNow" data-i18n="seriesNow"></button><button class="danger-btn safe" id="tsOk" data-i18n="done"></button></div>
     </div>
   </div>

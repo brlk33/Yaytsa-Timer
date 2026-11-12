@@ -2004,3 +2004,238 @@ html.android .sc-row .hs-del { width: 34px; height: 34px; }
 
 /* crash note: one fact per line */
 #modalText { white-space: pre-line; }
+
+/* ======================= 2.19: Plan ======================= */
+.plan-next { font-size: 14px; color: var(--text-2); margin: -6px 0 16px; }
+.plan-next b { color: var(--text-strong); font-weight: 600; }
+.plan {
+  display: grid; grid-template-columns: auto 1fr auto; align-items: center; gap: 16px;
+  padding: 14px 16px; margin-bottom: 8px; border-radius: var(--r-l);
+  background: var(--panel); box-shadow: inset 0 0 0 1px var(--border); cursor: pointer;
+  transition: box-shadow .18s var(--ease), opacity .2s var(--ease);
+}
+.plan:hover { box-shadow: inset 0 0 0 1px var(--border-strong), var(--shadow-soft); }
+.plan.off { opacity: .5; }
+.plan-time { font-family: var(--font-display); font-size: 30px; font-weight: 600; letter-spacing: -0.02em; color: var(--text-strong); font-variant-numeric: tabular-nums; line-height: 1; }
+.plan-main { min-width: 0; }
+.plan-days { font-weight: 600; color: var(--text-strong); }
+.plan-sub { font-size: 13px; color: var(--text-2); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+html.android .plan { background: var(--block); box-shadow: none; border-radius: 20px; }
+.pe-card { width: min(420px, 100%); }
+.pe-time {
+  border: 0; border-radius: 12px; padding: 4px 14px; background: var(--hover); color: var(--text-strong);
+  font-family: var(--font-display); font-size: 26px; font-weight: 600; font-variant-numeric: tabular-nums;
+}
+.pe-time:hover { background: var(--active); }
+#peDays { display: flex; gap: 4px; flex-wrap: wrap; }
+.pe-day { flex: 1; min-width: 38px; border: 0; border-radius: 10px; padding: 7px 0; background: var(--hover); color: var(--text-2); font-size: 13px; font-weight: 600; }
+.pe-day.on { background: linear-gradient(135deg, #4f8bff, #8a5cff); color: #fff; }
+.pe-del { margin-right: auto; border: 0; background: transparent; color: var(--text-3); font-size: 14px; padding: 7px 4px; }
+.pe-del:hover { color: var(--danger); }
+.pe-card .danger-btn:disabled { opacity: .45; cursor: default; }
+html.android .pe-day { min-height: 40px; }
+html.android .pe-card .modal-btns .pe-del { flex: 0 0 auto; }
+/* "start later" set for another day: a little "+1" mark on the chip */
+.when-chip.set.later::after { content: attr(data-day); font-size: 10px; font-weight: 700; margin-left: 3px; opacity: .8; }
+.tabs.tight { gap: 0; padding: 0 8px; }
+.tabs.tight .tab { padding-left: 7px; padding-right: 7px; }
+.tabs.tight .tab::after { left: 7px; right: 7px; }
+.tabs.tighter .tab { font-size: 13.5px; padding-left: 5px; padding-right: 5px; }
+.tabs.tighter .tab::after { left: 5px; right: 5px; }
+html:not(.android) .tabs.icons .tab { padding: 9px 9px 11px; }
+html:not(.android) .tabs.icons .tab span { display: none; }
+html:not(.android) .tabs.icons .tab .ico { display: block; width: 19px; height: 19px; }
+.plan-days::first-letter { text-transform: uppercase; }
+/* six tabs on the phone: labels a touch smaller so they never touch */
+html.android .tab span { font-size: 10px; letter-spacing: 0; }
+
+/* Plan as a panel opened from the timer page */
+.plan-card { width: min(460px, 100%); max-height: min(86vh, 760px); display: flex; flex-direction: column; gap: 12px; }
+.plan-lead { margin: -4px 0 0 !important; font-size: 13px !important; color: var(--text-2); }
+.plan-card .plan-next { margin: 0; }
+.plan-scroll { flex: 1; min-height: 0; overflow-y: auto; margin: 0 -6px; padding: 0 6px; }
+.plan-scroll .plan:last-child { margin-bottom: 0; }
+.plan-add { width: 100%; padding: 11px 16px; border-radius: 12px; font-size: 15px; }
+html.android .plan-card { border-radius: 24px; }
+html.android .plan-add { min-height: 50px; border-radius: 16px; }
+.plan-time { white-space: nowrap; }
+.plan-end { font-size: 17px; font-weight: 500; color: var(--text-2); margin-left: 2px; letter-spacing: 0; }
+.pe-span { margin-top: -6px; text-align: right; font-size: 13px; color: var(--text-2); font-variant-numeric: tabular-nums; }
+
+/* The plan chip on the timer page: bolder figures, room around the icon and the "+1" mark */
+.when-chip { font-weight: 600; font-variant-numeric: tabular-nums; }
+.when-chip.set { gap: 8px; padding: 6px 14px 6px 12px; letter-spacing: .01em; }
+.when-chip.set .when-ico { display: block !important; width: 18px !important; height: 18px !important; }
+.when-chip.set.later::after {
+  content: attr(data-day); margin: 0; padding: 2px 7px; border-radius: 999px;
+  background: rgba(255, 255, 255, .24); font-size: 11px; font-weight: 700; opacity: 1; line-height: 1.3;
+}
+html.android .when-chip.set { height: 44px; padding: 0 16px 0 14px; gap: 8px; font-size: 15.5px; }
+html.android .when-chip.set .when-ico { width: 19px !important; height: 19px !important; }
+html.android .when-x { flex: none; }
+html.android #view-timer .props .when { gap: 8px; }
+.plan-time { display: flex; flex-direction: column; align-items: flex-start; min-width: 76px; }
+.plan-end { display: block; margin: 4px 0 0; font-size: 12.5px; font-weight: 500; font-family: var(--font); color: var(--text-2); }
+.when-chip { flex-wrap: nowrap; white-space: nowrap; }
+
+/* Plan card 2.19: "07:21 ——— 09:11", both times in one size, the line between them */
+.plan { grid-template-columns: 1fr auto; grid-template-areas: "span tog" "info info"; gap: 8px 14px; }
+.plan-span { grid-area: span; display: flex; align-items: center; gap: 12px; min-width: 0; }
+.plan .toggle { grid-area: tog; }
+.plan .pt { font-family: var(--font-display); font-size: 28px; font-weight: 600; letter-spacing: -0.02em; line-height: 1; color: var(--text-strong); font-variant-numeric: tabular-nums; }
+.plan .pt.inf { font-size: 26px; color: var(--text-2); }
+.plan-line { position: relative; flex: 1; max-width: 120px; min-width: 28px; height: 2px; border-radius: 2px; background: linear-gradient(90deg, #4f8bff, #8a5cff); }
+.plan-line::before, .plan-line::after { content: ""; position: absolute; top: 50%; width: 7px; height: 7px; margin-top: -3.5px; border-radius: 50%; background: #4f8bff; }
+.plan-line::before { left: -3px; }
+.plan-line::after { right: -3px; background: #8a5cff; }
+.plan.off .plan-line { background: var(--text-3); }
+.plan.off .plan-line::before, .plan.off .plan-line::after { background: var(--text-3); }
+.plan-info { grid-area: info; font-size: 13px; color: var(--text-2); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.plan-info .plan-days { color: var(--text-strong); font-weight: 600; }
+.plan-info .plan-days::first-letter { text-transform: uppercase; }
+.plan-next { display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; }
+.plan-skip { border: 0; background: transparent; color: var(--text-3); font-size: 12.5px; padding: 2px 0; }
+.plan-skip:hover { color: var(--text); }
+
+/* the plan chip stands alone now (no ×): a round clock, or a pill with the time */
+html:not(.android) .prop[data-p="when"] .when { width: 140px; justify-content: center; } /* same column as the other rows */
+html:not(.android) .prop[data-p="when"] .when-chip.set { padding: 6px 14px 6px 12px; }
+
+/* one session has no break: its length setting steps aside */
+#view-timer.no-brk .prop[data-p="brk"], html.android #view-timer.no-brk .dial[data-key="brk"] { display: none !important; }
+.lc-cap { margin: 2px 0 0 46px; font-size: 11.5px; color: var(--text-3); }
+#modal { z-index: 65; } /* a question may come from inside another card */
+.row[data-id], .hs:not(.series) { cursor: pointer; }
+#addTime { z-index: 62; } /* editing an entry opens over the full history */
+.plan-info .plan-days { display: inline-block; }
+
+/* Chart zoom and selection (2.19) */
+.ad-chart.lc { position: relative; }
+.lc-zoom, .lc-tools { position: absolute; top: -30px; display: flex; gap: 2px; z-index: 2; }
+.lc-zoom { right: 0; }
+.lc-tools { right: 64px; }
+.lc-b {
+  width: 26px; height: 24px; border: 0; border-radius: 7px; padding: 0;
+  background: var(--hover); color: var(--text-2); font-size: 15px; line-height: 1;
+  transition: background .12s var(--ease), color .12s var(--ease);
+}
+.lc-b:hover:not(:disabled) { background: var(--active); color: var(--text-strong); }
+.lc-b:disabled { opacity: .35; cursor: default; }
+.lc-plot { user-select: none; touch-action: pan-y; }
+.lc-plot svg { overflow: hidden; }
+.lc-sel { position: absolute; top: 0; bottom: 0; border-radius: 6px; background: rgba(111, 107, 255, .18); box-shadow: inset 0 0 0 1px rgba(138, 92, 255, .55); pointer-events: none; }
+.ad-chart.lc { margin-top: 26px; }
+/* Plan on the PC: a page of its own */
+#view-plan .plan-box { display: flex; flex-direction: column; gap: 12px; }
+#view-plan .plan-lead { margin: -14px 0 4px !important; font-size: 14px !important; }
+#view-plan .plan-scroll { overflow: visible; margin: 0; padding: 0; }
+#view-plan .plan-add { align-self: stretch; }
+/* card, second line: the days (and task) on the left, a quiet "skip today" on the right */
+.plan { grid-template-areas: "span tog" "info act"; }
+.plan-act { grid-area: act; justify-self: end; }
+.plan-act .plan-skip { font-size: 12px; color: var(--text-3); opacity: 0; transition: opacity .15s var(--ease), color .15s var(--ease); white-space: nowrap; }
+.plan:hover .plan-act .plan-skip, .plan-act .plan-skip[data-act="unskip"] { opacity: 1; }
+.plan-act .plan-skip:hover { color: var(--text); text-decoration: underline; text-underline-offset: 2px; }
+html.android .plan-act .plan-skip { opacity: .8; }
+.plan-next { display: block; }
+
+/* "What are you working on?" and naming a series afterwards */
+#taskAsk { z-index: 64; }
+.ta-card { width: min(400px, 100%); }
+.ta-sub { margin: -4px 0 2px !important; font-size: 13.5px; color: var(--text-2); }
+.ta-chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.ta-chips:empty { display: none; }
+html.android .ta-chips .at-chip { padding: 10px 15px; font-size: 15px; background: var(--block-2); }
+.sc-task {
+  display: inline-flex; align-items: center; gap: 6px; align-self: flex-start;
+  border: 0; border-radius: 10px; padding: 6px 10px; margin: -4px 0 2px;
+  background: var(--hover); color: var(--text-2); font-size: 13.5px;
+}
+.sc-task b { color: var(--text-strong); font-weight: 600; }
+.sc-task svg { width: 14px; height: 14px; opacity: .6; }
+.sc-task:hover { background: var(--active); }
+.plan .toggle { justify-self: end; }
+
+/* The small "i": explanations on demand instead of on the page */
+.head-i { display: flex; align-items: center; gap: 10px; }
+.head-i > h1, .head-i > h3 { margin-right: 0; }
+#view-projects .head-i, #view-apps .head-i, #view-plan .head-i { margin-bottom: 18px; }
+.head-i > h1 { margin-bottom: 0 !important; }
+.ad-head .head-i { flex: 1; min-width: 0; }
+.info-i {
+  flex: none; width: 20px; height: 20px; padding: 0; border-radius: 50%;
+  display: inline-grid; place-items: center; vertical-align: middle;
+  border: 1.4px solid var(--text-3); background: transparent; color: var(--text-3);
+  font: italic 600 12px/1 Georgia, "Times New Roman", serif;
+  transition: color .15s var(--ease), border-color .15s var(--ease), background .15s var(--ease);
+}
+.info-i:hover, .info-i.on { color: var(--text-strong); border-color: var(--text-2); background: var(--hover); }
+.info-i.sm { width: 16px; height: 16px; font-size: 10.5px; margin-left: 4px; }
+.info-tip {
+  position: fixed; z-index: 80; max-width: min(320px, calc(100vw - 20px));
+  padding: 10px 13px; border-radius: 12px;
+  background: var(--bg-3); color: var(--text); box-shadow: var(--shadow);
+  font-size: 13.5px; line-height: 1.5;
+  animation: dropIn .16s var(--ease);
+}
+html.android .info-i { width: 24px; height: 24px; font-size: 13px; }
+/* time picker: "Remove" and "Full plan…" on the left, Done on the right */
+.tp-left { display: flex; gap: 2px; }
+.tp .tp-extra { color: var(--text-3); }
+.tp .tp-extra:hover { color: var(--text); }
+.tp { width: 240px; }
+.ts-extra { display: block; margin: -4px auto 12px; border: 0; background: transparent; color: var(--text-2); font-size: 14px; padding: 6px 10px; }
+.tp { width: 270px; }
+.tp .cal-foot .ghost { white-space: nowrap; }
+
+/* ======================= Just a timer (simple mode) ======================= */
+.simple-day { display: none; }
+html.simple .tab[data-view="projects"], html.simple .tab[data-view="apps"], html.simple .tab[data-view="plan"] { display: none !important; }
+html.android.simple #view-projects, html.android.simple #view-apps { display: none !important; }
+html.simple #view-timer .label-wrap, html.simple #view-timer .label-meta, html.simple #view-timer .test-row,
+html.simple #view-timer .props .prop:not([data-p="work"]):not([data-p="brk"]),
+html.simple.android #view-timer .props { display: none !important; }
+html.simple #view-timer .props { border-top: 0; margin-top: 4px; }
+/* the day at a glance: today towards the goal, the streak, a bar that fills with every session */
+html.simple .simple-day {
+  display: block; position: relative; width: 100%; max-width: 360px; margin: 6px auto 22px;
+}
+.sd-top { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; margin-bottom: 8px; }
+.sd-done { font-size: 15px; font-weight: 600; color: var(--text-strong); font-variant-numeric: tabular-nums; }
+.sd-streak { font-size: 13px; font-weight: 600; color: #ff9a4d; }
+.sd-streak:not(:empty)::before { content: ""; display: inline-block; width: 11px; height: 14px; margin-right: 5px; vertical-align: -2px;
+  background: linear-gradient(180deg, #ffcf5a, #ff6a3d); clip-path: path("M5.5 0C6.5 3 11 5 11 9.2C11 12 8.6 14 5.5 14S0 12 0 9.2C0 7 1.4 5.6 2.6 4.6C2.6 6.4 3.6 7.4 4.6 7.4C4.6 4.6 3.6 2.6 5.5 0Z"); }
+.sd-bar { height: 10px; border-radius: 999px; background: var(--track); overflow: hidden; }
+.sd-bar i { display: block; height: 100%; width: 0; border-radius: 999px; background: linear-gradient(90deg, #4f8bff, #8a5cff); transition: width .8s cubic-bezier(.22, .9, .3, 1); }
+.simple-day.no-goal .sd-bar { display: none; }
+.simple-day .plus-chip { top: -30px; }
+.simple-day.done-pulse .sd-bar i { animation: sdPulse 1.1s ease-out; }
+@keyframes sdPulse { 30% { filter: brightness(1.5) drop-shadow(0 0 8px rgba(138, 92, 255, .9)); } }
+.simple-day.win .sd-bar i { animation: sdWin 1.6s ease-out; background: linear-gradient(90deg, #2fbf8f, #3db7d6, #8a5cff); }
+@keyframes sdWin { 0% { filter: none; } 20% { filter: brightness(1.7) drop-shadow(0 0 12px rgba(47, 191, 143, .9)); } 100% { filter: none; } }
+.simple-day.win .sd-done { animation: kPop .5s var(--ease); }
+html.simple.android .simple-day { max-width: 320px; margin: 18px auto 0; order: 3; }
+
+/* the task list: "Create a new project" at the very bottom, apart from the projects */
+.sug-foot { margin: 4px -6px -6px; padding: 6px; border-top: 1px solid var(--border); }
+.sug-create {
+  width: 100%; display: flex; align-items: center; gap: 10px;
+  border: 0; border-radius: 10px; padding: 8px 10px; background: transparent;
+  color: var(--accent); font-weight: 600; text-align: left;
+  transition: background .12s var(--ease);
+}
+.sug-create:hover { background: var(--accent-soft); }
+.sug-plus-ico { width: 26px; height: 26px; flex: none; display: grid; place-items: center; border-radius: 8px; background: linear-gradient(135deg, #4f8bff, #8a5cff); color: #fff; }
+.sug-plus-ico svg { width: 16px; height: 16px; }
+.sug-new-row { display: flex; gap: 6px; padding: 2px; }
+.sug-new-in { flex: 1; min-width: 0; border: 0; outline: 0; border-radius: 10px; padding: 8px 12px; font: inherit; background: var(--hover); color: var(--text-strong); box-shadow: inset 0 0 0 1.5px var(--accent); user-select: text; }
+.sug-new-ok { width: 38px; border: 0; border-radius: 10px; background: linear-gradient(135deg, #4f8bff, #8a5cff); color: #fff; display: grid; place-items: center; }
+.sug-new-ok svg { width: 16px; height: 16px; }
+/* "Create …" in the task list: quiet grey, like a secondary line, not a call to action */
+.sug-create { color: var(--text-2); font-weight: 500; }
+.sug-create:hover, .sug-create.on { background: var(--hover); color: var(--text); }
+.sug-create .sug-plus-ico { background: var(--hover); color: var(--text-2); }
+.sug-create:hover .sug-plus-ico, .sug-create.on .sug-plus-ico { background: var(--active); color: var(--text); }
+.sug-create.typed { color: var(--text); }
+.sug-create span:last-child { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.sug-foot.alone { margin-top: -6px; border-top: 0; }
