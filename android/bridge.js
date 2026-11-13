@@ -48,6 +48,7 @@
     openDataFolder: noop,
     showAlert: d => post('showAlert', d),
     closeAlert: () => post('closeAlert'),
+    haptic: () => post('haptic'),
     onAlertAction: on('alert-action'),
     updateTray: noop,
     onTrayAction: on('tray-action'),

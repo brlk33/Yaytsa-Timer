@@ -400,6 +400,9 @@ public class MainActivity extends Activity {
             case "notify":
                 if (!Host.alreadyAlerted(this)) Host.postAlert(this, args.optString(0), args.optString(1), "", "", false);
                 break;
+            case "haptic":
+                web.performHapticFeedback(android.view.HapticFeedbackConstants.LONG_PRESS);
+                break;
             case "closeAlert":
                 Host.cancelAlert(this);
                 break;
